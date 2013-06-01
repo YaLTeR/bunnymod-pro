@@ -1,0 +1,461 @@
+#include <vector>
+#include <memory.h>
+#include "hud.h"
+#include "com_model.h"
+#include "cl_util.h"
+#include "studio_util.h"
+#include "const.h"
+#include "cdll_int.h"
+#include "pm_defs.h"
+#include "eventscripts.h"
+#include "event_api.h"
+#include "r_efx.h"
+
+#include "ruler.h"
+
+extern vec3_t g_org;
+extern vec3_t g_vecViewAngle;
+extern cvar_t *cl_ruler_enable;
+extern cvar_t *cl_ruler_autodelay;
+extern cvar_t *cl_ruler_addorigin;
+extern cvar_t *cl_autostopsave_radius;
+extern cvar_t *cl_autostopsave_cmd;
+
+cl_rulerPoint firstRulerPoint;
+
+cl_rulerPoint *autostopsavePoint = NULL;
+cl_sphere *autostopsaveSphere = NULL;
+std::vector<float> autostopsaveSphereVertices;
+
+bool autostopsaveCmdExecuted = false;
+
+double flRulerOldTime = 0.0, flRulerTime, flRulerTimeDelta;
+
+/*
+ResetRuler
+Resets ruler points and cleans the memory.
+*/
+void ResetRuler( void )
+{
+	cl_rulerPoint *delRulerPoint = firstRulerPoint.pNext;
+	firstRulerPoint.pNext = NULL;
+
+	while ( delRulerPoint != NULL )
+	{
+		if ( delRulerPoint->beamToThisPoint != NULL )
+		{
+			delRulerPoint->beamToThisPoint->flags &= ~FBEAM_FOREVER;
+		}
+
+		cl_rulerPoint *nextRulerPoint = delRulerPoint->pNext;
+		delete delRulerPoint;
+		delRulerPoint = nextRulerPoint;
+	}
+
+	InitRuler();
+	return;
+}
+
+/*
+InitRuler
+Initializes the variables with zero values.
+*/
+void InitRuler( void )
+{
+	firstRulerPoint.origin[0] = 0;
+	firstRulerPoint.origin[1] = 0;
+	firstRulerPoint.origin[2] = 0;
+	firstRulerPoint.beamToThisPoint = NULL;
+	firstRulerPoint.pNext = NULL;
+	firstRulerPoint.pPrev = NULL;
+
+	return;
+}
+
+/*
+PrintDistance
+Prints the distance between the two points into the console.
+*/
+void PrintDistance( void )
+{
+	vec3_t rulerDelta;
+	double flDistanceXYZ = 0.0, flDistanceXY = 0.0;
+	cl_rulerPoint *curPoint = firstRulerPoint.pNext;
+
+	while ( curPoint != NULL )
+	{
+		cl_rulerPoint *nextPoint = curPoint->pNext;
+		if ( nextPoint == NULL ) break;
+
+		VectorSubtract( nextPoint->origin, curPoint->origin, rulerDelta );
+		flDistanceXY += sqrt( rulerDelta[0] * rulerDelta[0] + rulerDelta[1] * rulerDelta[1] );
+		flDistanceXYZ += sqrt( rulerDelta[0] * rulerDelta[0] + rulerDelta[1] * rulerDelta[1] + rulerDelta[2] * rulerDelta[2] );
+
+		curPoint = nextPoint;
+	}
+
+	gEngfuncs.Con_Printf("Distance (XY): %.15f\nDistance (XYZ): %.15f\n", flDistanceXY, flDistanceXYZ);
+
+	return;
+}
+
+/*
+AimPos
+Stores the position of the point the player is aiming at.
+*/
+void AimPos( void )
+{
+	vec3_t origin;
+	vec3_t angles;
+	vec3_t vecStart, vecEnd;
+	vec3_t forward, right, up;
+
+	VectorCopy( g_org, origin );
+	VectorCopy( g_vecViewAngle, angles );
+
+	AngleVectors( angles, forward, right, up );
+
+	vec3_t view_ofs;
+	VectorClear( view_ofs );
+	view_ofs[2] = DEFAULT_VIEWHEIGHT;
+	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( view_ofs );
+	VectorAdd( origin, view_ofs, vecStart );
+
+	VectorMA( vecStart, 8192, forward, vecEnd );
+
+	pmtrace_t tr;
+	gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
+	gEngfuncs.pEventAPI->EV_PlayerTrace( vecStart, vecEnd, PM_STUDIO_BOX, -1, &tr );// 1st, this can hit players
+
+	if ( tr.fraction < 1.0 )
+	{
+		StorePoint( tr.endpos );
+	}
+}
+
+/*
+PlayerPos
+Stores the player position.
+*/
+void PlayerPos( void )
+{
+	StorePoint( g_org );
+}
+
+/*
+ViewPos
+Stores the view position.
+*/
+void ViewPos( void )
+{
+	vec3_t origin;
+	vec3_t out;
+
+	VectorCopy( g_org, origin );
+
+	vec3_t view_ofs;
+	VectorClear( view_ofs );
+	view_ofs[2] = DEFAULT_VIEWHEIGHT;
+	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( view_ofs );
+	VectorAdd( origin, view_ofs, out );
+
+	StorePoint( out );
+}
+
+/*
+RulerAutoFunc
+This function is called automatically each frame to add player position as a point each <cl_ruler_autodelay> seconds.
+Also this function is used to add the point by its origin (cl_ruler_addorigin).
+And also updates autosavepointSphere radius if it doesn't match the one set in cl_autostopsave_radius.
+Arguments: double flTime - current time.
+*/
+void RulerAutoFunc( double flTime )
+{
+	flRulerOldTime = flRulerTime;
+	flRulerTime = flTime;
+	flRulerTimeDelta = flRulerTime - flRulerOldTime;
+
+	if ( flRulerTimeDelta < 0 )
+	{
+		flRulerTimeDelta = 0;
+		flRulerOldTime = flRulerTime;
+	}
+
+	if ( ( cl_ruler_autodelay->value > 0 ) && ( flRulerTimeDelta > cl_ruler_autodelay->value ) )
+	{
+		PlayerPos();
+	}
+	else
+	{
+		flRulerTime = flRulerOldTime;
+	}
+
+	if ( strlen( cl_ruler_addorigin->string ) > 0 )
+	{
+		float x = 0.0, y = 0.0, z = 0.0;
+
+		sscanf( cl_ruler_addorigin->string, "%f %f %f", &x, &y, &z );
+
+		vec3_t vecPoint;
+		vecPoint[0] = x;
+		vecPoint[1] = y;
+		vecPoint[2] = z;
+
+		StorePoint( vecPoint );
+
+		gEngfuncs.pfnClientCmd( "cl_ruler_addorigin \"\"\n" );
+	}
+
+	if ( autostopsaveSphere != NULL )
+	{
+		float flSphereRadius = cl_autostopsave_radius->value;
+		if ( flSphereRadius <= 0.0 )
+		{
+			flSphereRadius = 50.0;
+		}
+
+		if ( autostopsaveSphere->flRadius != flSphereRadius )
+		{
+			autostopsaveSphere->flRadius = flSphereRadius;
+			CalcSphereVertices( autostopsaveSphere );
+		}
+	}
+}
+
+/*
+StorePos
+Stores the position of the point into memory.
+Arguments: vec3_t vecPoint - coordinates of a point.
+*/
+void StorePoint( vec3_t vecPoint )
+{
+	if ( !cl_ruler_enable->value ) return;
+
+	cl_rulerPoint *newPoint = new cl_rulerPoint;
+
+	if ( !newPoint )
+	{
+		gEngfuncs.Con_Printf( "Error: Failed to allocate memory for a new ruler point!\n" );
+		return;
+	}
+
+	VectorCopy( vecPoint, newPoint->origin );
+
+	cl_rulerPoint *curPoint = firstRulerPoint.pNext;
+
+	newPoint->pNext = curPoint;
+	newPoint->pPrev = &firstRulerPoint;
+
+	if ( curPoint != NULL )
+	{
+		curPoint->pPrev = newPoint;
+
+		int m_iBeam = gEngfuncs.pEventAPI->EV_FindModelIndex( "sprites/smoke.spr" );
+		newPoint->beamToThisPoint = gEngfuncs.pEfxAPI->R_BeamPoints( curPoint->origin, newPoint->origin, m_iBeam, 0, 1.0, 0, 256.0, 0, 0, 0, 0, 255, 0 );
+	}
+
+	firstRulerPoint.pNext = newPoint;
+
+	PrintDistance();
+}
+
+/*
+DeleteLast
+Deletes the last added point from memory.
+*/
+void DeleteLast( void )
+{
+	cl_rulerPoint *delPoint = firstRulerPoint.pNext;
+
+	if ( delPoint != NULL )
+	{
+		cl_rulerPoint *nextPoint = delPoint->pNext;
+
+		if ( nextPoint != NULL )
+		{
+			nextPoint->pPrev = &firstRulerPoint;
+		}
+
+		firstRulerPoint.pNext = nextPoint;
+
+		if ( delPoint->beamToThisPoint != NULL )
+		{
+			delPoint->beamToThisPoint->flags &= ~FBEAM_FOREVER;
+		}
+
+		delete delPoint;
+	}
+}
+
+/*
+AutostopsaveAddPoint
+Converts the last added point to an autostopsave point.
+*/
+void AutostopsaveAddPoint( void )
+{
+	if ( autostopsavePoint == NULL )
+	{
+		cl_rulerPoint *lastPoint = firstRulerPoint.pNext;
+
+		if ( lastPoint != NULL )
+		{
+			cl_rulerPoint *nextPoint = lastPoint->pNext;
+
+			if ( nextPoint != NULL )
+			{
+				nextPoint->pPrev = &firstRulerPoint;
+			}
+
+			firstRulerPoint.pNext = nextPoint;
+
+			if ( lastPoint->beamToThisPoint != NULL )
+			{
+				lastPoint->beamToThisPoint->flags &= ~FBEAM_FOREVER;
+			}
+
+			autostopsavePoint = lastPoint;
+
+			float flSphereRadius = cl_autostopsave_radius->value;
+			if ( flSphereRadius <= 0.0 )
+			{
+				flSphereRadius = 50.0;
+			}
+
+			autostopsaveSphere = new cl_sphere;
+
+			if ( !autostopsaveSphere )
+			{
+				gEngfuncs.Con_Printf( "cl_autostopsave_addpoint error: Failed to allocate memory for a new ruler point!\n" );
+				return;
+			}
+
+			VectorCopy( autostopsavePoint->origin, autostopsaveSphere->vecOrigin );
+			autostopsaveSphere->flRadius = flSphereRadius;
+			autostopsaveSphere->iRings = 20;
+			autostopsaveSphere->iSectors = 20;
+
+			CalcSphereVertices( autostopsaveSphere );
+
+			PrintDistance();
+		}
+		else
+		{
+			gEngfuncs.Con_Printf( "cl_autostopsave_addpoint error: you need to add a ruler point first!\n" );
+		}
+	}
+	else
+	{
+		gEngfuncs.Con_Printf( "cl_autostopsave_addpoint error: you can't add more than one autostopsave point, please delete the existing one first!\n" );
+	}
+}
+
+/*
+AutostopsaveDeletePoint
+Deletes the autostopsave point.
+*/
+void AutostopsaveDeletePoint( void )
+{
+	if ( autostopsavePoint != NULL )
+	{
+		delete autostopsavePoint;
+
+		autostopsavePoint = NULL;
+
+		if ( autostopsaveSphere != NULL )
+		{
+			delete autostopsaveSphere;
+
+			autostopsaveSphere = NULL;
+		}
+	}
+	else
+	{
+		gEngfuncs.Con_Printf( "cl_autostopsave_delpoint error: no points to delete!\n" );
+	}
+}
+
+/*
+AutostopsaveAutoFunc
+This function is called automatically each time the position is updated. This function checks if
+the player is in the radius for the autostopsave point and executes console commands if so.
+Arguments: vec3_t vecOrigin - player position.
+*/
+void AutostopsaveAutoFunc( vec3_t vecOrigin )
+{
+	if ( autostopsavePoint != NULL )
+	{
+		float flSphereRadius = cl_autostopsave_radius->value;
+		if ( flSphereRadius <= 0.0 )
+		{
+			flSphereRadius = 50.0;
+		}
+
+		vec3_t vecDelta;
+
+		VectorSubtract( autostopsavePoint->origin, vecOrigin, vecDelta );
+
+		float flDistance = sqrt( vecDelta[0] * vecDelta[0] + vecDelta[1] * vecDelta[1] + vecDelta[2] * vecDelta[2] );
+
+		if ( flDistance <= flSphereRadius )
+		{
+			if ( !autostopsaveCmdExecuted )
+			{
+				autostopsaveCmdExecuted = true;
+				gEngfuncs.pfnClientCmd( cl_autostopsave_cmd->string );
+			}
+		}
+		else
+		{
+			autostopsaveCmdExecuted = false;
+		}
+	}
+}
+
+/*
+AutostopsavePrintOrigin
+Prints the origin of the autostopsave point into the console.
+*/
+void AutostopsavePrintOrigin( void )
+{
+	if ( autostopsavePoint != NULL )
+	{
+		vec3_t vecOrigin;
+		VectorCopy( autostopsavePoint->origin, vecOrigin );
+
+		gEngfuncs.Con_Printf( "autostopsave point origin (x, y, z): %f, %f, %f\n", vecOrigin[0], vecOrigin[1], vecOrigin[2] );
+	}
+	else
+	{
+		gEngfuncs.Con_Printf( "cl_autostopsave_printorigin error: no autostopsave point found!\n" );
+	}
+}
+
+/*
+CalcSphereVertices
+Calculates vertices for a given sphere and stores them so that they can be rendered.
+Arguments: cl_sphere *sphere - pointer to the sphere.
+*/
+void CalcSphereVertices( cl_sphere *sphere )
+{
+	float const R = 1.0 / ( float ) ( sphere->iRings - 1 );
+	float const S = 1.0 / ( float ) ( sphere->iSectors - 1 );
+	int r, s;
+
+	autostopsaveSphereVertices.resize( sphere->iRings * sphere->iSectors * 3 );
+
+	std::vector<float>::iterator v = autostopsaveSphereVertices.begin();
+
+	for ( r = 0; r < sphere->iRings; r++ )
+	{
+		for ( s = 0; s < sphere->iSectors; s++ )
+		{
+			float const y = sin( -( M_PI / 2 ) + M_PI * r * R );
+			float const x = cos( 2 * M_PI * s * S ) * sin( M_PI * r * R );
+			float const z = sin( 2 * M_PI * s * S ) * sin( M_PI * r * R );
+
+			*v++ = ( x * sphere->flRadius ) + sphere->vecOrigin[0];
+			*v++ = ( y * sphere->flRadius ) + sphere->vecOrigin[1];
+			*v++ = ( z * sphere->flRadius ) + sphere->vecOrigin[2];
+		}
+	}
+}

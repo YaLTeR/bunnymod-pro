@@ -1,0 +1,978 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"demorec",
+				"demorec_counter_delta"
+			],
+			[
+				"g_b",
+				"g_bResetDemorecCounter"
+			],
+			[
+				"g_acce",
+				"g_acceleration_negative"
+			],
+			[
+				"autostopsave",
+				"autostopsaveSphere"
+			],
+			[
+				"autostop",
+				"autostopsavePoint"
+			],
+			[
+				"autos",
+				"autostopsavePoint"
+			],
+			[
+				"Auto",
+				"AutostopsavePrintOrigin"
+			],
+			[
+				"Autostopsave",
+				"AutostopsaveDeletePoint"
+			],
+			[
+				"autostopsa",
+				"autostopsavePoint"
+			],
+			[
+				"Calc",
+				"CalcSphereVertices"
+			],
+			[
+				"aut",
+				"autostopsaveSphere"
+			],
+			[
+				"autostopsae",
+				"autostopsaveSphere"
+			],
+			[
+				"Autostop",
+				"AutostopsaveDeletePoint"
+			],
+			[
+				"RulerAutos",
+				"RulerAutostopsaveDeletePoint"
+			],
+			[
+				"RulerAuto",
+				"RulerAutostopsaveAddPoint"
+			],
+			[
+				"cl_autostopsave",
+				"cl_autostopsave_cmd"
+			],
+			[
+				"true",
+				"GetRunSpeed	:GetRunSpeed"
+			],
+			[
+				"flRuler",
+				"flRulerOldTime"
+			],
+			[
+				"flRule",
+				"flRulerOldTime"
+			],
+			[
+				"flRu",
+				"flRulerTimeDelta"
+			],
+			[
+				"ruler",
+				"rulerPoint2"
+			],
+			[
+				"Print",
+				"PrintDistance"
+			],
+			[
+				"conco",
+				"concommand.Add"
+			],
+			[
+				"GetClass",
+				"GetClassName	:GetClassName"
+			],
+			[
+				"auto",
+				"autoFireTime"
+			],
+			[
+				"chargin",
+				"chargingStart"
+			],
+			[
+				"hud_speed",
+				"hud_speedinfo"
+			],
+			[
+				"gauss",
+				"gaussboost_ammoConsumed"
+			],
+			[
+				"g_sModelIn",
+				"g_sModelIndexNull"
+			],
+			[
+				"m_flSaveS",
+				"m_flSaveStartCharge"
+			],
+			[
+				"gaussboo",
+				"gaussboost_delta"
+			],
+			[
+				"g_vecPlayer",
+				"g_vecPlayerVelocity"
+			],
+			[
+				"hud_gauss",
+				"hud_gaussboost"
+			],
+			[
+				"Scree",
+				"ScreenWidth"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "#include <string.h>\n\n#include \"hud.h\"\n#include \"cl_util.h\"\n#include \"demo_api.h\"\n\nint CHudCustom::Init( void )\n{\n	m_iFlags = HUD_ACTIVE;\n	m_fJumpspeedFadeGreen = 0;\n	m_fJumpspeedFadeRed = 0;\n\n	gHUD.AddHudElem( this );\n\n	return 1;\n}\n\nint CHudCustom::VidInit( void )\n{\n	return 1;\n}\n\nextern cvar_t *hud_accuracy;\nextern cvar_t *hud_speedometer, *hud_speedometer_pos;\nextern cvar_t *hud_jumpspeed, *hud_jumpspeed_pos;\nextern cvar_t *hud_zspeed, *hud_zspeed_pos;\nextern cvar_t *hud_acceleration, *hud_acceleration_pos;\nextern cvar_t *hud_origin_x, *hud_origin_x_pos;\nextern cvar_t *hud_origin_y, *hud_origin_y_pos;\nextern cvar_t *hud_origin_z, *hud_origin_z_pos;\nextern cvar_t *hud_viewangle_x, *hud_viewangle_x_pos;\nextern cvar_t *hud_viewangle_y, *hud_viewangle_y_pos;\nextern cvar_t *hud_grenadetimer, *hud_grenadetimer_pos;\nextern cvar_t *hud_grenadetimer_width, *hud_grenadetimer_height;\nextern cvar_t *hud_demorec_counter, *hud_demorec_counter_pos;\nextern cvar_t *hud_gaussboost, *hud_gaussboost_pos;\nextern cvar_t *hud_gausscharge, *hud_gausscharge_pos;\nextern cvar_t *hud_speedinfo, *hud_speedinfo_pos;\nextern cvar_t *hud_grenadetimer_dontchange_resetto;\nextern cvar_t *hud_gaussboost_dontchange_resetto;\nextern vec3_t g_vel, g_org;\nextern Vector g_vecViewAngle;\nextern Vector g_vecPlayerAngle;\nextern Vector g_vecPlayerVelocity;\nextern double jspeed, jspeeddelta;\nextern double g_acceleration;\nextern bool g_acceleration_negative;\nextern bool g_bPaused;\nextern bool g_bDemorecChangelevel;\nextern bool g_bResetDemorecCounter;\nextern bool g_bGrenTimeReset;\nextern float g_fGrenTime;\nextern bool g_bTimer;\nextern bool g_bGausscharge;\nextern float g_fGaussStart;\nextern float gaussboost_ammoConsumed;\nextern bool g_bHoldingGaussCannon;\nextern bool g_bGaussboostReset;\n\ndouble demorec_counter_delta = 0.0;\ndouble demorec_delta;\n\nfloat gaussboost_delta;\nfloat gaussboost_damage;\nVector gaussboost_vecBoostWithCurrentViewangles;\nVector gaussboost_vecResultingSpeed;\nVector gaussboost_vecResultingSpeedBB;\nfloat gaussboost_boostWithCurrentViewangles;\nfloat gaussboost_boostWithOptimalViewangles;	\nfloat gaussboost_resultingSpeed;\nfloat gaussboost_resultingSpeedBB;\nfloat gaussboost_resultingSpeedWithOptimalViewangles;\nfloat gaussboost_resultingSpeedWithOptimalViewanglesBB;\n\nint recording = 0, oldrecording = 0;\nint playingback = 0;\n\nint CHudCustom::Draw( float fTime )\n{\n	int x = 0, y = 0;\n\n	int sx = 0, sy = 0; // Speed counter\n	\n	int jr, jg, jb; // Jump speed\n	int jx = 0, jy = 0;\n	\n	int zsx = 0, zsy = 0; // Z speed\n	int ax = 0, ay = 0; // Acceleration\n	int xx = 0, xy = 0; // X\n	int yx = 0, yy = 0; // Y\n	int zx = 0, zy = 0; // Z	\n	int vxx = 0, vxy = 0; // Viewangle X	\n	int vyx = 0, vyy = 0; // Viewangle Y	\n	int gtx = 0, gty = 0; // Grenade Timer	\n	int dx = 0, dy = 0; // Demorec counter\n	\n	bool accuracy = ( hud_accuracy->value || ( !strcmp(hud_accuracy->string, \"quadrazid\") ) );\n\n	int HealthWidth = gHUD.GetSpriteRect(gHUD.m_HUD_number_0).right - gHUD.GetSpriteRect(gHUD.m_HUD_number_0).left;\n\n	double speed = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );\n	\n	if (hud_speedometer->value)\n	{\n		x = ScreenWidth / 2 - HealthWidth / 2;\n		y = ScreenHeight - gHUD.m_iFontHeight - gHUD.m_iFontHeight / 2;\n\n		if (hud_speedometer_pos->string)\n		{\n			sscanf(hud_speedometer_pos->string, \"%i %i\", &sx, &sy);\n		}\n\n		if (accuracy)\n		{\n			DrawNumber(speed, x, y, sx, sy);\n		}\n		else\n		{\n			DrawNumber((int)speed, x, y, sx, sy);\n		}\n	}\n\n	if (hud_jumpspeed->value)\n	{	\n		GetHudColor(jr, jg, jb);\n\n		x = ScreenWidth / 2 - HealthWidth / 2;\n		y = ScreenHeight - 3 * gHUD.m_iFontHeight - gHUD.m_iFontHeight / 2;\n\n		if (hud_jumpspeed_pos->string)\n		{\n			sscanf(hud_jumpspeed_pos->string, \"%i %i\", &jx, &jy);\n		}\n\n		if (jspeeddelta > 0)\n		{\n			jspeeddelta = 0;\n			m_fJumpspeedFadeGreen = JUMPSPEED_FADE_TIME;\n			m_fJumpspeedFadeRed = 0;\n		}\n		else if (jspeeddelta < 0)\n		{\n			jspeeddelta = 0;\n			m_fJumpspeedFadeGreen = 0;\n			m_fJumpspeedFadeRed = JUMPSPEED_FADE_TIME;\n		}\n\n		if (m_fJumpspeedFadeGreen > 0)\n		{\n			m_fJumpspeedFadeGreen -= (gHUD.m_flTimeDelta * 20);\n\n			if (m_fJumpspeedFadeGreen <= 0)\n			{\n				m_fJumpspeedFadeGreen = 0;\n			}\n\n			jr = jr - jr * (m_fJumpspeedFadeGreen / JUMPSPEED_FADE_TIME);\n			jg = jg + (255 - jg) * (m_fJumpspeedFadeGreen / JUMPSPEED_FADE_TIME);\n			jb = jb - jb * (m_fJumpspeedFadeGreen / JUMPSPEED_FADE_TIME);\n		}\n		else if (m_fJumpspeedFadeRed > 0)\n		{\n			m_fJumpspeedFadeRed -= (gHUD.m_flTimeDelta * 20);\n\n			if (m_fJumpspeedFadeRed <= 0)\n			{\n				m_fJumpspeedFadeRed = 0;\n			}\n			\n			jr = jr + (255 - jr) * (m_fJumpspeedFadeRed / JUMPSPEED_FADE_TIME);\n			jg = jg - jg * (m_fJumpspeedFadeRed / JUMPSPEED_FADE_TIME);\n			jb = jb - jb * (m_fJumpspeedFadeRed / JUMPSPEED_FADE_TIME);\n		}\n\n		if (accuracy)\n		{\n			DrawNumber(jspeed, x, y, jx, jy);\n		}\n		else\n		{\n			DrawNumber((int)jspeed, x, y, jx, jy, false, jr, jg, jb);\n		}\n	}\n\n	double zspeed = g_vel[2];\n\n	if (hud_zspeed->value)\n	{\n		x = ScreenWidth / 2 - HealthWidth / 2;\n		y = ScreenHeight - 2 * gHUD.m_iFontHeight - gHUD.m_iFontHeight / 2;\n\n		if (hud_zspeed_pos->string)\n		{\n			sscanf(hud_zspeed_pos->string, \"%i %i\", &zsx, &zsy);\n		}\n\n		if (accuracy)\n		{\n			DrawNumber(zspeed, x, y, zsx, zsy);\n		}\n		else\n		{\n			DrawNumber((int)zspeed, x, y, zsx, zsy);\n		}\n	}\n\n	if (hud_acceleration->value)\n	{\n		x = ScreenWidth / 2 - HealthWidth / 2;\n		y = ScreenHeight - 4 * gHUD.m_iFontHeight - gHUD.m_iFontHeight / 2;\n\n		if (hud_acceleration_pos->string)\n		{\n			sscanf(hud_acceleration_pos->string, \"%i %i\", &ax, &ay);\n		}\n\n		if (accuracy)\n		{\n			if (g_acceleration_negative)\n			{\n				DrawNumber(-g_acceleration, x, y, ax, ay);\n			}\n			else\n			{\n				DrawNumber(g_acceleration, x, y, ax, ay);\n			}\n		}\n		else\n		{\n			DrawNumber((int)g_acceleration, x, y, ax, ay, g_acceleration_negative);\n		}\n	}\n	\n	if (hud_origin_x->value)\n	{\n		double origin_x = g_org[0];\n		\n		x = 0;\n		y = 0;\n\n		if (hud_origin_x_pos->string)\n		{\n			sscanf(hud_origin_x_pos->string, \"%i %i\", &xx, &xy);\n		}\n\n		if (accuracy)\n		{\n			DrawNumber(origin_x, x, y, xx, xy);\n		}\n		else\n		{\n			DrawNumber((int)origin_x, x, y, xx, xy);\n		}\n	}\n	\n	if (hud_origin_y->value)\n	{\n		double origin_y = g_org[1];\n	\n		x = 0;\n		y = gHUD.m_iFontHeight;\n\n		if (hud_origin_y_pos->string)\n		{\n			sscanf(hud_origin_y_pos->string, \"%i %i\", &yx, &yy);\n		}\n\n		if (accuracy)\n		{\n			DrawNumber(origin_y, x, y, yx, yy);\n		}\n		else\n		{\n			DrawNumber((int)origin_y, x, y, yx, yy);\n		}\n	}\n	\n	if (hud_origin_z->value)\n	{\n		double origin_z = g_org[2];\n	\n		x = 0;\n		y = 2 * gHUD.m_iFontHeight;\n\n		if (hud_origin_z_pos->string)\n		{\n			sscanf(hud_origin_z_pos->string, \"%i %i\", &zx, &zy);\n		}\n\n		if (accuracy)\n		{\n			DrawNumber(origin_z, x, y, zx, zy);\n		}\n		else\n		{\n			DrawNumber((int)origin_z, x, y, zx, zy);\n		}\n	}\n	\n	if (hud_viewangle_x->value)\n	{\n		x = 0;\n		y = 3.5 * gHUD.m_iFontHeight;\n		\n		char temp_viewangle_x[32];\n		\n		if ( !strcmp(hud_accuracy->string, \"quadrazid\") )\n		{\n			sprintf(temp_viewangle_x, \"Viewangle X: %.15f\", g_vecViewAngle[0]);\n		}\n		else\n		{\n			sprintf(temp_viewangle_x, \"Viewangle X: %f\", g_vecViewAngle[0]);\n		}\n\n		if (hud_viewangle_x_pos->string)\n		{\n			sscanf(hud_viewangle_x_pos->string, \"%i %i\", &vxx, &vxy);\n		}\n\n		DrawString(temp_viewangle_x, x, y, vxx, vxy);\n	}\n	\n	if (hud_viewangle_y->value)\n	{\n		x = 0;\n		y = 4.5 * gHUD.m_iFontHeight;\n		\n		char temp_viewangle_y[32];\n		\n		if ( !strcmp(hud_accuracy->string, \"quadrazid\") )\n		{\n			sprintf(temp_viewangle_y, \"Viewangle Y: %.15f\", g_vecViewAngle[1]);\n		}\n		else\n		{\n			sprintf(temp_viewangle_y, \"Viewangle Y: %f\", g_vecViewAngle[1]);\n		}\n\n		if (hud_viewangle_y_pos->string)\n		{\n			sscanf(hud_viewangle_y_pos->string, \"%i %i\", &vyx, &vyy);\n		}\n\n		DrawString(temp_viewangle_y, x, y, vyx, vyy);\n	}\n\n	// ===========\n	// DEMO RECORD TIMER\n	// ===========\n\n	demorec_delta = gHUD.m_flTimeDelta;\n	\n	if (g_bDemorecChangelevel)\n	{\n		g_bDemorecChangelevel = false;\n		demorec_delta = 0;\n	}\n	\n	oldrecording = recording;\n	recording = gEngfuncs.pDemoAPI->IsRecording();\n	playingback = gEngfuncs.pDemoAPI->IsPlayingback();\n	\n	if (oldrecording != recording && !oldrecording)\n	{\n		demorec_counter_delta = 0.0;\n	}\n	\n	if (g_bResetDemorecCounter)\n	{\n		demorec_delta = 0.0;\n		demorec_counter_delta = 0.0;\n		g_bResetDemorecCounter = false;\n	}\n	\n	if ((recording || playingback) && !g_bPaused)\n	{\n		demorec_counter_delta += demorec_delta;\n	}\n\n	if (hud_demorec_counter->value)\n	{		\n		x = 0;\n		y = ScreenHeight / 2;\n		\n		if (hud_demorec_counter_pos->string)\n		{\n			sscanf(hud_demorec_counter_pos->string, \"%i %i\", &dx, &dy);\n		}\n		\n		DrawNumber(demorec_counter_delta, x, y, dx, dy);\n	}\n	\n	// ===========\n	// END DEMO RECORD TIMER\n	// ===========\n	// GRENADE TIMER\n	// ===========\n	\n	if (g_bGrenTimeReset)\n	{\n		g_bGrenTimeReset = false;\n		\n		if (hud_grenadetimer_dontchange_resetto->value != -1)\n		{		\n			g_fGrenTime = gEngfuncs.GetClientTime() - hud_grenadetimer_dontchange_resetto->value + 0.1;\n			gEngfuncs.Cvar_SetValue(\"hud_grenadetimer_dontchange_resetto\", -1);\n			gEngfuncs.Con_Printf(\"curtime %f\\n\", fTime);\n			gEngfuncs.Con_Printf(\"grentime set to %f\\n\", g_fGrenTime);\n		}\n		else\n		{\n			g_fGrenTime = gEngfuncs.GetClientTime();\n		}\n	}\n	\n	float m_flGrenTimerDelta = fTime - g_fGrenTime;\n	\n	if (m_flGrenTimerDelta <= 3.1 && m_flGrenTimerDelta > 0)\n	{\n		g_bTimer = true;\n	}\n	else\n	{\n		g_bTimer = false;\n	}\n	\n	if (g_bTimer && hud_grenadetimer->value)\n	{		\n		x = ScreenWidth / 2;\n		y = 0;\n		\n		int m_iGrenTimerOut = (int) ceil(100 * (3.1 - m_flGrenTimerDelta));\n		\n		if (hud_grenadetimer_pos->string)\n		{\n			sscanf(hud_grenadetimer_pos->string, \"%i %i\", &gtx, &gty);\n		}\n		\n		x = DrawNumber(m_iGrenTimerOut, x, y, gtx, gty);\n		\n		x += gtx;\n		y -= gty;\n		\n		x += HealthWidth / 2;\n		\n		FillRGBA(x, y, hud_grenadetimer_width->value, hud_grenadetimer_height->value, 0, 255, 0, 128);		\n		\n		int y2 = (hud_grenadetimer_height->value * m_iGrenTimerOut) / 310;\n		y += hud_grenadetimer_height->value - (hud_grenadetimer_height->value * m_iGrenTimerOut) / 310;\n		FillRGBA(x, y, hud_grenadetimer_width->value, y2, 255, 255, 0, 128);\n	}\n	\n	// ===========\n	// END GRENADE TIMER\n	// ===========\n	// GAUSS BOOST INFO\n	// ===========\n\n	if (g_bGaussboostReset)\n	{\n		g_bGaussboostReset = false;\n		\n		if (hud_gaussboost_dontchange_resetto->value != -1)\n		{		\n			g_fGaussStart = gEngfuncs.GetClientTime() - hud_gaussboost_dontchange_resetto->value + 0.1;\n			gEngfuncs.Cvar_SetValue(\"hud_gaussboost_dontchange_resetto\", -1);\n			gEngfuncs.Con_Printf(\"curtime %f\\n\", fTime);\n			gEngfuncs.Con_Printf(\"gaussboost time set to %f\\n\", g_fGaussStart);\n		}\n		else\n		{\n			g_fGaussStart = gEngfuncs.GetClientTime();\n			gEngfuncs.Con_Printf(\"curtime %f\\n\", fTime);\n			gEngfuncs.Con_Printf(\"gaussboost time set to %f\\n\", g_fGaussStart);\n		}\n	}\n\n	if (g_bGausscharge)\n	{\n		gaussboost_delta = fTime - g_fGaussStart;\n		gaussboost_damage = (gaussboost_delta > 4) ? 200 : 200 * (gaussboost_delta / 4);\n\n		Vector forward, right, up;\n		AngleVectors(g_vecPlayerAngle, forward, right, up);\n		gaussboost_vecBoostWithCurrentViewangles = -forward * gaussboost_damage * 5;\n		gaussboost_boostWithOptimalViewangles = gaussboost_damage * 5;\n		gaussboost_boostWithCurrentViewangles = sqrt(gaussboost_vecBoostWithCurrentViewangles[0] * gaussboost_vecBoostWithCurrentViewangles[0] + gaussboost_vecBoostWithCurrentViewangles[1] * gaussboost_vecBoostWithCurrentViewangles[1]);\n		\n		gaussboost_vecResultingSpeed = g_vecPlayerVelocity + gaussboost_vecBoostWithCurrentViewangles;\n		gaussboost_vecResultingSpeedBB = g_vecPlayerVelocity - gaussboost_vecBoostWithCurrentViewangles;\n		gaussboost_resultingSpeed = sqrt(gaussboost_vecResultingSpeed[0] * gaussboost_vecResultingSpeed[0] + gaussboost_vecResultingSpeed[1] * gaussboost_vecResultingSpeed[1]);\n		gaussboost_resultingSpeedBB = sqrt(gaussboost_vecResultingSpeedBB[0] * gaussboost_vecResultingSpeedBB[0] + gaussboost_vecResultingSpeedBB[1] * gaussboost_vecResultingSpeedBB[1]);\n		gaussboost_resultingSpeedWithOptimalViewangles = sqrt(g_vecPlayerVelocity[0] * g_vecPlayerVelocity[0] + g_vecPlayerVelocity[1] * g_vecPlayerVelocity[1]) - gaussboost_damage * 5;;\n		gaussboost_resultingSpeedWithOptimalViewanglesBB = sqrt(g_vecPlayerVelocity[0] * g_vecPlayerVelocity[0] + g_vecPlayerVelocity[1] * g_vecPlayerVelocity[1]) + gaussboost_damage * 5;;\n	}\n\n	if (hud_gaussboost->value && g_bHoldingGaussCannon)\n	{\n		int dx = 0, dy = 0;\n\n		x = ScreenWidth / 4;\n		y = 0;\n\n		if (hud_gaussboost_pos->string)\n		{\n			sscanf(hud_gaussboost_pos->string, \"%i %i\", &dx, &dy);\n		}\n\n		char temp[255] = \"== Gauss boost info ==\";\n		DrawString(temp, x, y, dx, dy);\n\n		if ( hud_gaussboost->value == 2 )\n		{\n			y += gHUD.m_iFontHeight;\n			sprintf(temp, \"Boost with current viewangles: %f\", gaussboost_boostWithCurrentViewangles);\n			DrawString(temp, x, y, dx, dy);\n		}\n\n		y += gHUD.m_iFontHeight;\n		sprintf(temp, \"Boost with optimal viewangles: %f\", gaussboost_boostWithOptimalViewangles);\n		DrawString(temp, x, y, dx, dy);\n\n		if ( hud_gaussboost->value == 2 )\n		{\n			y += gHUD.m_iFontHeight;\n			sprintf(temp, \"Resulting speed: %f\", gaussboost_resultingSpeed);\n			DrawString(temp, x, y, dx, dy);\n\n			y += gHUD.m_iFontHeight;\n			sprintf(temp, \"Resulting speed [back boost]: %f\", gaussboost_resultingSpeedBB);\n			DrawString(temp, x, y, dx, dy);\n\n			y += gHUD.m_iFontHeight;\n			sprintf(temp, \"Optimal resulting speed: %f\", gaussboost_resultingSpeedWithOptimalViewangles);\n			DrawString(temp, x, y, dx, dy);\n		}\n\n		y += gHUD.m_iFontHeight;\n		sprintf(temp, \"Optimal resulting speed [back boost]: %f\", gaussboost_resultingSpeedWithOptimalViewanglesBB);\n		DrawString(temp, x, y, dx, dy);\n\n		y += gHUD.m_iFontHeight;\n		sprintf(temp, \"Ammo consumed: %.2f\", gaussboost_ammoConsumed);\n		DrawString(temp, x, y, dx, dy);\n	}\n\n	// ===========\n	// END GAUSS BOOST INFO\n	// ===========\n	// SPEED INFO\n	// ===========\n\n	if (hud_speedinfo->value)\n	{\n		int dx, dy = 0;\n		x = 0.75 * ScreenWidth;\n		y = 0;\n\n		if (hud_speedinfo_pos->string)\n		{\n			sscanf(hud_speedinfo_pos->string, \"%i %i\", &dx, &dy);\n		}\n\n		char temp[255] = \"== Speed info ==\";\n		DrawString(temp, x, y, dx, dy);\n\n		y += gHUD.m_iFontHeight;\n		sprintf(temp, \"X: %f\", g_vel[0]);\n		DrawString(temp, x, y, dx, dy);\n\n		y += gHUD.m_iFontHeight;\n		sprintf(temp, \"Y: %f\", g_vel[1]);\n		DrawString(temp, x, y, dx, dy);\n\n		y += gHUD.m_iFontHeight;\n		sprintf(temp, \"Z: %f\", g_vel[2]);\n		DrawString(temp, x, y, dx, dy);\n\n		y += gHUD.m_iFontHeight;\n		sprintf(temp, \"XY: %f\", sqrt(g_vel[0] * g_vel[0] + g_vel[1] * g_vel[1]) );\n		DrawString(temp, x, y, dx, dy);\n\n		y += gHUD.m_iFontHeight;\n		sprintf( temp, \"XYZ: %f\", sqrt(g_vel[0] * g_vel[0] + g_vel[1] * g_vel[1] + g_vel[2] * g_vel[2]) );\n		DrawString(temp, x, y, dx, dy);\n	}\n\n	// ===========\n	// END SPEED INFO\n	// ===========\n\n	return 1;\n}\n\nextern cvar_t *hud_alpha;\nextern cvar_t *hud_pos_percent;\n\nint CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNegative, int r, int g, int b )\n{\n	int a;\n	\n	if ( r == 0 && g == 0 && b == 0 )\n	{\n		if ( isNegative || number < 0 )\n		{\n			r = 255;\n			g = 0;\n			b = 0;\n		}\n		else\n		{\n			GetHudColor( r, g, b );\n		}\n	}\n	\n	if ( number < 0 )\n	{\n		number = -1 * number;\n	}\n	\n	if ( hud_alpha->value )\n	{\n		a = hud_alpha->value;\n\n		if ( a > 255 )	a = 255;\n		if ( a < 1 )	a = 1;\n	}\n	else\n	{\n		a = 255;\n	}\n	\n	ScaleColors( r, g, b, a );\n	\n	if ( hud_pos_percent->value )\n	{\n		return gHUD.DrawHudNumber( dx > 100 ? ScreenWidth : ( dx * ScreenWidth ) / 100, dy > 100 ? ScreenHeight : ( dx * ScreenHeight ) / 100, DHN_3DIGITS | DHN_DRAWZERO, number, r, g, b );\n	}\n	else\n	{\n		return gHUD.DrawHudNumber( x + dx, y - dy, DHN_3DIGITS | DHN_DRAWZERO, number, r, g, b );\n	}\n}\n\nint CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy )\n{\n	char temp[255];\n	int ret;\n	\n	if ( !strcmp( hud_accuracy->string, \"quadrazid\" ) )\n	{\n		sprintf( temp, \"%.15f\", number );\n	}\n	else\n	{\n		sprintf( temp, \"%f\", number );\n	}\n	\n	if ( hud_pos_percent->value )\n	{\n		ret = gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : ( dx * ScreenWidth ) / 100, dy > 100 ? ScreenHeight : ( dx * ScreenHeight ) / 100, temp );\n	}\n	else\n	{\n		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, temp );\n	}\n\n	return ret;\n}\n\nint CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy )\n{	\n	if ( hud_pos_percent->value )\n	{\n		return gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : ( dx * ScreenWidth ) / 100, dy > 100 ? ScreenHeight : ( dx * ScreenHeight ) / 100, stringToDraw );\n	}\n	else\n	{\n		return gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, stringToDraw );\n	}\n}",
+			"file": "cl_dll/custom_hud.cpp",
+			"file_size": 17128,
+			"file_write_time": 130144890883012082,
+			"settings":
+			{
+				"buffer_size": 16426,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 242.0,
+		"selected_items":
+		[
+			[
+				"packages",
+				"Preferences: Browse Packages"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"pro",
+				"Project: Save As"
+			],
+			[
+				"install ",
+				"Package Control: Install Package"
+			],
+			[
+				"snippe",
+				"Snippet: FalcoComment"
+			],
+			[
+				"snippet",
+				"Snippet: hook.Remove(Hook ID, Hook Name)"
+			],
+			[
+				"wiki",
+				"Search Garry's Mod wiki"
+			],
+			[
+				"gmod",
+				"Set Syntax: Gmod Lua"
+			]
+		],
+		"width": 400.0
+	},
+	"console":
+	{
+		"height": 139.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/hud.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/ruler.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/view.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/custom_hud.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/ev_hldm.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/health_2.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/health.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/ammo.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/battery.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/hud_redraw.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/health.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/hud.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/ammo_secondary.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/saytext.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/cl_util.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/cl_dll.dsp",
+		"/C/Users/YaLTeR/Documents/HLSDK/Single-Player Source/cl_dll/health.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/ruler.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/player.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/StudioModelRenderer.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/engine/cdll_int.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/engine/studio.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/tri.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/cdll_int.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/common/const.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/common/triangleapi.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/common/r_efx.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/game.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/triggers.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/soundent.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/weapons.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/rpg.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/crossbow.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/handgrenade.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/gauss.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/egon.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/squeakgrenade.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/tripmine.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/ggrenade.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/satchel.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/explode.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/crowbar.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/hornetgun.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/hornet.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/mp5.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/glock.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/shotgun.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/python.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/scientist.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/monsters.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/monsters.cpp",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/gauss/lua/autorun/client/gauss_font.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/gamemodes/sandbhopx/gamemode/cl_init.lua",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/weapons.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/hl/hl_weapons.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/ev_common.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/common/event_api.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/hl/hl_events.cpp",
+		"/C/Program Files (x86)/Steam/steamapps/common/Garry's Mod Beta/garrysmod/gamemodes/sandbhopx/gamemode/cl_init.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/gauss/lua/weapons/weapon_gauss/cl_init.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/gamemodes/deathrun/gamemode/cl_init.lua",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/engine/progdefs.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/extdll.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/h_ai.cpp",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/dlls/cbase.h",
+		"/C/Games/Half-Life/hl-residual-life/userconfig.cfg",
+		"/C/Games/Half-Life/hl-residual-life/bunnymodpro.cfg",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/lua/testscript.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/mane_6_ponies/lua/autorun/pony_player.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/gauss/lua/weapons/weapon_gauss/shared.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/mane_6_ponies/lua/autorun/celestia.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/gauss/Lua/effects/gauss_beam/init.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/7zO4165.tmp/init.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/gauss/Lua/weapons/weapon_gauss/shared.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/7zO9A4D.tmp/init.lua",
+		"/C/Users/YaLTeR/Desktop/shared.lua",
+		"/C/Users/YaLTeR/Desktop/cl_init.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/gauss/Lua/weapons/weapon_gauss/cl_init.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/gauss/Lua/autorun/client/gauss_font.lua",
+		"/C/Users/YaLTeR/Downloads/shared.lua",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/engine/client/cl_main.c",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/common/event_api.h",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/engine/client/cl_game.c",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/engine/client/client.h",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/engine/eiface.h",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/engine/common/common.h",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/engine/studio.h",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/engine/client/gl_beams.c",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/engine/client/cl_cmds.c",
+		"/C/Users/YaLTeR/Documents/sing-engine/src_main/utils/ripent/ripent.cpp",
+		"/C/Users/YaLTeR/Desktop/demtool.pas",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/common/usercmd.h",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/halflifehud.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/gauss/Lua/entities/ammo_gauss_energy/shared.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/lua_run.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/info_player_deathmatch.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/info_player_coop.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/outputs.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/7zO67BA.tmp/sv_weps.lua",
+		"/C/Games/Half-Life/hlspbunny/bunnymodpro.cfg",
+		"/C/Games/Half-Life/hlspbunny/defbinds.cfg",
+		"/C/Games/Half-Life/hlspbunny/helpdesk_aliases.cfg",
+		"/C/Games/Half-Life/hlspbunny/game.cfg",
+		"/C/Games/Half-Life/hlspbunny/userconfig.cfg",
+		"/C/Users/YaLTeR/Desktop/hl-residual-life/userconfig.cfg",
+		"/C/Users/YaLTeR/Desktop/hl-residual-life/game.cfg",
+		"/C/Program Files (x86)/Steam/steamapps/common/Half-Life/hlspbunny/defbinds.cfg",
+		"/C/Games/Half-Life/hlspbunny/liblist.gam",
+		"/C/Games/Half-Life/valve/liblist.gam",
+		"/C/Program Files (x86)/Half-Life/hl-residual-life/userconfig.cfg",
+		"/C/Users/YaLTeR/Downloads/lua_run.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/wire/lua/weapons/gmod_tool/stools/wire_debugger.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/gamemodes/sandbhopx/gamemode/init.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/base_gmodentity.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/info_player_start_npc_&_player/lua/autorun/infoplayerstart.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/info_player_start_npc_&_player/lua/autorun/server/infoplayerstart_resources.lua",
+		"/C/Tools/ResourceGenerator3/resources.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/gamemodes/sandbhopx/gamemode/shared.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/7zO104A.tmp/init.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/7zO2D7D.tmp/shared.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/7zEF31C.tmp/init.lua",
+		"/C/Users/YaLTeR/AppData/Local/Temp/7zEDB64.tmp/shared.lua",
+		"/C/Program Files (x86)/Steam/steamapps/yalter/garrysmod/garrysmod/addons/setfovver/lua/autorun/server/setfovver.lua",
+		"/C/Program Files (x86)/Half-Life/hlspbunny/userconfig.cfg",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/common/beamdef.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/cl_dll/eventscripts.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/pm_shared/pm_defs.h",
+		"/C/Users/YaLTeR/Documents/BunnyMod Pro/utils/vgui/include/VGUI_MenuItem.h"
+	],
+	"find":
+	{
+		"height": 34.0
+	},
+	"find_in_files":
+	{
+		"height": 90.0,
+		"where_history":
+		[
+			"<open folders>",
+			"<open folders>,C:\\Users\\YaLTeR\\Documents\\BunnyMod Pro"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"g_bResetDemorecCounter",
+			"demorec_curtime",
+			"g_vecViewAngle",
+			"g_bDemorecChangelevel",
+			"g_bPaused",
+			"g_org",
+			"x_offset",
+			"alpha",
+			"m_iFlags",
+			"Draw(",
+			"m_Health",
+			"CHudHealth",
+			"DrawPain",
+			"m_pHudList",
+			"HUDLIST",
+			"flTime",
+			"health.h",
+			"CHudHealth",
+			"health.h",
+			"health.cpp",
+			"m_Health",
+			"CHudHealth",
+			"AddHudElem",
+			"m_pHudList",
+			"m_flGrenTimerDelta",
+			"g_bGrenTimeReset",
+			"g_fGrenTime",
+			"prethink",
+			"autostopsaveautofunc",
+			"rulerautofunc",
+			"restore",
+			"cl_enginefunc_t",
+			"gEngfuncs",
+			"cl_enginefuncs_t",
+			"ResetRuler",
+			"cl_enginefunc_t",
+			"gEngfuncs",
+			"rulerDelta",
+			"M_PI",
+			"kRenderTransColor",
+			"RulerAutoFunc",
+			"autosave",
+			"demorec",
+			"hud_zcounter",
+			"zcounter",
+			"GetHudColor",
+			"hud_speedcounter",
+			"BOLT_AIR_VELOCITY",
+			"handgre",
+			"radiusdamage",
+			"NORMAL_EXPLOSION_VOLUME",
+			"FIRE_WIDE",
+			"EGON_PRIMARY_VOLUME",
+			"NORMAL_EXPLOSION_VOLUME",
+			"LOUD_GUN_VOLUME",
+			"NORMAL_GUN_VOLUME",
+			"QUIET_GUN_VOLUME",
+			"StartFire(",
+			"Fire(",
+			"Fire",
+			"GAUSS_PRIMARY_FIRE_VOLUME",
+			"GAUSS_PRIMARY_CHARGE_VOLUME",
+			"BIG_EXPLOSION_VOLUME",
+			"SMALL_EXPLOSION_VOLUME",
+			"Explode(",
+			"Explode",
+			"BeamBreakThink",
+			"TRIPMINE_PRIMARY_VOLUME",
+			"DetonateUse",
+			"tripminefire",
+			"TRIPMINE_PRIMARY_VOLUME",
+			"CROWBAR_BODYHIT_VOLUME",
+			"PrimaryAttack",
+			"QUIET_GUN_VOLUME",
+			"NORMAL_EXPLOSION_VOLUME",
+			"InsertSound",
+			"HearingSensitivity",
+			"free",
+			"load(",
+			"ResetRuler",
+			"InitRuler",
+			"init",
+			"EV_HLDM_GunshotDecalTrace",
+			"EV_HLDM_DecalGunshot",
+			"ашкуьз5",
+			"EV_HLDM_PlayTextureSound",
+			"EV_HLDM_FireBullets",
+			"EV_FireMP5",
+			"R_TracerEffect",
+			"EV_CreateTracer",
+			"EV_HLDM_DamageDecal",
+			"EV_HLDM_DecalGunshot",
+			"EV_CreateTracer",
+			"EV_HLDM_CheckTracer",
+			"EV_HLDM_FireBullets",
+			"FireMP5",
+			"EV_FireMP5",
+			"FireBulletsPlayer",
+			"CMP5",
+			"pfnDrawConsoleString",
+			"multiple",
+			"trigger_teleport",
+			"sv_trigger_multiple_display",
+			"multiple",
+			"hook.Add",
+			"InitPostEntity",
+			"entvars_t",
+			"CL_LoadProgs",
+			"Initialize",
+			"gEngfuncs",
+			"cl_enginefunc_t",
+			"pEventAPI ",
+			"pEventAPI",
+			"event_api_s",
+			"loadbspfile",
+			"addons/info_player_start_npc_&_player/",
+			"m_flTimeDelta",
+			"pfnAdd",
+			"BEAM",
+			"R_BeamKill",
+			"R_BeamEntPoint",
+			"EV_FireGauss",
+			"kRenderTransAdd",
+			"kRenderTransAdd ",
+			"rendermode",
+			"PlayerTrace",
+			"PM_STUDIO_IGNORE",
+			"gethudcolor"
+		],
+		"highlight": true,
+		"in_selection": true,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"",
+			"this.handleMouseClick(",
+			"this.handleMouseClick(var14, ",
+			"this.handleMouseClick(var14.slotNumber,",
+			"stackOnMouse.getItemDamage()",
+			"originalStack.getItemDamage()",
+			"originalStack.getHasSubtypes()",
+			"stackOnMouse.itemID",
+			"originalStack.itemID",
+			""
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "cl_dll/custom_hud.cpp",
+					"settings":
+					{
+						"buffer_size": 16426,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								15767,
+								15767
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 10675.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 33.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 62.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"ev_hl",
+				"cl_dll/ev_hldm.cpp"
+			],
+			[
+				"health_2",
+				"cl_dll/health_2.cpp"
+			],
+			[
+				"health",
+				"cl_dll/health.cpp"
+			],
+			[
+				"view",
+				"cl_dll/view.cpp"
+			],
+			[
+				"ammo",
+				"cl_dll/ammo.cpp"
+			],
+			[
+				"battery",
+				"cl_dll/battery.cpp"
+			],
+			[
+				"hud_redraw",
+				"cl_dll/hud_redraw.cpp"
+			],
+			[
+				"health.cpp",
+				"cl_dll/health.cpp"
+			],
+			[
+				"health.h",
+				"cl_dll/health.h"
+			],
+			[
+				"cl_util.",
+				"cl_dll/cl_util.h"
+			],
+			[
+				"hud.h",
+				"cl_dll/hud.h"
+			],
+			[
+				"ev_hldm",
+				"cl_dll/ev_hldm.cpp"
+			],
+			[
+				"heal",
+				"cl_dll/health.cpp"
+			],
+			[
+				"player",
+				"dlls/player.cpp"
+			],
+			[
+				"studiore",
+				"cl_dll/StudioModelRenderer.cpp"
+			],
+			[
+				"ruler",
+				"cl_dll/ruler.cpp"
+			],
+			[
+				"ruler.cpp",
+				"cl_dll/ruler.cpp"
+			],
+			[
+				"studio",
+				"engine/studio.h"
+			],
+			[
+				"hud.cpp",
+				"cl_dll/hud.cpp"
+			],
+			[
+				"tri",
+				"cl_dll/tri.cpp"
+			],
+			[
+				"ruler.h",
+				"cl_dll/ruler.h"
+			],
+			[
+				"cl_util",
+				"cl_dll/cl_util.h"
+			],
+			[
+				"tri.h",
+				"common/triangleapi.h"
+			],
+			[
+				"trian",
+				"common/triangleapi.h"
+			],
+			[
+				"efx",
+				"common/r_efx.h"
+			],
+			[
+				"tria",
+				"common/triangleapi.h"
+			],
+			[
+				"hud",
+				"cl_dll/hud.cpp"
+			],
+			[
+				"game.cpp",
+				"dlls/game.cpp"
+			],
+			[
+				"rpg",
+				"dlls/rpg.cpp"
+			],
+			[
+				"cross",
+				"dlls/crossbow.cpp"
+			],
+			[
+				"crossbow",
+				"dlls/crossbow.cpp"
+			],
+			[
+				"hand",
+				"dlls/handgrenade.cpp"
+			],
+			[
+				"gauss",
+				"dlls/gauss.cpp"
+			],
+			[
+				"egon",
+				"dlls/egon.cpp"
+			],
+			[
+				"tripmine",
+				"dlls/tripmine.cpp"
+			],
+			[
+				"satchel",
+				"dlls/satchel.cpp"
+			],
+			[
+				"explo",
+				"dlls/explode.cpp"
+			],
+			[
+				"satche",
+				"dlls/satchel.cpp"
+			],
+			[
+				"crow",
+				"dlls/crowbar.cpp"
+			],
+			[
+				"horne",
+				"dlls/hornetgun.cpp"
+			],
+			[
+				"hornet",
+				"dlls/hornet.cpp"
+			],
+			[
+				"mp5",
+				"dlls/mp5.cpp"
+			],
+			[
+				"glock",
+				"dlls/glock.cpp"
+			],
+			[
+				"shotgun",
+				"dlls/shotgun.cpp"
+			],
+			[
+				"python",
+				"dlls/python.cpp"
+			],
+			[
+				"soundent",
+				"dlls/soundent.cpp"
+			],
+			[
+				"monsters.cp",
+				"dlls/monsters.cpp"
+			],
+			[
+				"monste",
+				"dlls/monsters.h"
+			],
+			[
+				"scien",
+				"dlls/scientist.cpp"
+			],
+			[
+				"pla",
+				"dlls/player.cpp"
+			],
+			[
+				"eve",
+				"common/event_api.h"
+			],
+			[
+				"evhl",
+				"cl_dll/ev_hldm.cpp"
+			],
+			[
+				"hl_ev",
+				"cl_dll/hl/hl_events.cpp"
+			],
+			[
+				"weapos.h",
+				"dlls/weapons.h"
+			],
+			[
+				"weapon",
+				"dlls/weapons.cpp"
+			],
+			[
+				"game",
+				"dlls/game.cpp"
+			],
+			[
+				"prog",
+				"engine/progdefs.h"
+			],
+			[
+				"ext",
+				"dlls/extdll.h"
+			],
+			[
+				"sque",
+				"dlls/squeakgrenade.cpp"
+			],
+			[
+				"squeak",
+				"dlls/squeakgrenade.cpp"
+			],
+			[
+				"usercmd",
+				"common/usercmd.h"
+			],
+			[
+				"user",
+				"common/usercmd.h"
+			],
+			[
+				"hud_re",
+				"cl_dll/hud_redraw.cpp"
+			],
+			[
+				"eventsc",
+				"cl_dll/eventscripts.h"
+			],
+			[
+				"trigger",
+				"dlls/triggers.cpp"
+			],
+			[
+				"init",
+				"utils/vgui/include/VGUI_MenuItem.h"
+			],
+			[
+				"rulercpp",
+				"cl_dll/ruler.cpp"
+			],
+			[
+				"cl_entit",
+				"common/cl_entity.h"
+			],
+			[
+				"event_ap",
+				"common/event_api.h"
+			],
+			[
+				"pm_defs.h",
+				"pm_shared/pm_defs.h"
+			],
+			[
+				"cdll_in",
+				"engine/cdll_int.h"
+			],
+			[
+				"entity_ty",
+				"common/entity_types.h"
+			],
+			[
+				"cl_dll.h",
+				"cl_dll/cl_dll.h"
+			],
+			[
+				"const.h",
+				"common/const.h"
+			],
+			[
+				"cl_uti",
+				"cl_dll/cl_util.h"
+			],
+			[
+				"clie",
+				"dlls/client.cpp"
+			],
+			[
+				"share",
+				"Lua/entities/ammo_gauss_energy/shared.lua"
+			],
+			[
+				"sha",
+				"Lua/weapons/weapon_gauss/shared.lua"
+			],
+			[
+				"cl_ini",
+				"Lua/weapons/weapon_gauss/cl_init.lua"
+			],
+			[
+				"hea",
+				"cl_dll/health.cpp"
+			],
+			[
+				"gaus",
+				"dlls/gauss.cpp"
+			],
+			[
+				"trip",
+				"dlls/tripmine.cpp"
+			],
+			[
+				"ammo.h",
+				"cl_dll/ammo.h"
+			],
+			[
+				"ammohi",
+				"cl_dll/ammohistory.cpp"
+			],
+			[
+				"ammohis",
+				"cl_dll/ammohistory.cpp"
+			],
+			[
+				"event",
+				"cl_dll/hl/hl_events.cpp"
+			],
+			[
+				"weapons.h",
+				"dlls/weapons.h"
+			],
+			[
+				"ggrena",
+				"dlls/ggrenade.cpp"
+			],
+			[
+				"weapons.cpp",
+				"dlls/weapons.cpp"
+			],
+			[
+				"weapo",
+				"dlls/weapons.cpp"
+			],
+			[
+				"player.h",
+				"dlls/player.h"
+			],
+			[
+				"weapons",
+				"dlls/weapons.h"
+			],
+			[
+				"studiomode",
+				"cl_dll/StudioModelRenderer.cpp"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 221.0,
+	"status_bar_visible": true
+}
