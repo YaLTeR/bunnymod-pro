@@ -311,6 +311,9 @@ cvar_t *cl_ruler_addorigin;
 cvar_t *cl_autostopsave_cmd;
 cvar_t *cl_autostopsave_radius;
 
+cvar_t *cl_autocmd_enable, *cl_autocmd_render;
+cvar_t *cl_autocmd_plane, *cl_autocmd_coord, *cl_autocmd_cmd;
+
 bool g_bResetDemorecCounter = false;
  
 void ResetDemorecCounter( void )
@@ -509,6 +512,12 @@ cl_ruler_addorigin = gEngfuncs.pfnRegisterVariable( "cl_ruler_addorigin", "", FC
 
 cl_autostopsave_cmd = gEngfuncs.pfnRegisterVariable( "cl_autostopsave_cmd", "stop;save autostopsave", FCVAR_ARCHIVE );
 cl_autostopsave_radius = gEngfuncs.pfnRegisterVariable( "cl_autostopsave_radius", "50", FCVAR_ARCHIVE );
+
+cl_autocmd_enable = gEngfuncs.pfnRegisterVariable( "cl_autocmd_enable", "1", FCVAR_ARCHIVE );
+cl_autocmd_render = gEngfuncs.pfnRegisterVariable( "cl_autocmd_render", "1", FCVAR_ARCHIVE );
+cl_autocmd_plane = gEngfuncs.pfnRegisterVariable( "cl_autocmd_plane", "x", FCVAR_ARCHIVE );
+cl_autocmd_coord = gEngfuncs.pfnRegisterVariable( "cl_autocmd_coord", "0", FCVAR_ARCHIVE );
+cl_autocmd_cmd = gEngfuncs.pfnRegisterVariable( "cl_autocmd_cmd", "stop;save autocmdsave", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);

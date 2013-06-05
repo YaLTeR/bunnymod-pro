@@ -229,31 +229,91 @@ extern std::vector<float> autostopsaveSphereVertices;
 
 void DrawRulerPoints( void )
 {
-	if ( !cl_ruler_render->value ) return;
-	
-    gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
-    gEngfuncs.pTriAPI->CullFace( TRI_NONE );
-
-	gEngfuncs.pTriAPI->Color4f( 1.0, 1.0, 0.0, 1.0 );
-
-	cl_rulerPoint *curPoint = firstRulerPoint.pNext;
-
-	while ( curPoint != NULL )
+	if ( cl_ruler_render->value )
 	{
-		DrawCube( curPoint->origin, 8 );
-		curPoint = curPoint->pNext;
-	}
+		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+		gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
 
-	if ( autostopsavePoint != NULL )
-	{
-		gEngfuncs.pTriAPI->Color4f( 1.0, 0.0, 0.0, 1.0 );
+		gEngfuncs.pTriAPI->Color4f( 1.0, 1.0, 0.0, 1.0 );
 
-		DrawCube( autostopsavePoint->origin, 16 );
+		cl_rulerPoint *curPoint = firstRulerPoint.pNext;
 
-		if ( autostopsaveSphere != NULL )
+		while ( curPoint != NULL )
 		{
-			DrawSphere( autostopsaveSphereVertices, autostopsaveSphere->iRings, autostopsaveSphere->iSectors );
+			DrawCube( curPoint->origin, 8 );
+			curPoint = curPoint->pNext;
 		}
+
+		if ( autostopsavePoint != NULL )
+		{
+			gEngfuncs.pTriAPI->Color4f( 1.0, 0.0, 0.0, 1.0 );
+
+			DrawCube( autostopsavePoint->origin, 16 );
+
+			if ( autostopsaveSphere != NULL )
+			{
+				DrawSphere( autostopsaveSphereVertices, autostopsaveSphere->iRings, autostopsaveSphere->iSectors );
+			}
+		}
+	}
+}
+
+
+/*
+RenderAutocmdPlane
+Renders the autocmd plane.
+*/
+extern cvar_t *cl_autocmd_render;
+extern cvar_t *cl_autocmd_plane, *cl_autocmd_coord;
+
+void RenderAutocmdPlane( void )
+{
+	if ( cl_autocmd_render->value && ( strlen( cl_autocmd_plane->string ) != 0 ) && ( strlen( cl_autocmd_coord->string ) != 0 ) )
+	{
+		float coord = cl_autocmd_coord->value;
+		char plane;
+
+		sscanf( cl_autocmd_plane->string, "%c", &plane );
+
+		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+		gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
+		gEngfuncs.pTriAPI->Color4f( 1.0, 0.0, 0.0, 0.5 );
+		gEngfuncs.pTriAPI->Begin( TRI_QUADS );
+
+		switch ( plane )
+		{
+			case 'X':
+			case 'x':
+				gEngfuncs.pTriAPI->Vertex3f( coord, -50000.0, -50000.0 );
+				gEngfuncs.pTriAPI->Vertex3f( coord, -50000.0, 50000.0 );
+				gEngfuncs.pTriAPI->Vertex3f( coord, 50000.0, 50000.0 );
+				gEngfuncs.pTriAPI->Vertex3f( coord, 50000.0, -50000.0 );
+
+				break;
+
+			case 'Y':
+			case 'y':
+				gEngfuncs.pTriAPI->Vertex3f( -50000.0, coord, -50000.0 );
+				gEngfuncs.pTriAPI->Vertex3f( -50000.0, coord, 50000.0 );
+				gEngfuncs.pTriAPI->Vertex3f( 50000.0, coord, 50000.0 );
+				gEngfuncs.pTriAPI->Vertex3f( 50000.0, coord, -50000.0 );
+
+				break;
+
+			case 'Z':
+			case 'z':
+				gEngfuncs.pTriAPI->Vertex3f( -50000.0, -50000.0, coord );
+				gEngfuncs.pTriAPI->Vertex3f( -50000.0, 50000.0, coord );
+				gEngfuncs.pTriAPI->Vertex3f( 50000.0, 50000.0, coord );
+				gEngfuncs.pTriAPI->Vertex3f( 50000.0, -50000.0, coord );
+
+				break;
+
+			default:
+				;
+		}
+
+		gEngfuncs.pTriAPI->End();
 	}
 }
 
@@ -286,6 +346,7 @@ Render any triangles with transparent rendermode needs here
 void DLLEXPORT HUD_DrawTransparentTriangles( void )
 {
 	DrawRulerPoints();
+	RenderAutocmdPlane();
 
 #if defined( TEST_IT )
 	// Draw_Triangles();

@@ -20,6 +20,9 @@ extern cvar_t *cl_ruler_autodelay;
 extern cvar_t *cl_ruler_addorigin;
 extern cvar_t *cl_autostopsave_radius;
 extern cvar_t *cl_autostopsave_cmd;
+extern cvar_t *cl_autocmd_enable;
+extern cvar_t *cl_autocmd_plane, *cl_autocmd_coord;
+extern cvar_t *cl_autocmd_cmd;
 
 cl_rulerPoint firstRulerPoint;
 
@@ -28,6 +31,7 @@ cl_sphere *autostopsaveSphere = NULL;
 std::vector<float> autostopsaveSphereVertices;
 
 bool autostopsaveCmdExecuted = false;
+bool autocmdCmdExecuted = false;
 
 double flRulerOldTime = 0.0, flRulerTime, flRulerTimeDelta;
 
@@ -407,6 +411,73 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin )
 		else
 		{
 			autostopsaveCmdExecuted = false;
+		}
+	}
+
+	if ( cl_autocmd_enable->value
+			&& ( strlen( cl_autocmd_plane->string ) != 0 )
+			&& ( strlen( cl_autocmd_coord->string ) != 0 ) )
+	{
+		float coord = cl_autocmd_coord->value;
+		char plane;
+
+		sscanf( cl_autocmd_plane->string, "%c", &plane );
+
+		switch ( plane )
+		{
+			case 'X':
+			case 'x':
+				if ( abs( coord - g_org[0] ) <= 34.0 )
+				{
+					if ( !autocmdCmdExecuted )
+					{
+						autocmdCmdExecuted = true;
+						gEngfuncs.pfnClientCmd( cl_autocmd_cmd->string );
+					}
+				}
+				else
+				{
+					autocmdCmdExecuted = false;
+				}
+
+				break;
+
+			case 'Y':
+			case 'y':
+				if ( abs( coord - g_org[1] ) <= 34.0 )
+				{
+					if ( !autocmdCmdExecuted )
+					{
+						autocmdCmdExecuted = true;
+						gEngfuncs.pfnClientCmd( cl_autocmd_cmd->string );
+					}
+				}
+				else
+				{
+					autocmdCmdExecuted = false;
+				}
+
+				break;
+
+			case 'Z':
+			case 'z':
+				if ( abs( coord - g_org[2] ) <= 34.0 )
+				{
+					if ( !autocmdCmdExecuted )
+					{
+						autocmdCmdExecuted = true;
+						gEngfuncs.pfnClientCmd( cl_autocmd_cmd->string );
+					}
+				}
+				else
+				{
+					autocmdCmdExecuted = false;
+				}
+
+				break;
+
+			default:
+				;
 		}
 	}
 }
