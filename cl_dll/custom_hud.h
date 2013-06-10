@@ -21,4 +21,6 @@ private:
 	float m_fJumpspeedFadeRed;
 
 	std::vector<int> m_ivDamage;
+
+	float m_fDamageAnimTime;
 };

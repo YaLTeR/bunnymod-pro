@@ -6,13 +6,65 @@
 --------------------Configuration: cl_dll - Win32 Release--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSPDA2A.tmp" with contents
+Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP9609.tmp" with contents
 [
 /nologo /MT /W3 /GX /Zi /O2 /I "..\utils\vgui\include" /I "..\engine" /I "..\common" /I "..\pm_shared" /I "..\dlls" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "CLIENT_DLL" /D "CLIENT_WEAPONS" /FR".\Release/" /Fo".\Release/" /Fd".\Release/" /FD /c 
+"D:\Vanya\BunnyMod Pro\cl_dll\ev_hldm.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\hl\hl_events.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\hl\hl_objects.cpp"
+"D:\Vanya\BunnyMod Pro\game_shared\voice_status.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\ammo.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\ammo_secondary.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\ammohistory.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\battery.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\cdll_int.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\com_weapons.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\custom_hud.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\death.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\demo.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\entity.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\ev_common.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\events.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\flashlight.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\GameStudioModelRenderer.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\geiger.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\health.cpp"
 "D:\Vanya\BunnyMod Pro\cl_dll\hud.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\hud_msg.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\hud_redraw.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\hud_servers.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\hud_spectator.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\hud_update.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\in_camera.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\input.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\inputw32.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\menu.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\message.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\ruler.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\saytext.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\status_icons.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\statusbar.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\studio_util.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\StudioModelRenderer.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\text_message.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\train.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\tri.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\util.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_ClassMenu.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_ConsolePanel.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_CustomObjects.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_int.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_MOTDWindow.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_SchemeManager.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_ScorePanel.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_ServerBrowser.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_SpectatorPanel.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_TeamFortressViewport.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\vgui_teammenu.cpp"
+"D:\Vanya\BunnyMod Pro\cl_dll\view.cpp"
 ]
-Creating command line "cl.exe @C:\Users\C249~1\AppData\Local\Temp\RSPDA2A.tmp" 
-Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSPDA3B.tmp" with contents
+Creating command line "cl.exe @C:\Users\C249~1\AppData\Local\Temp\RSP9609.tmp" 
+Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP9619.tmp" with contents
 [
 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib winmm.lib ../utils/vgui/lib/win32_vc6/vgui.lib wsock32.lib /nologo /subsystem:windows /dll /incremental:no /pdb:".\Release/client.pdb" /map:".\Release/client.map" /machine:I386 /out:"C:\Games\Half-Life\hlspbunny\cl_dlls\client.dll" /implib:".\Release/client.lib" 
 ".\Release\crossbow.obj"
@@ -99,13 +151,70 @@ kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32
 ".\Release\vgui_teammenu.obj"
 ".\Release\view.obj"
 ]
-Creating command line "link.exe @C:\Users\C249~1\AppData\Local\Temp\RSPDA3B.tmp"
+Creating command line "link.exe @C:\Users\C249~1\AppData\Local\Temp\RSP9619.tmp"
 <h3>Output Window</h3>
 Compiling...
+ev_hldm.cpp
+hl_events.cpp
+hl_objects.cpp
+voice_status.cpp
+ammo.cpp
+ammo_secondary.cpp
+ammohistory.cpp
+battery.cpp
+cdll_int.cpp
+com_weapons.cpp
+custom_hud.cpp
+death.cpp
+demo.cpp
+entity.cpp
+ev_common.cpp
+events.cpp
+flashlight.cpp
+GameStudioModelRenderer.cpp
+geiger.cpp
+health.cpp
+Generating Code...
+Compiling...
 hud.cpp
+hud_msg.cpp
+hud_redraw.cpp
+hud_servers.cpp
+hud_spectator.cpp
+hud_update.cpp
+in_camera.cpp
+input.cpp
+inputw32.cpp
+menu.cpp
+message.cpp
+ruler.cpp
+saytext.cpp
+status_icons.cpp
+statusbar.cpp
+studio_util.cpp
+StudioModelRenderer.cpp
+text_message.cpp
+train.cpp
+tri.cpp
+Generating Code...
+Compiling...
+util.cpp
+vgui_ClassMenu.cpp
+vgui_ConsolePanel.cpp
+vgui_CustomObjects.cpp
+vgui_int.cpp
+vgui_MOTDWindow.cpp
+vgui_SchemeManager.cpp
+vgui_ScorePanel.cpp
+vgui_ServerBrowser.cpp
+vgui_SpectatorPanel.cpp
+vgui_TeamFortressViewport.cpp
+vgui_teammenu.cpp
+view.cpp
+Generating Code...
 Linking...
    Creating library .\Release/client.lib and object .\Release/client.exp
-Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP1567.tmp" with contents
+Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSPE820.tmp" with contents
 [
 /nologo /o".\Release/cl_dll.bsc" 
 ".\Release\crossbow.sbr"
@@ -191,7 +300,7 @@ Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP1567.tmp" with co
 ".\Release\vgui_TeamFortressViewport.sbr"
 ".\Release\vgui_teammenu.sbr"
 ".\Release\view.sbr"]
-Creating command line "bscmake.exe @C:\Users\C249~1\AppData\Local\Temp\RSP1567.tmp"
+Creating command line "bscmake.exe @C:\Users\C249~1\AppData\Local\Temp\RSPE820.tmp"
 Creating browse info file...
 <h3>Output Window</h3>
 

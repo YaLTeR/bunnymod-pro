@@ -10,6 +10,7 @@ int CHudCustom::Init( void )
 	m_iFlags = HUD_ACTIVE;
 	m_fJumpspeedFadeGreen = 0;
 	m_fJumpspeedFadeRed = 0;
+	m_fDamageAnimTime = 0;
 
 	gHUD.AddHudElem( this );
 
@@ -39,7 +40,7 @@ extern cvar_t *hud_gausscharge, *hud_gausscharge_pos;
 extern cvar_t *hud_speedinfo, *hud_speedinfo_pos;
 extern cvar_t *hud_grenadetimer_dontchange_resetto;
 extern cvar_t *hud_gaussboost_dontchange_resetto;
-extern cvar_t *hud_damage, *hud_damage_size;
+extern cvar_t *hud_damage, *hud_damage_size, *hud_damage_anim;
 extern cvar_t *hud_health_pos;
 extern vec3_t g_vel, g_org;
 extern Vector g_vecViewAngle;
@@ -597,6 +598,11 @@ int CHudCustom::Draw( float fTime )
 
 	int maxSize = ( hud_damage_size->value > 0 ) ? hud_damage_size->value : 1;
 
+	if ( hud_damage_anim->value )
+	{
+		maxSize++;
+	}
+
 	if ( m_ivDamage.size() > maxSize )
 	{
 		m_ivDamage.erase( m_ivDamage.begin() + maxSize, m_ivDamage.end() );
@@ -651,6 +657,11 @@ void CHudCustom::HealthChanged( int delta )
 	}
 
 	int maxSize = ( hud_damage_size->value > 0 ) ? hud_damage_size->value : 1;
+
+	if ( hud_damage_anim->value )
+	{
+		maxSize++;
+	}
 
 	m_ivDamage.insert( m_ivDamage.begin(), delta );
 
