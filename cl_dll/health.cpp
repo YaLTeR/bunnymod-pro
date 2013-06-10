@@ -121,6 +121,7 @@ int CHudHealth:: MsgFunc_Health(const char *pszName,  int iSize, void *pbuf )
 	// Only update the fade if we've changed health
 	if (x != m_iHealth)
 	{
+		gHUD.m_CustomHud.HealthChanged( x - m_iHealth );
 		m_fFade = FADE_TIME;
 		m_iHealth = x;
 	}

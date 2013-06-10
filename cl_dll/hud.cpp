@@ -298,6 +298,8 @@ cvar_t *hud_gaussboost_dontchange_resetto;
 
 cvar_t *hud_speedinfo, *hud_speedinfo_pos;
 
+cvar_t *hud_damage, *hud_damage_enable, *hud_damage_size;
+
 cvar_t *hud_accuracy;
 
 cvar_t *cl_rendermodels;
@@ -392,6 +394,11 @@ void RulerAutostopsaveDeletePoint( void )
 void RulerAutostopsavePrintOrigin( void )
 {
 	AutostopsavePrintOrigin();
+}
+
+void DamageHistoryReset( void )
+{
+	gHUD.m_CustomHud.DamageHistoryReset();
 }
  
  // This is called every time the DLL is loaded
@@ -500,6 +507,10 @@ hud_gaussboost_dontchange_resetto = gEngfuncs.pfnRegisterVariable("hud_gaussboos
 hud_speedinfo = gEngfuncs.pfnRegisterVariable("hud_speedinfo","0",FCVAR_ARCHIVE);
 hud_speedinfo_pos = gEngfuncs.pfnRegisterVariable("hud_speedinfo_pos","0",FCVAR_ARCHIVE);
 
+hud_damage = gEngfuncs.pfnRegisterVariable("hud_damage","0",FCVAR_ARCHIVE);
+hud_damage_enable = gEngfuncs.pfnRegisterVariable("hud_damage_enable","1",FCVAR_ARCHIVE);
+hud_damage_size = gEngfuncs.pfnRegisterVariable("hud_damage_size","5",FCVAR_ARCHIVE);
+
 hud_accuracy = gEngfuncs.pfnRegisterVariable("hud_accuracy","0",FCVAR_ARCHIVE);
 
 cl_rendermodels = gEngfuncs.pfnRegisterVariable("cl_rendermodels", "1", FCVAR_ARCHIVE);
@@ -524,6 +535,7 @@ gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
 gEngfuncs.pfnAddCommand("hud_dontchange_changelevel_occured", ChangelevelOccured);
 gEngfuncs.pfnAddCommand("hud_gaussboost_disable", GaussboostDisable);
 gEngfuncs.pfnAddCommand("hud_gaussboost_reset", GaussboostReset);
+gEngfuncs.pfnAddCommand("hud_damage_reset", DamageHistoryReset);
 
 gEngfuncs.pfnAddCommand( "cl_ruler_reset", RulerReset );
 gEngfuncs.pfnAddCommand( "cl_ruler_distance", RulerPrintDistance );

@@ -1,3 +1,4 @@
+#include <vector>
 #include <string.h>
 
 #include "hud.h"
@@ -38,6 +39,8 @@ extern cvar_t *hud_gausscharge, *hud_gausscharge_pos;
 extern cvar_t *hud_speedinfo, *hud_speedinfo_pos;
 extern cvar_t *hud_grenadetimer_dontchange_resetto;
 extern cvar_t *hud_gaussboost_dontchange_resetto;
+extern cvar_t *hud_damage, *hud_damage_size;
+extern cvar_t *hud_health_pos;
 extern vec3_t g_vel, g_org;
 extern Vector g_vecViewAngle;
 extern Vector g_vecPlayerAngle;
@@ -589,8 +592,77 @@ int CHudCustom::Draw( float fTime )
 	// ===========
 	// END SPEED INFO
 	// ===========
+	// DAMAGE INDICATOR
+	// ===========
+
+	int maxSize = ( hud_damage_size->value > 0 ) ? hud_damage_size->value : 1;
+
+	if ( m_ivDamage.size() > maxSize )
+	{
+		m_ivDamage.erase( m_ivDamage.begin() + maxSize, m_ivDamage.end() );
+	}
+
+	if ( hud_damage->value )
+	{
+		int healthY = ScreenHeight - 2 * gHUD.m_iFontHeight;
+
+		int HealthWidth = gHUD.GetSpriteRect(gHUD.m_HUD_number_0).right - gHUD.GetSpriteRect(gHUD.m_HUD_number_0).left;
+		int CrossWidth = gHUD.GetSpriteRect(gHUD.m_Health.m_HUD_cross).right - gHUD.GetSpriteRect(gHUD.m_Health.m_HUD_cross).left;
+		int healthX = CrossWidth + HealthWidth / 2;
+
+		int dx = 0, dy = 0;
+
+		bool isNegative = false;
+
+		if ( hud_health_pos->string )
+		{
+			sscanf( hud_health_pos->string, "%i %i", &dx, &dy );
+		}
+
+		for ( int i = 0; i < m_ivDamage.size(); ++i )
+		{
+			healthY -= gHUD.m_iFontHeight;
+			
+			if ( m_ivDamage[i] < 0 )
+			{
+				isNegative = true;
+			}
+
+			DrawNumber( m_ivDamage[i], healthX, healthY, dx, dy, false, isNegative ? 255 : 0, isNegative ? 0 : 255);
+
+			isNegative = false;
+		}
+	}
+
+	// ===========
+	// END DAMAGE INDICATOR
+	// ===========
 
 	return 1;
+}
+
+extern cvar_t *hud_damage_enable;
+
+void CHudCustom::HealthChanged( int delta )
+{
+	if ( !hud_damage_enable->value )
+	{
+		return;
+	}
+
+	int maxSize = ( hud_damage_size->value > 0 ) ? hud_damage_size->value : 1;
+
+	m_ivDamage.insert( m_ivDamage.begin(), delta );
+
+	if ( m_ivDamage.size() > maxSize )
+	{
+		m_ivDamage.pop_back();
+	}
+}
+
+void CHudCustom::DamageHistoryReset( void )
+{
+	m_ivDamage.erase( m_ivDamage.begin(), m_ivDamage.end() );
 }
 
 extern cvar_t *hud_alpha;
