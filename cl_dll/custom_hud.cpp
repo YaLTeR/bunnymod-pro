@@ -5,6 +5,11 @@
 #include "cl_util.h"
 #include "demo_api.h"
 
+#define JUMPSPEED_FADE_TIME 7
+
+#define DAMAGE_MOVE_TIME	1
+#define DAMAGE_MOVE_ACCEL	-4
+
 int CHudCustom::Init( void )
 {
 	m_iFlags = HUD_ACTIVE;
@@ -625,18 +630,67 @@ int CHudCustom::Draw( float fTime )
 			sscanf( hud_health_pos->string, "%i %i", &dx, &dy );
 		}
 
+		float v0 = 0, sf = 0, s = 0;
+
+		if ( m_fDamageAnimTime > 0 )
+		{
+			v0 = -1 * DAMAGE_MOVE_ACCEL * DAMAGE_MOVE_TIME;
+			sf = v0 * DAMAGE_MOVE_TIME + ( DAMAGE_MOVE_ACCEL * DAMAGE_MOVE_TIME * DAMAGE_MOVE_TIME ) / 2;
+			s = v0 * ( DAMAGE_MOVE_TIME - m_fDamageAnimTime ) + ( DAMAGE_MOVE_ACCEL * ( DAMAGE_MOVE_TIME - m_fDamageAnimTime ) * ( DAMAGE_MOVE_TIME - m_fDamageAnimTime ) ) / 2;
+		}
+
 		for ( int i = 0; i < m_ivDamage.size(); ++i )
 		{
 			healthY -= gHUD.m_iFontHeight;
+
+			float currentY = healthY;
 			
 			if ( m_ivDamage[i] < 0 )
 			{
 				isNegative = true;
 			}
 
-			DrawNumber( m_ivDamage[i], healthX, healthY, dx, dy, false, isNegative ? 255 : 0, isNegative ? 0 : 255);
+			int r = 255;
+			int g = 0;
+
+			if ( !isNegative )
+			{
+				r = 0;
+				g = 255;
+			}
+
+			if ( m_fDamageAnimTime > 0 )
+			{
+				currentY += gHUD.m_iFontHeight * ( 1 - ( s / sf ) );
+
+				if ( i == 0 )
+				{
+					r *= ( s / sf );
+					g *= ( s / sf );
+				}
+				else if ( i == ( maxSize - 1 ) )
+				{
+					r *= ( 1 - ( s / sf ) );
+					g *= ( 1 - ( s / sf ) );
+				}
+			}
+
+			if ( !( i == ( maxSize - 1 ) && m_fDamageAnimTime == 0 && hud_damage_anim->value ) )
+			{
+				DrawNumber( m_ivDamage[i], healthX, currentY, dx, dy, false, r, g, 0, true);
+			}
 
 			isNegative = false;
+		}
+
+		if ( m_fDamageAnimTime > 0 )
+		{
+			m_fDamageAnimTime -= gHUD.m_flTimeDelta;
+		
+			if ( m_fDamageAnimTime < 0 )
+			{
+				m_fDamageAnimTime = 0;
+			}
 		}
 	}
 
@@ -669,6 +723,11 @@ void CHudCustom::HealthChanged( int delta )
 	{
 		m_ivDamage.pop_back();
 	}
+
+	if ( hud_damage_anim->value )
+	{
+		m_fDamageAnimTime = DAMAGE_MOVE_TIME;
+	}
 }
 
 void CHudCustom::DamageHistoryReset( void )
@@ -679,11 +738,11 @@ void CHudCustom::DamageHistoryReset( void )
 extern cvar_t *hud_alpha;
 extern cvar_t *hud_pos_percent;
 
-int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNegative, int r, int g, int b )
+int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNegative, int r, int g, int b, bool transparent )
 {
 	int a;
 	
-	if ( r == 0 && g == 0 && b == 0 )
+	if ( r == 0 && g == 0 && b == 0 && !transparent )
 	{
 		if ( isNegative || number < 0 )
 		{
