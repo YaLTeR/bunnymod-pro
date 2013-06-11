@@ -733,6 +733,8 @@ void CHudCustom::HealthChanged( int delta )
 void CHudCustom::DamageHistoryReset( void )
 {
 	m_ivDamage.erase( m_ivDamage.begin(), m_ivDamage.end() );
+
+	m_fDamageAnimTime = 0;
 }
 
 extern cvar_t *hud_alpha;
