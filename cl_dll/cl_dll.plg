@@ -6,13 +6,13 @@
 --------------------Configuration: cl_dll - Win32 Release--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP4C9F.tmp" with contents
+Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP1CF0.tmp" with contents
 [
 /nologo /MT /W3 /GX /Zi /O2 /I "..\utils\vgui\include" /I "..\engine" /I "..\common" /I "..\pm_shared" /I "..\dlls" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "CLIENT_DLL" /D "CLIENT_WEAPONS" /FR".\Release/" /Fo".\Release/" /Fd".\Release/" /FD /c 
 "D:\Vanya\BunnyMod Pro\cl_dll\custom_hud.cpp"
 ]
-Creating command line "cl.exe @C:\Users\C249~1\AppData\Local\Temp\RSP4C9F.tmp" 
-Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP4CBF.tmp" with contents
+Creating command line "cl.exe @C:\Users\C249~1\AppData\Local\Temp\RSP1CF0.tmp" 
+Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP1D10.tmp" with contents
 [
 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib winmm.lib ../utils/vgui/lib/win32_vc6/vgui.lib wsock32.lib /nologo /subsystem:windows /dll /incremental:no /pdb:".\Release/client.pdb" /map:".\Release/client.map" /machine:I386 /out:"C:\Games\Half-Life\hlspbunny\cl_dlls\client.dll" /implib:".\Release/client.lib" 
 ".\Release\crossbow.obj"
@@ -99,13 +99,13 @@ kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32
 ".\Release\vgui_teammenu.obj"
 ".\Release\view.obj"
 ]
-Creating command line "link.exe @C:\Users\C249~1\AppData\Local\Temp\RSP4CBF.tmp"
+Creating command line "link.exe @C:\Users\C249~1\AppData\Local\Temp\RSP1D10.tmp"
 <h3>Output Window</h3>
 Compiling...
 custom_hud.cpp
 Linking...
    Creating library .\Release/client.lib and object .\Release/client.exp
-Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP70E3.tmp" with contents
+Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP4105.tmp" with contents
 [
 /nologo /o".\Release/cl_dll.bsc" 
 ".\Release\crossbow.sbr"
@@ -191,7 +191,7 @@ Creating temporary file "C:\Users\C249~1\AppData\Local\Temp\RSP70E3.tmp" with co
 ".\Release\vgui_TeamFortressViewport.sbr"
 ".\Release\vgui_teammenu.sbr"
 ".\Release\view.sbr"]
-Creating command line "bscmake.exe @C:\Users\C249~1\AppData\Local\Temp\RSP70E3.tmp"
+Creating command line "bscmake.exe @C:\Users\C249~1\AppData\Local\Temp\RSP4105.tmp"
 Creating browse info file...
 <h3>Output Window</h3>
 
