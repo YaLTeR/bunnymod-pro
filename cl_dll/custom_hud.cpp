@@ -16,6 +16,8 @@ int CHudCustom::Init( void )
 	m_fJumpspeedFadeGreen = 0;
 	m_fJumpspeedFadeRed = 0;
 	m_fDamageAnimTime = 0;
+	m_fChargingTime = 0;
+	m_bChargingHealth = false;
 
 	gHUD.AddHudElem( this );
 
@@ -692,6 +694,16 @@ int CHudCustom::Draw( float fTime )
 				m_fDamageAnimTime = 0;
 			}
 		}
+
+		if ( m_fChargingTime > 0 )
+		{
+			m_fChargingTime -= gHUD.m_flTimeDelta;
+		
+			if ( m_fChargingTime < 0 )
+			{
+				m_fChargingTime = 0;
+			}
+		}
 	}
 
 	// ===========
@@ -708,6 +720,32 @@ void CHudCustom::HealthChanged( int delta )
 	if ( !hud_damage_enable->value )
 	{
 		return;
+	}
+
+	if ( delta == 1 )
+	{
+		if ( m_bChargingHealth )
+		{
+			if ( m_fChargingTime > 0 )
+			{
+				m_fChargingTime = 1;
+				m_ivDamage[0]++;
+				return;
+			}
+			else
+			{
+				m_fChargingTime = 1;
+			}
+		}
+		else
+		{
+			m_bChargingHealth = true;
+			m_fChargingTime = 1;
+		}
+	}
+	else
+	{
+		m_bChargingHealth = false;
 	}
 
 	int maxSize = ( hud_damage_size->value > 0 ) ? hud_damage_size->value : 1;
@@ -735,6 +773,8 @@ void CHudCustom::DamageHistoryReset( void )
 	m_ivDamage.erase( m_ivDamage.begin(), m_ivDamage.end() );
 
 	m_fDamageAnimTime = 0;
+	m_fChargingTime = 0;
+	m_bChargingHealth = false;
 }
 
 extern cvar_t *hud_alpha;

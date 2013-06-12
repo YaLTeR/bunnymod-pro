@@ -21,4 +21,6 @@ private:
 	std::vector<int> m_ivDamage;
 
 	float m_fDamageAnimTime;
+	float m_fChargingTime;
+	bool m_bChargingHealth;
 };
