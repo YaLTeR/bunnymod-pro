@@ -18,8 +18,9 @@ typedef struct cl_sphere
 {
 	vec3_t vecOrigin;
 
-	int iRadius;
+	int random_stuff_here; // This not-used-at-all variable presence fixes the crash. No, I don't know why.
 
+	int iRadius;
 	int iRings;
 	int iSectors;
 } cl_sphere_t;
