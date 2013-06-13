@@ -309,7 +309,6 @@ cvar_t *cl_rendergibs;
 cvar_t *cl_ruler_enable;
 cvar_t *cl_ruler_render;
 cvar_t *cl_ruler_autodelay;
-cvar_t *cl_ruler_addorigin;
 
 cvar_t *cl_autostopsave_cmd;
 cvar_t *cl_autostopsave_radius;
@@ -380,6 +379,11 @@ void RulerViewPos( void )
 void RulerDeleteLast( void )
 {
 	DeleteLast();
+}
+
+void RulerAddOrigin( void )
+{
+	AddOrigin();
 }
 
 void RulerAutostopsaveAddPoint( void )
@@ -521,7 +525,6 @@ cl_rendergibs = gEngfuncs.pfnRegisterVariable("cl_rendergibs", "1", FCVAR_ARCHIV
 cl_ruler_enable = gEngfuncs.pfnRegisterVariable( "cl_ruler_enable", "1", FCVAR_ARCHIVE );
 cl_ruler_render = gEngfuncs.pfnRegisterVariable( "cl_ruler_render", "1", FCVAR_ARCHIVE );
 cl_ruler_autodelay = gEngfuncs.pfnRegisterVariable( "cl_ruler_autodelay", "0", FCVAR_ARCHIVE );
-cl_ruler_addorigin = gEngfuncs.pfnRegisterVariable( "cl_ruler_addorigin", "", FCVAR_ARCHIVE );
 
 cl_autostopsave_cmd = gEngfuncs.pfnRegisterVariable( "cl_autostopsave_cmd", "stop;save autostopsave", FCVAR_ARCHIVE );
 cl_autostopsave_radius = gEngfuncs.pfnRegisterVariable( "cl_autostopsave_radius", "50", FCVAR_ARCHIVE );
@@ -545,6 +548,7 @@ gEngfuncs.pfnAddCommand( "cl_ruler_aimpos", RulerAimPos );
 gEngfuncs.pfnAddCommand( "cl_ruler_playerpos", RulerPlayerPos );
 gEngfuncs.pfnAddCommand( "cl_ruler_viewpos", RulerViewPos );
 gEngfuncs.pfnAddCommand( "cl_ruler_dellast", RulerDeleteLast );
+gEngfuncs.pfnAddCommand( "cl_ruler_addorigin", RulerAddOrigin );
 
 gEngfuncs.pfnAddCommand( "cl_autostopsave_addpoint", RulerAutostopsaveAddPoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_delpoint", RulerAutostopsaveDeletePoint );

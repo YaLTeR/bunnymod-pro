@@ -194,7 +194,7 @@ void RulerAutoFunc( double flTime )
 		flRulerTime = flRulerOldTime;
 	}
 
-	if ( strlen( cl_ruler_addorigin->string ) > 0 )
+	/*if ( strlen( cl_ruler_addorigin->string ) > 0 )
 	{
 		float x = 0.0, y = 0.0, z = 0.0;
 
@@ -208,19 +208,19 @@ void RulerAutoFunc( double flTime )
 		StorePoint( vecPoint );
 
 		gEngfuncs.pfnClientCmd( "cl_ruler_addorigin \"\"\n" );
-	}
+	}*/
 
 	if ( autostopsaveSphere != NULL )
 	{
-		float flSphereRadius = cl_autostopsave_radius->value;
-		if ( flSphereRadius <= 0.0 )
+		int iSphereRadius = cl_autostopsave_radius->value;
+		if ( iSphereRadius <= 0 )
 		{
-			flSphereRadius = 50.0;
+			iSphereRadius = 50;
 		}
 
-		if ( autostopsaveSphere->flRadius != flSphereRadius )
+		if ( autostopsaveSphere->iRadius != iSphereRadius )
 		{
-			autostopsaveSphere->flRadius = flSphereRadius;
+			autostopsaveSphere->iRadius = iSphereRadius;
 			CalcSphereVertices( autostopsaveSphere );
 		}
 	}
@@ -292,6 +292,33 @@ void DeleteLast( void )
 }
 
 /*
+AddOrigin
+Adds a ruler point by given through cmd arguments origin.
+*/
+void AddOrigin( void )
+{
+	if ( gEngfuncs.Cmd_Argc() != 4 )
+	{
+		gEngfuncs.Con_Printf( "Usage: cl_ruler_addorigin <x> <y> <z>\n" );
+		return;
+	}
+
+	float x = 0, y = 0, z = 0;
+	sscanf( gEngfuncs.Cmd_Argv( 1 ), "%f", &x );
+	sscanf( gEngfuncs.Cmd_Argv( 2 ), "%f", &y );
+	sscanf( gEngfuncs.Cmd_Argv( 3 ), "%f", &z );
+
+	gEngfuncs.Con_Printf( "x, y, z: %f, %f, %f\n", x, y, z );
+
+	vec3_t vecPoint;
+	vecPoint[0] = x;
+	vecPoint[1] = y;
+	vecPoint[2] = z;
+
+	StorePoint( vecPoint );
+}
+
+/*
 AutostopsaveAddPoint
 Converts the last added point to an autostopsave point.
 */
@@ -319,10 +346,10 @@ void AutostopsaveAddPoint( void )
 
 			autostopsavePoint = lastPoint;
 
-			float flSphereRadius = cl_autostopsave_radius->value;
-			if ( flSphereRadius <= 0.0 )
+			int iSphereRadius = cl_autostopsave_radius->value;
+			if ( iSphereRadius <= 0 )
 			{
-				flSphereRadius = 50.0;
+				iSphereRadius = 50;
 			}
 
 			autostopsaveSphere = new cl_sphere;
@@ -333,8 +360,10 @@ void AutostopsaveAddPoint( void )
 				return;
 			}
 
+			gEngfuncs.Con_Printf( "x, y, z: %f, %f, %f\n", autostopsavePoint->origin[0], autostopsavePoint->origin[1], autostopsavePoint->origin[2] );
+
 			VectorCopy( autostopsavePoint->origin, autostopsaveSphere->vecOrigin );
-			autostopsaveSphere->flRadius = flSphereRadius;
+			autostopsaveSphere->iRadius = iSphereRadius;
 			autostopsaveSphere->iRings = 20;
 			autostopsaveSphere->iSectors = 20;
 
@@ -388,10 +417,10 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin )
 {
 	if ( autostopsavePoint != NULL )
 	{
-		float flSphereRadius = cl_autostopsave_radius->value;
-		if ( flSphereRadius <= 0.0 )
+		int iSphereRadius = cl_autostopsave_radius->value;
+		if ( iSphereRadius <= 0 )
 		{
-			flSphereRadius = 50.0;
+			iSphereRadius = 50;
 		}
 
 		vec3_t vecDelta;
@@ -400,7 +429,7 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin )
 
 		float flDistance = sqrt( vecDelta[0] * vecDelta[0] + vecDelta[1] * vecDelta[1] + vecDelta[2] * vecDelta[2] );
 
-		if ( flDistance <= flSphereRadius )
+		if ( flDistance <= iSphereRadius )
 		{
 			if ( !autostopsaveCmdExecuted )
 			{
@@ -524,9 +553,9 @@ void CalcSphereVertices( cl_sphere *sphere )
 			float const x = cos( 2 * M_PI * s * S ) * sin( M_PI * r * R );
 			float const z = sin( 2 * M_PI * s * S ) * sin( M_PI * r * R );
 
-			*v++ = ( x * sphere->flRadius ) + sphere->vecOrigin[0];
-			*v++ = ( y * sphere->flRadius ) + sphere->vecOrigin[1];
-			*v++ = ( z * sphere->flRadius ) + sphere->vecOrigin[2];
+			*v++ = ( x * sphere->iRadius ) + sphere->vecOrigin[0];
+			*v++ = ( y * sphere->iRadius ) + sphere->vecOrigin[1];
+			*v++ = ( z * sphere->iRadius ) + sphere->vecOrigin[2];
 		}
 	}
 }

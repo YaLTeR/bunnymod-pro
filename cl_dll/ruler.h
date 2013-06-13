@@ -18,7 +18,7 @@ typedef struct cl_sphere
 {
 	vec3_t vecOrigin;
 
-	float flRadius;
+	int iRadius;
 
 	int iRings;
 	int iSectors;
@@ -34,6 +34,7 @@ void PrintDistance( void );
 void ResetRuler( void );
 void InitRuler( void );
 void DrawRulerPoints( void );
+void AddOrigin( void );
 
 void AutostopsaveAddPoint( void );
 void AutostopsaveDeletePoint( void );
