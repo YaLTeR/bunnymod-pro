@@ -118,10 +118,15 @@ int CHudHealth:: MsgFunc_Health(const char *pszName,  int iSize, void *pbuf )
 
 	m_iFlags |= HUD_ACTIVE;
 
+	// YaLTeR
+	x += gHUD.m_CustomHud.g_iHealthDifference;
+
 	// Only update the fade if we've changed health
 	if (x != m_iHealth)
 	{
+		// YaLTeR
 		gHUD.m_CustomHud.HealthChanged( x - m_iHealth );
+
 		m_fFade = FADE_TIME;
 		m_iHealth = x;
 	}

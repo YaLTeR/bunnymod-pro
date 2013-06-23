@@ -10,9 +10,13 @@ public:
 	void HealthChanged( int delta );
 	void DamageHistoryReset( void );
 
+	void HealthDifference( void );
+
 	static int DrawNumber( int number, int x, int y, int dx, int dy, bool isNegative = false, int r = 0, int g = 0, int b = 0, bool colors = false );
 	static int DrawNumber( double number, int x, int y, int dx, int dy );
 	static int DrawString( char *stringToDraw, int x, int y, int dx, int dy );
+
+	int g_iHealthDifference;
 
 private:
 	float m_fJumpspeedFadeGreen;

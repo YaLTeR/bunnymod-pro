@@ -19,6 +19,8 @@ int CHudCustom::Init( void )
 	m_fChargingTime = 0;
 	m_bChargingHealth = false;
 
+	g_iHealthDifference = 0;
+
 	gHUD.AddHudElem( this );
 
 	return 1;
@@ -775,6 +777,27 @@ void CHudCustom::DamageHistoryReset( void )
 	m_fDamageAnimTime = 0;
 	m_fChargingTime = 0;
 	m_bChargingHealth = false;
+}
+
+void CHudCustom::HealthDifference( void )
+{
+	if ( gEngfuncs.Cmd_Argc() != 2 )
+	{
+		gEngfuncs.Con_Printf( "Usage: hud_health_difference <difference>\n" );
+		gEngfuncs.Con_Printf( "Current difference: %d\n", g_iHealthDifference );
+		return;
+	}
+
+	int iNewHealthDifference = 0;
+	sscanf( gEngfuncs.Cmd_Argv( 1 ), "%d", &iNewHealthDifference );
+
+	if ( iNewHealthDifference != g_iHealthDifference )
+	{
+		int iDelta = iNewHealthDifference - g_iHealthDifference;
+
+		g_iHealthDifference = iNewHealthDifference;		
+		gHUD.m_Health.m_iHealth += iDelta;
+	}
 }
 
 extern cvar_t *hud_alpha;

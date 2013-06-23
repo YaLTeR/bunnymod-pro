@@ -405,6 +405,11 @@ void DamageHistoryReset( void )
 {
 	gHUD.m_CustomHud.DamageHistoryReset();
 }
+
+void HealthDifference( void )
+{
+	gHUD.m_CustomHud.HealthDifference();
+}
  
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
@@ -541,6 +546,7 @@ gEngfuncs.pfnAddCommand("hud_dontchange_changelevel_occured", ChangelevelOccured
 gEngfuncs.pfnAddCommand("hud_gaussboost_disable", GaussboostDisable);
 gEngfuncs.pfnAddCommand("hud_gaussboost_reset", GaussboostReset);
 gEngfuncs.pfnAddCommand("hud_damage_reset", DamageHistoryReset);
+gEngfuncs.pfnAddCommand("hud_health_difference", HealthDifference);
 
 gEngfuncs.pfnAddCommand( "cl_ruler_reset", RulerReset );
 gEngfuncs.pfnAddCommand( "cl_ruler_distance", RulerPrintDistance );
