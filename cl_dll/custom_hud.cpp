@@ -797,6 +797,8 @@ void CHudCustom::HealthDifference( void )
 
 		g_iHealthDifference = iNewHealthDifference;		
 		gHUD.m_Health.m_iHealth += iDelta;
+
+		HealthChanged( iDelta );
 	}
 }
 
