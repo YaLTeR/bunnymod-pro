@@ -328,6 +328,10 @@ void CGauss::SecondaryAttack()
 // of weaponidle() and make its own function then to try to
 // merge this into Fire(), which has some identical variable names
 //=========================================================
+
+// YaLTeR
+extern cvar_t singleplayer_vertical_gaussboost;
+
 void CGauss::StartFire( void )
 {
 	float flDamage;
@@ -367,7 +371,7 @@ void CGauss::StartFire( void )
 			m_pPlayer->pev->velocity = m_pPlayer->pev->velocity - gpGlobals->v_forward * flDamage * 5;
 		}
 
-		if ( !g_pGameRules->IsMultiplayer() )
+		if ( !g_pGameRules->IsMultiplayer() && !singleplayer_vertical_gaussboost.value )
 
 		{
 			// in deathmatch, gauss can pop you up into the air. Not in single play.

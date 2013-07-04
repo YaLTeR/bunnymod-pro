@@ -51,6 +51,7 @@ cvar_t	autosave	= { "sv_autosave", "1", FCVAR_SERVER };
 cvar_t jumpvelocity = { "sv_jumpvelocity", "-1", FCVAR_SERVER };
 cvar_t sethealth = { "sv_sethealth", "-1", FCVAR_SERVER };
 cvar_t setbattery = { "sv_setbattery", "-1", FCVAR_SERVER };
+cvar_t singleplayer_vertical_gaussboost = { "sv_singleplayer_vertical_gaussboost", "0", FCVAR_SERVER };
 
 cvar_t sv_trigger_alpha = { "sv_trigger_alpha", "128", FCVAR_SERVER };
 cvar_t sv_trigger_changelevel_display = { "sv_trigger_changelevel_display", "0", FCVAR_SERVER };
@@ -523,6 +524,7 @@ void GameDLLInit( void )
 	CVAR_REGISTER (&jumpvelocity);
 	CVAR_REGISTER (&sethealth);
 	CVAR_REGISTER (&setbattery);
+	CVAR_REGISTER (&singleplayer_vertical_gaussboost);
 	
 	CVAR_REGISTER (&sv_trigger_alpha);
 	CVAR_REGISTER (&sv_trigger_changelevel_display);
