@@ -203,6 +203,9 @@ int gmsgTeamNames = 0;
 int gmsgStatusText = 0;
 int gmsgStatusValue = 0;
 
+// YaLTeR
+int gmsgEntityHealth = 0;
+
 void LinkUserMessages( void )
 {
 	// Already taken care of?
@@ -247,6 +250,10 @@ void LinkUserMessages( void )
 
 	gmsgStatusText = REG_USER_MSG("StatusText", -1);
 	gmsgStatusValue = REG_USER_MSG("StatusValue", 3);
+
+	// YaLTeR
+	gmsgEntityHealth = REG_USER_MSG("EntHealth", 4);
+	// ALERT(at_console, "Msg registered: %d, health: %d, statusvalue: %d\n", gmsgEntityHealth, gmsgHealth, gmsgStatusValue);
 }
 
 LINK_ENTITY_TO_CLASS( player, CBasePlayer );
@@ -4271,6 +4278,21 @@ void CBasePlayer :: UpdateClientData( void )
 		UpdateStatusBar();
 		m_flNextSBarUpdateTime = gpGlobals->time + 0.2;
 	}
+
+	// YaLTeR
+	float entityHealth = 0.0;
+
+	CBaseEntity *pEntity = FindEntityForward( this );
+	if ( pEntity )
+	{
+		entityHealth = pEntity->pev->health;
+	}
+
+	int *entHP_pointer = (int*) &entityHealth;
+
+	MESSAGE_BEGIN( MSG_ONE, gmsgEntityHealth, NULL, pev );
+		WRITE_LONG( *entHP_pointer );
+	MESSAGE_END();
 }
 
 

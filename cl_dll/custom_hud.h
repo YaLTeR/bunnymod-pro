@@ -12,6 +12,8 @@ public:
 
 	void HealthDifference( void );
 
+	int MsgFunc_EntHealth( const char *pszName, int iSize, void *pbuf );
+
 	static int DrawNumber( int number, int x, int y, int dx, int dy, bool isNegative = false, int r = 0, int g = 0, int b = 0, bool colors = false );
 	static int DrawNumber( double number, int x, int y, int dx, int dy );
 	static int DrawString( char *stringToDraw, int x, int y, int dx, int dy );

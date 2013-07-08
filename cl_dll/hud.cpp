@@ -301,6 +301,8 @@ cvar_t *hud_speedinfo, *hud_speedinfo_pos;
 cvar_t *hud_damage;
 cvar_t *hud_damage_enable, *hud_damage_size, *hud_damage_anim;
 
+cvar_t *hud_entityhealth, *hud_entityhealth_pos;
+
 cvar_t *hud_accuracy;
 
 cvar_t *cl_rendermodels;
@@ -521,6 +523,9 @@ hud_damage = gEngfuncs.pfnRegisterVariable("hud_damage","0",FCVAR_ARCHIVE);
 hud_damage_enable = gEngfuncs.pfnRegisterVariable("hud_damage_enable","1",FCVAR_ARCHIVE);
 hud_damage_size = gEngfuncs.pfnRegisterVariable("hud_damage_size","5",FCVAR_ARCHIVE);
 hud_damage_anim = gEngfuncs.pfnRegisterVariable("hud_damage_anim","1",FCVAR_ARCHIVE);
+
+hud_entityhealth = gEngfuncs.pfnRegisterVariable("hud_entityhealth","0",FCVAR_ARCHIVE);
+hud_entityhealth_pos = gEngfuncs.pfnRegisterVariable("hud_entityhealth_pos","0",FCVAR_ARCHIVE);
 
 hud_accuracy = gEngfuncs.pfnRegisterVariable("hud_accuracy","0",FCVAR_ARCHIVE);
 

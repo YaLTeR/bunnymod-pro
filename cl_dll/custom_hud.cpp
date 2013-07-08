@@ -4,20 +4,28 @@
 #include "hud.h"
 #include "cl_util.h"
 #include "demo_api.h"
+#include "parsemsg.h"
 
 #define JUMPSPEED_FADE_TIME 7
 
 #define DAMAGE_MOVE_TIME	1
 #define DAMAGE_MOVE_ACCEL	-4
 
+float m_fEntityHealth;
+
+DECLARE_MESSAGE( m_CustomHud, EntHealth )
+
 int CHudCustom::Init( void )
 {
+	HOOK_MESSAGE( EntHealth )
+
 	m_iFlags = HUD_ACTIVE;
 	m_fJumpspeedFadeGreen = 0;
 	m_fJumpspeedFadeRed = 0;
 	m_fDamageAnimTime = 0;
 	m_fChargingTime = 0;
 	m_bChargingHealth = false;
+	m_fEntityHealth = 0.0;
 
 	g_iHealthDifference = 0;
 
@@ -50,6 +58,7 @@ extern cvar_t *hud_speedinfo, *hud_speedinfo_pos;
 extern cvar_t *hud_grenadetimer_dontchange_resetto;
 extern cvar_t *hud_gaussboost_dontchange_resetto;
 extern cvar_t *hud_damage, *hud_damage_size, *hud_damage_anim;
+extern cvar_t *hud_entityhealth, *hud_entityhealth_pos;
 extern cvar_t *hud_health_pos;
 extern vec3_t g_vel, g_org;
 extern Vector g_vecViewAngle;
@@ -711,6 +720,20 @@ int CHudCustom::Draw( float fTime )
 	// ===========
 	// END DAMAGE INDICATOR
 	// ===========
+	// ENTITY HEALTH
+	// ===========
+
+	if ( hud_entityhealth->value )
+	{
+		int ehx = 0, ehy = 0;
+
+		if ( hud_entityhealth_pos->string )
+		{
+			sscanf( hud_entityhealth_pos->string, "%d %d", &ehx, &ehy );
+		}
+
+		DrawNumber( m_fEntityHealth, 0, 6 * gHUD.m_iFontHeight, ehx, ehy );
+	}
 
 	return 1;
 }
@@ -800,6 +823,15 @@ void CHudCustom::HealthDifference( void )
 
 		HealthChanged( iDelta );
 	}
+}
+
+int CHudCustom::MsgFunc_EntHealth( const char *pszName, int iSize, void *pbuf )
+{
+	BEGIN_READ( pbuf, iSize );
+
+	m_fEntityHealth = READ_FLOAT();
+
+	return 1;
 }
 
 extern cvar_t *hud_alpha;
