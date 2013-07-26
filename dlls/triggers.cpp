@@ -1431,6 +1431,7 @@ void CTriggerVolume :: Spawn( void )
 	//pev->modelindex = 0;
 	
 	pev->nextthink = gpGlobals->time + 1.0; // YaLTeR
+	SetBits( pev->effects, EF_NODRAW );
 }
 
 // YaLTeR

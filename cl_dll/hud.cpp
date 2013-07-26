@@ -267,23 +267,24 @@ int __MsgFunc_AllowSpec(const char *pszName, int iSize, void *pbuf)
 	return 0;
 }
 
+// <UNMODIFIED JULIEN'S CODE>
 //duh..
- cvar_t *cl_modelalpha,*hud_origin_x,*hud_origin_x_pos,*hud_origin_y,*hud_origin_y_pos,*hud_origin_z,*hud_origin_z_pos,*cl_wallhack,*hud_speedometer,*hud_health_pos,*hud_ammo_pos,*hud_acceleration,*hud_acceleration_pos,*hud_armor_pos,*hud_speedometer_pos,*hud_zspeed,*hud_jumpspeed,*hud_jumpspeed_pos,*hud_zspeed_pos;
-cvar_t *hud_gausscharge,*hud_gausscharge_pos;
- cvar_t *hud_alpha,*hud_gaussboost;
+cvar_t *cl_modelalpha,*hud_origin_x,*hud_origin_x_pos,*hud_origin_y,*hud_origin_y_pos,*hud_origin_z,*hud_origin_z_pos,*cl_wallhack,*hud_speedometer,*hud_health_pos,*hud_ammo_pos,*hud_acceleration,*hud_acceleration_pos,*hud_armor_pos,*hud_speedometer_pos,*hud_zspeed,*hud_jumpspeed,*hud_jumpspeed_pos,*hud_zspeed_pos;
+cvar_t *hud_alpha,*hud_gaussboost;
+// </UNMODIFIED JULIEN'S CODE>
  
 cvar_t *r_drawviewmodel = NULL;
 
 cvar_t *hud_pos_percent = NULL;
 
 cvar_t *hud_gaussboost_pos;
+cvar_t *hud_gaussammo;
+cvar_t *hud_gaussammo_pos;
 
 cvar_t *hud_grenadetimer,*hud_grenadetimer_pos, *hud_grenadetimer_width, *hud_grenadetimer_height;
 
-
-//angle counter
-cvar_t *hud_viewangle_x,*hud_viewangle_x_pos,
-*hud_viewangle_y,*hud_viewangle_y_pos;
+cvar_t *hud_viewangle_x,*hud_viewangle_x_pos;
+cvar_t *hud_viewangle_y,*hud_viewangle_y_pos;
 
 cvar_t *hud_health_reqhev;
 cvar_t *hud_health_5dig;
@@ -316,7 +317,7 @@ cvar_t *cl_autostopsave_cmd;
 cvar_t *cl_autostopsave_radius;
 
 cvar_t *cl_autocmd_enable, *cl_autocmd_render;
-cvar_t *cl_autocmd_plane, *cl_autocmd_coord, *cl_autocmd_cmd;
+cvar_t *cl_autocmd_plane, *cl_autocmd_coord, *cl_autocmd_distance, *cl_autocmd_cmd;
 
 bool g_bResetDemorecCounter = false;
  
@@ -493,12 +494,11 @@ hud_pos_percent = gEngfuncs.pfnRegisterVariable ("hud_pos_percent", "0", FCVAR_A
 
 hud_alpha = gEngfuncs.pfnRegisterVariable("hud_alpha","0",FCVAR_ARCHIVE);
 
-hud_gaussboost_pos = gEngfuncs.pfnRegisterVariable("hud_gaussboost_pos","0",FCVAR_ARCHIVE);
 hud_gaussboost = gEngfuncs.pfnRegisterVariable("hud_gaussboost","0",FCVAR_ARCHIVE);
+hud_gaussboost_pos = gEngfuncs.pfnRegisterVariable("hud_gaussboost_pos","0",FCVAR_ARCHIVE);
 
-hud_gausscharge = gEngfuncs.pfnRegisterVariable("hud_gausscharge","1",FCVAR_ARCHIVE);
-hud_gausscharge_pos = gEngfuncs.pfnRegisterVariable("hud_gausscharge_pos","0",FCVAR_ARCHIVE);
-
+hud_gaussammo = gEngfuncs.pfnRegisterVariable("hud_gaussammo","0",FCVAR_ARCHIVE);
+hud_gaussammo_pos = gEngfuncs.pfnRegisterVariable("hud_gaussammo_pos","0",FCVAR_ARCHIVE);
 
 hud_grenadetimer = gEngfuncs.pfnRegisterVariable("hud_grenadetimer","1",FCVAR_ARCHIVE);
 hud_grenadetimer_pos = gEngfuncs.pfnRegisterVariable("hud_grenadetimer_pos","0",FCVAR_ARCHIVE);
@@ -539,10 +539,11 @@ cl_ruler_autodelay = gEngfuncs.pfnRegisterVariable( "cl_ruler_autodelay", "0", F
 cl_autostopsave_cmd = gEngfuncs.pfnRegisterVariable( "cl_autostopsave_cmd", "stop;save autostopsave", FCVAR_ARCHIVE );
 cl_autostopsave_radius = gEngfuncs.pfnRegisterVariable( "cl_autostopsave_radius", "50", FCVAR_ARCHIVE );
 
-cl_autocmd_enable = gEngfuncs.pfnRegisterVariable( "cl_autocmd_enable", "1", FCVAR_ARCHIVE );
-cl_autocmd_render = gEngfuncs.pfnRegisterVariable( "cl_autocmd_render", "1", FCVAR_ARCHIVE );
+cl_autocmd_enable = gEngfuncs.pfnRegisterVariable( "cl_autocmd_enable", "0", FCVAR_ARCHIVE );
+cl_autocmd_render = gEngfuncs.pfnRegisterVariable( "cl_autocmd_render", "0", FCVAR_ARCHIVE );
 cl_autocmd_plane = gEngfuncs.pfnRegisterVariable( "cl_autocmd_plane", "x", FCVAR_ARCHIVE );
 cl_autocmd_coord = gEngfuncs.pfnRegisterVariable( "cl_autocmd_coord", "0", FCVAR_ARCHIVE );
+cl_autocmd_distance = gEngfuncs.pfnRegisterVariable( "cl_autocmd_distance", "34.0", FCVAR_ARCHIVE );
 cl_autocmd_cmd = gEngfuncs.pfnRegisterVariable( "cl_autocmd_cmd", "stop;save autocmdsave", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);

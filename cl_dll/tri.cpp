@@ -232,7 +232,7 @@ void DrawRulerPoints( void )
 	if ( cl_ruler_render->value )
 	{
 		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
-		gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
+		gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
 
 		gEngfuncs.pTriAPI->Color4f( 1.0, 1.0, 0.0, 1.0 );
 
@@ -345,7 +345,7 @@ Render any triangles with transparent rendermode needs here
 */
 void DLLEXPORT HUD_DrawTransparentTriangles( void )
 {
-	DrawRulerPoints();
+	// DrawRulerPoints();
 	RenderAutocmdPlane();
 
 #if defined( TEST_IT )

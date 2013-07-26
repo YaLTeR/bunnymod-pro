@@ -21,7 +21,7 @@ extern cvar_t *cl_ruler_addorigin;
 extern cvar_t *cl_autostopsave_radius;
 extern cvar_t *cl_autostopsave_cmd;
 extern cvar_t *cl_autocmd_enable;
-extern cvar_t *cl_autocmd_plane, *cl_autocmd_coord;
+extern cvar_t *cl_autocmd_plane, *cl_autocmd_coord, *cl_autocmd_distance;
 extern cvar_t *cl_autocmd_cmd;
 
 cl_rulerPoint firstRulerPoint;
@@ -410,7 +410,8 @@ void AutostopsaveDeletePoint( void )
 /*
 AutostopsaveAutoFunc
 This function is called automatically each time the position is updated. This function checks if
-the player is in the radius for the autostopsave point and executes console commands if so.
+the player is in the radius for the autostopsave point and executes console commands if so. Also
+checks if the player is close enough to the autocmd plane and executes console commands if so.
 Arguments: vec3_t vecOrigin - player position.
 */
 void AutostopsaveAutoFunc( vec3_t vecOrigin )
@@ -445,9 +446,11 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin )
 
 	if ( cl_autocmd_enable->value
 			&& ( strlen( cl_autocmd_plane->string ) != 0 )
-			&& ( strlen( cl_autocmd_coord->string ) != 0 ) )
+			&& ( strlen( cl_autocmd_coord->string ) != 0 ) 
+			&& ( strlen( cl_autocmd_distance->string) != 0 ) )
 	{
 		float coord = cl_autocmd_coord->value;
+		float distance = cl_autocmd_distance->value;
 		char plane;
 
 		sscanf( cl_autocmd_plane->string, "%c", &plane );
@@ -456,7 +459,7 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin )
 		{
 			case 'X':
 			case 'x':
-				if ( abs( coord - g_org[0] ) <= 34.0 )
+				if ( abs( coord - g_org[0] ) <= distance )
 				{
 					if ( !autocmdCmdExecuted )
 					{
@@ -473,7 +476,7 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin )
 
 			case 'Y':
 			case 'y':
-				if ( abs( coord - g_org[1] ) <= 34.0 )
+				if ( abs( coord - g_org[1] ) <= distance )
 				{
 					if ( !autocmdCmdExecuted )
 					{
@@ -490,7 +493,7 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin )
 
 			case 'Z':
 			case 'z':
-				if ( abs( coord - g_org[2] ) <= 34.0 )
+				if ( abs( coord - g_org[2] ) <= distance )
 				{
 					if ( !autocmdCmdExecuted )
 					{

@@ -53,6 +53,7 @@ extern cvar_t *hud_grenadetimer, *hud_grenadetimer_pos;
 extern cvar_t *hud_grenadetimer_width, *hud_grenadetimer_height;
 extern cvar_t *hud_demorec_counter, *hud_demorec_counter_pos;
 extern cvar_t *hud_gaussboost, *hud_gaussboost_pos;
+extern cvar_t *hud_gaussammo, *hud_gaussammo_pos;
 extern cvar_t *hud_gausscharge, *hud_gausscharge_pos;
 extern cvar_t *hud_speedinfo, *hud_speedinfo_pos;
 extern cvar_t *hud_grenadetimer_dontchange_resetto;
@@ -564,6 +565,23 @@ int CHudCustom::Draw( float fTime )
 
 		y += gHUD.m_iFontHeight;
 		sprintf(temp, "Ammo consumed: %.2f", gaussboost_ammoConsumed);
+		DrawString(temp, x, y, dx, dy);
+	}
+
+	if ( hud_gaussammo->value && g_bHoldingGaussCannon )
+	{
+		int dx = 0, dy = 0;
+
+		x = ScreenWidth / 2;
+		y = ScreenHeight / 2 - gHUD.m_iFontHeight;
+
+		if (hud_gaussammo_pos->string)
+		{
+			sscanf(hud_gaussammo_pos->string, "%d %d", &dx, &dy);
+		}
+
+		char temp[10];
+		sprintf(temp, "%.2f", gaussboost_ammoConsumed);
 		DrawString(temp, x, y, dx, dy);
 	}
 
