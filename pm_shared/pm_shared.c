@@ -36,7 +36,10 @@
 #endif
 
 static int pm_shared_initialized = 0;
+
+// YaLTeR
 int g_iCustomJumpvel = -1;
+int g_iAutoJump = 0;
 
 #pragma warning( disable : 4305 )
 
@@ -2432,6 +2435,35 @@ void PM_PreventMegaBunnyJumping( void )
 	VectorScale( pmove->velocity, fraction, pmove->velocity ); //Crop it down!.
 }
 
+// YaLTeR
+void PM_ABH( void )
+{
+	// Current player speed
+	float spd;
+	// If we have to crop, apply this cropping fraction to velocity
+	float fraction;
+	// Speed at which bunny jumping is limited
+	float maxscaledspeed;
+
+	maxscaledspeed = pmove->maxspeed;
+
+	// Don't divide by zero
+	if ( maxscaledspeed <= 0.0f )
+		return;
+
+	if ( ( pmove->velocity[0] * pmove->angles[0] + pmove->velocity[1] * pmove->angles[1] ) >= 0 )
+		return;
+
+	spd = Length( pmove->velocity );
+
+	if ( spd <= maxscaledspeed )
+		return;
+
+	fraction = 1 / ( ( maxscaledspeed / spd ) ); //Returns the modifier for the velocity
+	
+	VectorScale( pmove->velocity, fraction, pmove->velocity ); //Crop it down!.
+}
+
 /*
 =============
 PM_Jump
@@ -2517,13 +2549,16 @@ void PM_Jump (void)
 		return;		// in air, so no effect
 	}
 
-	if ( pmove->oldbuttons & IN_JUMP )
+	if ( ( pmove->oldbuttons & IN_JUMP ) && !g_iAutoJump )
 		return;		// don't pogo stick
 
 	// In the air now.
     pmove->onground = -1;
 
 	//PM_PreventMegaBunnyJumping();
+
+	// YaLTeR
+	// PM_ABH();
 
 	if ( tfc )
 	{

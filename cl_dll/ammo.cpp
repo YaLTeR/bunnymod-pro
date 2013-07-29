@@ -39,6 +39,7 @@ WeaponsResource gWR;
 
 int g_weaponselect = 0;
 
+// YaLTeR
 extern cvar_t *hud_alpha;
 
 void WeaponsResource :: LoadAllWeaponSprites( void )
@@ -55,7 +56,7 @@ int WeaponsResource :: CountAmmo( int iId )
 	if ( iId < 0 )
 		return 0;
 
-	return riAmmo[iId];
+	return riAmmo[iId] + (int)CVAR_GET_FLOAT( "hud_ammo_difference" ); // YaLTeR
 }
 
 int WeaponsResource :: HasAmmo( WEAPON *p )

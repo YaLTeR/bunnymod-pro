@@ -1783,8 +1783,11 @@ void CBasePlayer::UpdateStatusBar()
 #define	CLIMB_PUNCH_X			-7  // how far to 'punch' client X axis when climbing
 #define CLIMB_PUNCH_Z			7	// how far to 'punch' client Z axis when climbing
 
+// YaLTeR
 extern "C" int g_iCustomJumpvel;
+extern "C" int g_iAutoJump;
 extern cvar_t jumpvelocity;
+extern cvar_t autojump;
 extern cvar_t sethealth;
 extern cvar_t setbattery;
 
@@ -1792,6 +1795,7 @@ void CBasePlayer::PreThink(void)
 {
 	// YaLTeR
 	g_iCustomJumpvel = jumpvelocity.value;
+	g_iAutoJump = autojump.value;
 	
 	if (sethealth.value != -1)
 	{

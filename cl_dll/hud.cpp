@@ -546,6 +546,8 @@ cl_autocmd_coord = gEngfuncs.pfnRegisterVariable( "cl_autocmd_coord", "0", FCVAR
 cl_autocmd_distance = gEngfuncs.pfnRegisterVariable( "cl_autocmd_distance", "34.0", FCVAR_ARCHIVE );
 cl_autocmd_cmd = gEngfuncs.pfnRegisterVariable( "cl_autocmd_cmd", "stop;save autocmdsave", FCVAR_ARCHIVE );
 
+CVAR_CREATE( "hud_ammo_difference", "0", FCVAR_ARCHIVE );
+
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
 gEngfuncs.pfnAddCommand("hud_dontchange_changelevel_occured", ChangelevelOccured);
