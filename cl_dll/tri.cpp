@@ -112,9 +112,9 @@ void Draw_Triangles( void )
 /*
 DrawCube
 Renders a cube with given center and halfsize.
-Arguments: vec3_t vecCenter - center of the cube; float flHalfsize - length of an edge / 2.
+Arguments: vec3_t vecCenter - center of the cube; float flHalfsize - length of an edge / 2; bool wireframe - draw the cube wireframe if set to true.
 */
-void DrawCube( vec3_t vecCenter, float flHalfsize )
+void DrawCube( vec3_t vecCenter, float flHalfsize, bool wireframe )
 {
 	vec3_t A, B, C, D, A1, B1, C1, D1;
 
@@ -145,45 +145,118 @@ void DrawCube( vec3_t vecCenter, float flHalfsize )
 	C1[2] = vecCenter[2] + flHalfsize;
 	D1[2] = vecCenter[2] + flHalfsize;
 
-	gEngfuncs.pTriAPI->Begin( TRI_QUADS );
+	if ( !wireframe )
+	{
 
-		// Bottom
-		gEngfuncs.pTriAPI->Vertex3fv( A );
-		gEngfuncs.pTriAPI->Vertex3fv( B );
-		gEngfuncs.pTriAPI->Vertex3fv( C );
-		gEngfuncs.pTriAPI->Vertex3fv( D );
+		gEngfuncs.pTriAPI->Begin( TRI_QUADS );
 
-		// Top
-		gEngfuncs.pTriAPI->Vertex3fv( D1 );
-		gEngfuncs.pTriAPI->Vertex3fv( C1 );
-		gEngfuncs.pTriAPI->Vertex3fv( B1 );
-		gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			// Bottom
+			gEngfuncs.pTriAPI->Vertex3fv( A );
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+			gEngfuncs.pTriAPI->Vertex3fv( C );
+			gEngfuncs.pTriAPI->Vertex3fv( D );
 
-		// Front
-		gEngfuncs.pTriAPI->Vertex3fv( D );
-		gEngfuncs.pTriAPI->Vertex3fv( D1 );
-		gEngfuncs.pTriAPI->Vertex3fv( A1 );
-		gEngfuncs.pTriAPI->Vertex3fv( A );
+			// Top
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
 
-		// Back
-		gEngfuncs.pTriAPI->Vertex3fv( B );
-		gEngfuncs.pTriAPI->Vertex3fv( B1 );
-		gEngfuncs.pTriAPI->Vertex3fv( C1 );
-		gEngfuncs.pTriAPI->Vertex3fv( C );
+			// Front
+			gEngfuncs.pTriAPI->Vertex3fv( D );
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A );
 
-		// Right
-		gEngfuncs.pTriAPI->Vertex3fv( C );
-		gEngfuncs.pTriAPI->Vertex3fv( C1 );
-		gEngfuncs.pTriAPI->Vertex3fv( D1 );
-		gEngfuncs.pTriAPI->Vertex3fv( D );
+			// Back
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C );
 
-		// Left
-		gEngfuncs.pTriAPI->Vertex3fv( A );
-		gEngfuncs.pTriAPI->Vertex3fv( A1 );
-		gEngfuncs.pTriAPI->Vertex3fv( B1 );
-		gEngfuncs.pTriAPI->Vertex3fv( B );
+			// Right
+			gEngfuncs.pTriAPI->Vertex3fv( C );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			gEngfuncs.pTriAPI->Vertex3fv( D );
 
-	gEngfuncs.pTriAPI->End();
+			// Left
+			gEngfuncs.pTriAPI->Vertex3fv( A );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+
+		gEngfuncs.pTriAPI->End();
+
+	}
+	else
+	{
+
+		gEngfuncs.pTriAPI->Begin( TRI_LINES );
+
+			// Bottom
+			gEngfuncs.pTriAPI->Vertex3fv( A );
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+			gEngfuncs.pTriAPI->Vertex3fv( C );
+			gEngfuncs.pTriAPI->Vertex3fv( C );
+			gEngfuncs.pTriAPI->Vertex3fv( D );
+			gEngfuncs.pTriAPI->Vertex3fv( D );
+			gEngfuncs.pTriAPI->Vertex3fv( A );
+
+			// Top
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+
+			// Front
+			gEngfuncs.pTriAPI->Vertex3fv( D );
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A );
+			gEngfuncs.pTriAPI->Vertex3fv( A );
+			gEngfuncs.pTriAPI->Vertex3fv( D );
+
+			// Back
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C );
+			gEngfuncs.pTriAPI->Vertex3fv( C );
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+
+			// Right
+			gEngfuncs.pTriAPI->Vertex3fv( C );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( C1 );
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			gEngfuncs.pTriAPI->Vertex3fv( D );
+			gEngfuncs.pTriAPI->Vertex3fv( D );
+			gEngfuncs.pTriAPI->Vertex3fv( C );
+
+			// Left
+			gEngfuncs.pTriAPI->Vertex3fv( A );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B1 );
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+			gEngfuncs.pTriAPI->Vertex3fv( B );
+			gEngfuncs.pTriAPI->Vertex3fv( A );
+
+		gEngfuncs.pTriAPI->End();
+
+	}
 }
 
 /*
@@ -227,6 +300,9 @@ extern cl_sphere *autostopsaveSphere;
 extern cvar_t *cl_ruler_render;
 extern std::vector<float> autostopsaveSphereVertices;
 
+extern cvar_t *cl_spawns_render, *cl_spawns_wireframe;
+extern std::vector<vec3_t> spawns;
+
 void DrawRulerPoints( void )
 {
 	if ( cl_ruler_render->value )
@@ -240,7 +316,7 @@ void DrawRulerPoints( void )
 
 		while ( curPoint != NULL )
 		{
-			DrawCube( curPoint->origin, 8 );
+			DrawCube( curPoint->origin, 8, false );
 			curPoint = curPoint->pNext;
 		}
 
@@ -248,11 +324,27 @@ void DrawRulerPoints( void )
 		{
 			gEngfuncs.pTriAPI->Color4f( 1.0, 0.0, 0.0, 1.0 );
 
-			DrawCube( autostopsavePoint->origin, 16 );
+			DrawCube( autostopsavePoint->origin, 16, false );
 
 			if ( autostopsaveSphere != NULL )
 			{
 				DrawSphere( autostopsaveSphereVertices, autostopsaveSphere->iRings, autostopsaveSphere->iSectors );
+			}
+		}
+	}
+
+	if ( cl_spawns_render->value )
+	{
+		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+		gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
+
+		gEngfuncs.pTriAPI->Color4f( 0.0, 1.0, 0.0, 1.0 );
+
+		if ( spawns.size() != 0 )
+		{
+			for( std::vector<vec3_t>::iterator it = spawns.begin(); it < spawns.end(); ++it )
+			{
+				DrawCube( *it, 10, cl_spawns_wireframe->value );
 			}
 		}
 	}

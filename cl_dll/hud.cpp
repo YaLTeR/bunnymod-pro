@@ -291,6 +291,8 @@ cvar_t *hud_health_5dig;
 
 cvar_t *hud_battery_5dig;
 
+cvar_t *hud_ammo_difference;
+
 cvar_t *hud_demorec_counter;
 cvar_t *hud_demorec_counter_pos;
 
@@ -303,6 +305,9 @@ cvar_t *hud_damage;
 cvar_t *hud_damage_enable, *hud_damage_size, *hud_damage_anim;
 
 cvar_t *hud_entityhealth, *hud_entityhealth_pos;
+cvar_t *hud_entityinfo, *hud_entityinfo_pos;
+
+cvar_t *hud_firemon, *hud_firemon_pos;
 
 cvar_t *hud_accuracy;
 
@@ -318,6 +323,8 @@ cvar_t *cl_autostopsave_radius;
 
 cvar_t *cl_autocmd_enable, *cl_autocmd_render;
 cvar_t *cl_autocmd_plane, *cl_autocmd_coord, *cl_autocmd_distance, *cl_autocmd_cmd;
+
+cvar_t *cl_spawns_render, *cl_spawns_wireframe;
 
 bool g_bResetDemorecCounter = false;
  
@@ -412,6 +419,11 @@ void DamageHistoryReset( void )
 void HealthDifference( void )
 {
 	gHUD.m_CustomHud.HealthDifference();
+}
+
+void FindSpawns( void )
+{
+	FindSpawnsInMap();
 }
  
  // This is called every time the DLL is loaded
@@ -527,6 +539,9 @@ hud_damage_anim = gEngfuncs.pfnRegisterVariable("hud_damage_anim","1",FCVAR_ARCH
 hud_entityhealth = gEngfuncs.pfnRegisterVariable("hud_entityhealth","0",FCVAR_ARCHIVE);
 hud_entityhealth_pos = gEngfuncs.pfnRegisterVariable("hud_entityhealth_pos","0",FCVAR_ARCHIVE);
 
+hud_entityinfo = gEngfuncs.pfnRegisterVariable("hud_entityinfo","0",FCVAR_ARCHIVE);
+hud_entityinfo_pos = gEngfuncs.pfnRegisterVariable("hud_entityinfo_pos","0",FCVAR_ARCHIVE);
+
 hud_accuracy = gEngfuncs.pfnRegisterVariable("hud_accuracy","0",FCVAR_ARCHIVE);
 
 cl_rendermodels = gEngfuncs.pfnRegisterVariable("cl_rendermodels", "1", FCVAR_ARCHIVE);
@@ -546,7 +561,13 @@ cl_autocmd_coord = gEngfuncs.pfnRegisterVariable( "cl_autocmd_coord", "0", FCVAR
 cl_autocmd_distance = gEngfuncs.pfnRegisterVariable( "cl_autocmd_distance", "34.0", FCVAR_ARCHIVE );
 cl_autocmd_cmd = gEngfuncs.pfnRegisterVariable( "cl_autocmd_cmd", "stop;save autocmdsave", FCVAR_ARCHIVE );
 
-CVAR_CREATE( "hud_ammo_difference", "0", FCVAR_ARCHIVE );
+hud_ammo_difference = CVAR_CREATE( "hud_ammo_difference", "0", FCVAR_ARCHIVE );
+
+hud_firemon = CVAR_CREATE( "hud_firemon", "0", FCVAR_ARCHIVE );
+hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
+
+cl_spawns_render = CVAR_CREATE( "cl_spawns_render", "0", FCVAR_ARCHIVE );
+cl_spawns_wireframe = CVAR_CREATE( "cl_spawns_wireframe", "1", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
@@ -567,6 +588,8 @@ gEngfuncs.pfnAddCommand( "cl_ruler_addorigin", RulerAddOrigin );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_addpoint", RulerAutostopsaveAddPoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_delpoint", RulerAutostopsaveDeletePoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_printorigin", RulerAutostopsavePrintOrigin );
+
+gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 
 	m_pSpriteList = NULL;
 

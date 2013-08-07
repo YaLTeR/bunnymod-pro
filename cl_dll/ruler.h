@@ -1,3 +1,4 @@
+#include <vector>
 #include "beamdef.h"
 
 #ifndef __RULER_H__
@@ -43,5 +44,10 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin );
 void AutostopsavePrintOrigin( void );
 
 void CalcSphereVertices( cl_sphere *sphere );
+
+void FindSpawnsInMap( void );
+int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins );
+
+void UTIL_StringToVector_( float *pVector, const char *pString );
 
 #endif

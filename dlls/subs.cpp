@@ -205,9 +205,15 @@ void CBaseEntity :: SUB_UseTargets( CBaseEntity *pActivator, USE_TYPE useType, f
 	}
 }
 
+// YaLTeR
+extern int gmsgEntityFired;
+extern cvar_t firemon_target;
 
 void FireTargets( const char *targetName, CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
 {
+	// YaLTeR
+	bool foundSomething = false;
+
 	edict_t *pentTarget = NULL;
 	if ( !targetName )
 		return;
@@ -225,7 +231,20 @@ void FireTargets( const char *targetName, CBaseEntity *pActivator, CBaseEntity *
 		{
 			ALERT( at_aiconsole, "Found: %s, firing (%s)\n", STRING(pTarget->pev->classname), targetName );
 			pTarget->Use( pActivator, pCaller, useType, value );
+
+			// YaLTeR
+			if ( !strcmp( targetName, firemon_target.string ) )
+			{
+				foundSomething = true;
+			}
 		}
+	}
+
+	// YaLTeR
+	if ( foundSomething )
+	{
+		MESSAGE_BEGIN( MSG_ALL, gmsgEntityFired, NULL );
+		MESSAGE_END();
 	}
 }
 

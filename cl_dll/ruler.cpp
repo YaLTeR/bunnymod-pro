@@ -37,6 +37,8 @@ bool autocmdCmdExecuted = false;
 
 double flRulerOldTime = 0.0, flRulerTime, flRulerTimeDelta;
 
+std::vector<vec3_t> spawns;
+
 /*
 ResetRuler
 Resets ruler points and cleans the memory.
@@ -564,5 +566,159 @@ void CalcSphereVertices( cl_sphere *sphere )
 			*v++ = ( y * sphere->iRadius ) + sphere->vecOrigin[1];
 			*v++ = ( z * sphere->iRadius ) + sphere->vecOrigin[2];
 		}
+	}
+}
+
+/*
+FindSpawnsInMap
+Finds every info_player_deathmatch on the map and stores its coordinates so that they can be rendered.
+*/
+void FindSpawnsInMap( void )
+{
+	if ( FindEntitiesInMap( "info_player_deathmatch", spawns ) == 0 )
+	{
+		gEngfuncs.Con_Printf( "Something went wrong in FindEntitiesInMap.\n" );
+	}
+	else
+	{
+		gEngfuncs.Con_Printf( "Found %d info_player_deathmatch entities!\n", spawns.size() );
+	}
+}
+
+/*
+FindEntitiesInMap
+Finds the origin of each entity in map of the specified classname.
+Arguments: char *name - classname, std::vector<vec3_t> &origins - output vector.
+*/
+int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins )
+{
+	int				n,found = 0;
+	char			keyname[256];
+	char			token[1024];
+
+	cl_entity_t *	pEnt = gEngfuncs.GetEntityByIndex( 0 );	// get world model
+
+	if ( !pEnt ) return 0;
+
+	if ( !pEnt->model )	return 0;
+
+	char * data = pEnt->model->entities;
+
+	origins.clear();
+
+	while (data)
+	{
+		data = gEngfuncs.COM_ParseFile(data, token);
+		
+		if ( (token[0] == '}') ||  (token[0]==0) )
+			break;
+
+		if (!data)
+		{
+			gEngfuncs.Con_DPrintf("FindEntitiesInMap: EOF without closing brace\n");
+			return 0;
+		}
+
+		if (token[0] != '{')
+		{
+			gEngfuncs.Con_DPrintf("FindEntitiesInMap: Expected {\n");
+			return 0;
+		}
+
+		// we parse the first { now parse entities properties
+		
+		while ( 1 )
+		{	
+			// parse key
+			data = gEngfuncs.COM_ParseFile(data, token);
+			if (token[0] == '}')
+				break; // finish parsing this entity
+
+			if (!data)
+			{	
+				gEngfuncs.Con_DPrintf("FindEntitiesInMap: EOF without closing brace\n");
+				return 0;
+			};
+			
+			strcpy (keyname, token);
+
+			// another hack to fix keynames with trailing spaces
+			n = strlen(keyname);
+			while (n && keyname[n-1] == ' ')
+			{
+				keyname[n-1] = 0;
+				n--;
+			}
+			
+			// parse value	
+			data = gEngfuncs.COM_ParseFile(data, token);
+			if (!data)
+			{	
+				gEngfuncs.Con_DPrintf("FindEntitiesInMap: EOF without closing brace\n");
+				return 0;
+			};
+	
+			if (token[0] == '}')
+			{
+				gEngfuncs.Con_DPrintf("FindEntitiesInMap: Closing brace without data");
+				return 0;
+			}
+
+			if (!strcmp(keyname,"classname"))
+			{
+				if (!strcmp(token, name ))
+				{
+					found = 1;	// thats our entity
+				}
+			}
+			
+			if (!strcmp(keyname,"origin") && found)
+			{
+				vec3_t origin;
+				UTIL_StringToVector_(origin, token);
+				origins.push_back( origin );
+				found = 0;
+			}
+				
+		} // while (1)
+
+	}
+
+	if (origins.size() == 0)
+	{
+		gEngfuncs.Con_Printf( "FindEntitiesInMap: There are no entities with such classname on the map!\n" );
+		return 0;	// we search all entities, but didn't found the correct
+	}
+	else
+	{
+		return 1;
+	}
+
+}
+
+void UTIL_StringToVector_( float * pVector, const char *pString )
+{
+	char *pstr, *pfront, tempString[128];
+	int	j;
+
+	strcpy( tempString, pString );
+	pstr = pfront = tempString;
+	
+	for ( j = 0; j < 3; j++ )		
+	{
+		pVector[j] = atof( pfront );
+		
+		while ( *pstr && *pstr != ' ' )
+			pstr++;
+		if (!*pstr)
+			break;
+		pstr++;
+		pfront = pstr;
+	}
+
+	if (j < 2)
+	{
+		for (j = j+1;j < 3; j++)
+			pVector[j] = 0;
 	}
 }

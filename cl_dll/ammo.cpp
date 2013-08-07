@@ -51,12 +51,15 @@ void WeaponsResource :: LoadAllWeaponSprites( void )
 	}
 }
 
+// YaLTeR
+extern cvar_t *hud_ammo_difference;
+
 int WeaponsResource :: CountAmmo( int iId ) 
 { 
 	if ( iId < 0 )
 		return 0;
 
-	return riAmmo[iId] + (int)CVAR_GET_FLOAT( "hud_ammo_difference" ); // YaLTeR
+	return riAmmo[iId] + hud_ammo_difference->value; // YaLTeR
 }
 
 int WeaponsResource :: HasAmmo( WEAPON *p )

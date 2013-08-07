@@ -12,12 +12,22 @@
 #define DAMAGE_MOVE_ACCEL	-4
 
 float m_fEntityHealth;
+int m_iNumFires;
+
+char m_sEntityName[32];
+char m_sEntityModel[32];
 
 DECLARE_MESSAGE( m_CustomHud, EntHealth )
+DECLARE_MESSAGE( m_CustomHud, EntInfo )
+DECLARE_MESSAGE( m_CustomHud, EntFired )
+DECLARE_MESSAGE( m_CustomHud, FireReset )
 
 int CHudCustom::Init( void )
 {
 	HOOK_MESSAGE( EntHealth )
+	HOOK_MESSAGE( EntInfo )
+	HOOK_MESSAGE( EntFired )
+	HOOK_MESSAGE( FireReset )
 
 	m_iFlags = HUD_ACTIVE;
 	m_fJumpspeedFadeGreen = 0;
@@ -26,6 +36,7 @@ int CHudCustom::Init( void )
 	m_fChargingTime = 0;
 	m_bChargingHealth = false;
 	m_fEntityHealth = 0.0;
+	m_iNumFires = 0;
 
 	g_iHealthDifference = 0;
 
@@ -36,6 +47,8 @@ int CHudCustom::Init( void )
 
 int CHudCustom::VidInit( void )
 {
+	m_iNumFires = 0;
+
 	return 1;
 }
 
@@ -60,6 +73,8 @@ extern cvar_t *hud_grenadetimer_dontchange_resetto;
 extern cvar_t *hud_gaussboost_dontchange_resetto;
 extern cvar_t *hud_damage, *hud_damage_size, *hud_damage_anim;
 extern cvar_t *hud_entityhealth, *hud_entityhealth_pos;
+extern cvar_t *hud_entityinfo, *hud_entityinfo_pos;
+extern cvar_t *hud_firemon, *hud_firemon_pos;
 extern cvar_t *hud_health_pos;
 extern vec3_t g_vel, g_org;
 extern Vector g_vecViewAngle;
@@ -738,7 +753,7 @@ int CHudCustom::Draw( float fTime )
 	// ===========
 	// END DAMAGE INDICATOR
 	// ===========
-	// ENTITY HEALTH
+	// ENTITY INFO
 	// ===========
 
 	if ( hud_entityhealth->value )
@@ -752,6 +767,49 @@ int CHudCustom::Draw( float fTime )
 
 		DrawNumber( m_fEntityHealth, 0, 6 * gHUD.m_iFontHeight, ehx, ehy );
 	}
+
+	if ( hud_entityinfo->value )
+	{
+		int eix = 0, eiy = 0;
+
+		if ( hud_entityinfo_pos->string )
+		{
+			sscanf( hud_entityinfo_pos->string, "%d %d", &eix, &eiy );
+		}
+
+		char temp[256];
+		sprintf( temp, "== Entity Info ==" );
+		DrawString( temp, 0, 7 * gHUD.m_iFontHeight, eix, eiy );
+
+		sprintf( temp, "Classname: %s", m_sEntityName );
+		DrawString( temp, 0, 8 * gHUD.m_iFontHeight, eix, eiy );
+
+		sprintf( temp, "Model: %s", m_sEntityModel );
+		DrawString( temp, 0, 9 * gHUD.m_iFontHeight, eix, eiy );
+	}
+
+	// ===========
+	// END ENTITY INFO
+	// ===========
+	// FIRE MONITOR
+	// ===========
+
+	if ( hud_firemon->value )
+	{
+		int numberWidth = gHUD.GetSpriteRect( gHUD.m_HUD_number_0 ).right - gHUD.GetSpriteRect( gHUD.m_HUD_number_0 ).left;
+		int fmx = 0, fmy = 0;
+
+		if ( hud_firemon_pos->string )
+		{
+			sscanf( hud_firemon_pos->string, "%d %d", &fmx, &fmy );
+		}
+
+		DrawNumber( m_iNumFires, ScreenWidth - numberWidth * 3, ScreenHeight / 2, fmx, fmy );
+	}
+
+	// ===========
+	// END FIRE MONITOR
+	// ===========
 
 	return 1;
 }
@@ -848,6 +906,30 @@ int CHudCustom::MsgFunc_EntHealth( const char *pszName, int iSize, void *pbuf )
 	BEGIN_READ( pbuf, iSize );
 
 	m_fEntityHealth = READ_FLOAT();
+
+	return 1;
+}
+
+int CHudCustom::MsgFunc_EntInfo( const char *pszName, int iSize, void *pbuf )
+{
+	BEGIN_READ( pbuf, iSize );
+
+	strcpy( m_sEntityName, READ_STRING() );
+	strcpy( m_sEntityModel, READ_STRING() );
+
+	return 1;
+}
+
+int CHudCustom::MsgFunc_EntFired( const char *pszName, int iSize, void *pbuf )
+{
+	m_iNumFires++;
+
+	return 1;
+}
+
+int CHudCustom::MsgFunc_FireReset( const char *pszName, int iSize, void *pbuf )
+{
+	m_iNumFires = 0;
 
 	return 1;
 }

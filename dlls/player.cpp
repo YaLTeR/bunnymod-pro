@@ -205,6 +205,13 @@ int gmsgStatusValue = 0;
 
 // YaLTeR
 int gmsgEntityHealth = 0;
+int gmsgEntityInfo = 0;
+int gmsgEntityFired = 0;
+int gmsgEntityFireReset = 0;
+
+char m_szLastFiremonTarget[128];
+
+extern cvar_t firemon_target;
 
 void LinkUserMessages( void )
 {
@@ -253,6 +260,9 @@ void LinkUserMessages( void )
 
 	// YaLTeR
 	gmsgEntityHealth = REG_USER_MSG("EntHealth", 4);
+	gmsgEntityInfo = REG_USER_MSG("EntInfo", -1);
+	gmsgEntityFired = REG_USER_MSG("EntFired", 0);
+	gmsgEntityFireReset = REG_USER_MSG("FireReset", 0);
 	// ALERT(at_console, "Msg registered: %d, health: %d, statusvalue: %d\n", gmsgEntityHealth, gmsgHealth, gmsgStatusValue);
 }
 
@@ -4078,6 +4088,9 @@ void CBasePlayer :: UpdateClientData( void )
 			{
 				FireTargets( "game_playerjoin", this, this, USE_TOGGLE, 0 );
 			}
+
+			// YaLTeR
+			sprintf( m_szLastFiremonTarget, "%s", firemon_target.string );
 		}
 
 		FireTargets( "game_playerspawn", this, this, USE_TOGGLE, 0 );
@@ -4290,6 +4303,18 @@ void CBasePlayer :: UpdateClientData( void )
 	if ( pEntity )
 	{
 		entityHealth = pEntity->pev->health;
+
+		MESSAGE_BEGIN( MSG_ONE, gmsgEntityInfo, NULL, pev );
+			WRITE_STRING( STRING( pEntity->pev->classname ) );
+			WRITE_STRING( STRING( pEntity->pev->model ) );
+		MESSAGE_END();
+	}
+	else
+	{
+		MESSAGE_BEGIN( MSG_ONE, gmsgEntityInfo, NULL, pev );
+			WRITE_STRING( "n/a" );
+			WRITE_STRING( "n/a" );
+		MESSAGE_END();
 	}
 
 	int *entHP_pointer = (int*) &entityHealth;
@@ -4297,6 +4322,19 @@ void CBasePlayer :: UpdateClientData( void )
 	MESSAGE_BEGIN( MSG_ONE, gmsgEntityHealth, NULL, pev );
 		WRITE_LONG( *entHP_pointer );
 	MESSAGE_END();
+
+	if ( m_szLastFiremonTarget )
+	{
+		if ( strcmp( m_szLastFiremonTarget, firemon_target.string ) )
+		{
+			MESSAGE_BEGIN( MSG_ONE, gmsgEntityFireReset, NULL, pev );
+			MESSAGE_END();
+		}
+	}
+	else
+	{
+		sprintf( m_szLastFiremonTarget, "%s", firemon_target.string );
+	}
 }
 
 
