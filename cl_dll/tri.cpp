@@ -8,6 +8,9 @@
 // Triangle rendering, if any
 #include <vector>
 
+#include <windows.h>
+#include <gl/gl.h>
+
 #include "hud.h"
 #include "cl_util.h"
 
@@ -40,7 +43,7 @@ extern "C"
     
     VectorTransform(point, matrix, result);
     
-    gEngfuncs.pTriAPI->Vertex3f(result[0], result[1], result[2]);
+    glVertex3f(result[0], result[1], result[2]);
 }*/
 
 #define TEST_IT
@@ -83,27 +86,27 @@ void Draw_Triangles( void )
 	// Create a triangle, sigh
 	gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
 	gEngfuncs.pTriAPI->CullFace( TRI_NONE );
-	gEngfuncs.pTriAPI->Begin( TRI_QUADS );
+	glBegin( GL_QUADS );
 	// Overload p->color with index into tracer palette, p->packedColor with brightness
 	gEngfuncs.pTriAPI->Color4f( 1.0, 0.0, 0.0, 1.0 );
 	// UNDONE: This gouraud shading causes tracers to disappear on some cards (permedia2)
 	gEngfuncs.pTriAPI->Brightness( 1 );
 	//gEngfuncs.pTriAPI->TexCoord2f( 0, 0 );
-	gEngfuncs.pTriAPI->Vertex3f( org.x, org.y, org.z );
+	glVertex3f( org.x, org.y, org.z );
 
 	gEngfuncs.pTriAPI->Brightness( 1 );
 	//gEngfuncs.pTriAPI->TexCoord2f( 0, 1 );
-	gEngfuncs.pTriAPI->Vertex3f( org.x, org.y , org.z + 50 );
+	glVertex3f( org.x, org.y , org.z + 50 );
 
 	gEngfuncs.pTriAPI->Brightness( 1 );
 	//gEngfuncs.pTriAPI->TexCoord2f( 1, 1 );
-	gEngfuncs.pTriAPI->Vertex3f( org.x, org.y + 50, org.z + 50 );
+	glVertex3f( org.x, org.y + 50, org.z + 50 );
 
 	gEngfuncs.pTriAPI->Brightness( 1 );
 	//gEngfuncs.pTriAPI->TexCoord2f( 1, 0 );
-	gEngfuncs.pTriAPI->Vertex3f( org.x, org.y + 50, org.z );
+	glVertex3f( org.x, org.y + 50, org.z );
 
-	gEngfuncs.pTriAPI->End();
+	glEnd();
 	gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
 }
 
@@ -148,113 +151,113 @@ void DrawCube( vec3_t vecCenter, float flHalfsize, bool wireframe )
 	if ( !wireframe )
 	{
 
-		gEngfuncs.pTriAPI->Begin( TRI_QUADS );
+		glBegin( GL_QUADS );
 
 			// Bottom
-			gEngfuncs.pTriAPI->Vertex3fv( A );
-			gEngfuncs.pTriAPI->Vertex3fv( B );
-			gEngfuncs.pTriAPI->Vertex3fv( C );
-			gEngfuncs.pTriAPI->Vertex3fv( D );
+			glVertex3fv( A );
+			glVertex3fv( B );
+			glVertex3fv( C );
+			glVertex3fv( D );
 
 			// Top
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
+			glVertex3fv( D1 );
+			glVertex3fv( C1 );
+			glVertex3fv( B1 );
+			glVertex3fv( A1 );
 
 			// Front
-			gEngfuncs.pTriAPI->Vertex3fv( D );
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A );
+			glVertex3fv( D );
+			glVertex3fv( D1 );
+			glVertex3fv( A1 );
+			glVertex3fv( A );
 
 			// Back
-			gEngfuncs.pTriAPI->Vertex3fv( B );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C );
+			glVertex3fv( B );
+			glVertex3fv( B1 );
+			glVertex3fv( C1 );
+			glVertex3fv( C );
 
 			// Right
-			gEngfuncs.pTriAPI->Vertex3fv( C );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
-			gEngfuncs.pTriAPI->Vertex3fv( D );
+			glVertex3fv( C );
+			glVertex3fv( C1 );
+			glVertex3fv( D1 );
+			glVertex3fv( D );
 
 			// Left
-			gEngfuncs.pTriAPI->Vertex3fv( A );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B );
+			glVertex3fv( A );
+			glVertex3fv( A1 );
+			glVertex3fv( B1 );
+			glVertex3fv( B );
 
-		gEngfuncs.pTriAPI->End();
+		glEnd();
 
 	}
 	else
 	{
 
-		gEngfuncs.pTriAPI->Begin( TRI_LINES );
+		glBegin( GL_LINES );
 
 			// Bottom
-			gEngfuncs.pTriAPI->Vertex3fv( A );
-			gEngfuncs.pTriAPI->Vertex3fv( B );
-			gEngfuncs.pTriAPI->Vertex3fv( B );
-			gEngfuncs.pTriAPI->Vertex3fv( C );
-			gEngfuncs.pTriAPI->Vertex3fv( C );
-			gEngfuncs.pTriAPI->Vertex3fv( D );
-			gEngfuncs.pTriAPI->Vertex3fv( D );
-			gEngfuncs.pTriAPI->Vertex3fv( A );
+			glVertex3fv( A );
+			glVertex3fv( B );
+			glVertex3fv( B );
+			glVertex3fv( C );
+			glVertex3fv( C );
+			glVertex3fv( D );
+			glVertex3fv( D );
+			glVertex3fv( A );
 
 			// Top
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
+			glVertex3fv( D1 );
+			glVertex3fv( C1 );
+			glVertex3fv( C1 );
+			glVertex3fv( B1 );
+			glVertex3fv( B1 );
+			glVertex3fv( A1 );
+			glVertex3fv( A1 );
+			glVertex3fv( D1 );
 
 			// Front
-			gEngfuncs.pTriAPI->Vertex3fv( D );
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A );
-			gEngfuncs.pTriAPI->Vertex3fv( A );
-			gEngfuncs.pTriAPI->Vertex3fv( D );
+			glVertex3fv( D );
+			glVertex3fv( D1 );
+			glVertex3fv( D1 );
+			glVertex3fv( A1 );
+			glVertex3fv( A1 );
+			glVertex3fv( A );
+			glVertex3fv( A );
+			glVertex3fv( D );
 
 			// Back
-			gEngfuncs.pTriAPI->Vertex3fv( B );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C );
-			gEngfuncs.pTriAPI->Vertex3fv( C );
-			gEngfuncs.pTriAPI->Vertex3fv( B );
+			glVertex3fv( B );
+			glVertex3fv( B1 );
+			glVertex3fv( B1 );
+			glVertex3fv( C1 );
+			glVertex3fv( C1 );
+			glVertex3fv( C );
+			glVertex3fv( C );
+			glVertex3fv( B );
 
 			// Right
-			gEngfuncs.pTriAPI->Vertex3fv( C );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( C1 );
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
-			gEngfuncs.pTriAPI->Vertex3fv( D1 );
-			gEngfuncs.pTriAPI->Vertex3fv( D );
-			gEngfuncs.pTriAPI->Vertex3fv( D );
-			gEngfuncs.pTriAPI->Vertex3fv( C );
+			glVertex3fv( C );
+			glVertex3fv( C1 );
+			glVertex3fv( C1 );
+			glVertex3fv( D1 );
+			glVertex3fv( D1 );
+			glVertex3fv( D );
+			glVertex3fv( D );
+			glVertex3fv( C );
 
 			// Left
-			gEngfuncs.pTriAPI->Vertex3fv( A );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
-			gEngfuncs.pTriAPI->Vertex3fv( A1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B1 );
-			gEngfuncs.pTriAPI->Vertex3fv( B );
-			gEngfuncs.pTriAPI->Vertex3fv( B );
-			gEngfuncs.pTriAPI->Vertex3fv( A );
+			glVertex3fv( A );
+			glVertex3fv( A1 );
+			glVertex3fv( A1 );
+			glVertex3fv( B1 );
+			glVertex3fv( B1 );
+			glVertex3fv( B );
+			glVertex3fv( B );
+			glVertex3fv( A );
 
-		gEngfuncs.pTriAPI->End();
+		glEnd();
 
 	}
 }
@@ -270,24 +273,39 @@ void DrawSphere( std::vector<float> vertices, int iRings, int iSectors )
 	float const S = 1.0 / ( float ) ( iSectors - 1 );
 	int r, s;
 
-	gEngfuncs.pTriAPI->Begin( TRI_LINES );
+	glBegin( GL_LINES );
 
 		for ( r = 0; r < ( iRings - 1 ); r++ )
 		{
 			for ( s = 0; s < ( iSectors - 1 ); s++ )
 			{
-				gEngfuncs.pTriAPI->Vertex3f( vertices[3 * ( r * iSectors + s )], vertices[3 * ( r * iSectors + s ) + 1], vertices[3 * ( r * iSectors + s ) + 2] );
-				gEngfuncs.pTriAPI->Vertex3f( vertices[3 * ( r * iSectors + ( s + 1 ) )], vertices[3 * ( r * iSectors + ( s + 1 ) ) + 1], vertices[3 * ( r * iSectors + ( s + 1 ) ) + 2] );
-				gEngfuncs.pTriAPI->Vertex3f( vertices[3 * ( r * iSectors + ( s + 1 ) )], vertices[3 * ( r * iSectors + ( s + 1 ) ) + 1], vertices[3 * ( r * iSectors + ( s + 1 ) ) + 2] );
-				gEngfuncs.pTriAPI->Vertex3f( vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) )], vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) ) + 1], vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) ) + 2] );
-				gEngfuncs.pTriAPI->Vertex3f( vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) )], vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) ) + 1], vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) ) + 2] );
-				gEngfuncs.pTriAPI->Vertex3f( vertices[3 * ( ( r + 1 ) * iSectors + s )], vertices[3 * ( ( r + 1 ) * iSectors + s ) + 1], vertices[3 * ( ( r + 1 ) * iSectors + s ) + 2] );
-				gEngfuncs.pTriAPI->Vertex3f( vertices[3 * ( ( r + 1 ) * iSectors + s )], vertices[3 * ( ( r + 1 ) * iSectors + s ) + 1], vertices[3 * ( ( r + 1 ) * iSectors + s ) + 2] );
-				gEngfuncs.pTriAPI->Vertex3f( vertices[3 * ( r * iSectors + s )], vertices[3 * ( r * iSectors + s ) + 1], vertices[3 * ( r * iSectors + s ) + 2] );
+				glVertex3f( vertices[3 * ( r * iSectors + s )], vertices[3 * ( r * iSectors + s ) + 1], vertices[3 * ( r * iSectors + s ) + 2] );
+				glVertex3f( vertices[3 * ( r * iSectors + ( s + 1 ) )], vertices[3 * ( r * iSectors + ( s + 1 ) ) + 1], vertices[3 * ( r * iSectors + ( s + 1 ) ) + 2] );
+				glVertex3f( vertices[3 * ( r * iSectors + ( s + 1 ) )], vertices[3 * ( r * iSectors + ( s + 1 ) ) + 1], vertices[3 * ( r * iSectors + ( s + 1 ) ) + 2] );
+				glVertex3f( vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) )], vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) ) + 1], vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) ) + 2] );
+				glVertex3f( vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) )], vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) ) + 1], vertices[3 * ( ( r + 1 ) * iSectors + ( s + 1 ) ) + 2] );
+				glVertex3f( vertices[3 * ( ( r + 1 ) * iSectors + s )], vertices[3 * ( ( r + 1 ) * iSectors + s ) + 1], vertices[3 * ( ( r + 1 ) * iSectors + s ) + 2] );
+				glVertex3f( vertices[3 * ( ( r + 1 ) * iSectors + s )], vertices[3 * ( ( r + 1 ) * iSectors + s ) + 1], vertices[3 * ( ( r + 1 ) * iSectors + s ) + 2] );
+				glVertex3f( vertices[3 * ( r * iSectors + s )], vertices[3 * ( r * iSectors + s ) + 1], vertices[3 * ( r * iSectors + s ) + 2] );
 			}
 		}
 
-	gEngfuncs.pTriAPI->End();
+	glEnd();
+}
+
+/*
+DrawLine
+Renders a line between two points with given origins.
+Arguments: vec3_t vecPoint1 - origin of the first point; vec3_t vecPoint2 - origin of the second point.
+*/
+void DrawLine( vec3_t vecPoint1, vec3_t vecPoint2 )
+{
+	glBegin( GL_LINES );
+
+		glVertex3fv( vecPoint1 );
+		glVertex3fv( vecPoint2 );
+
+	glEnd();
 }
 
 /*
@@ -300,17 +318,15 @@ extern cl_sphere *autostopsaveSphere;
 extern cvar_t *cl_ruler_render;
 extern std::vector<float> autostopsaveSphereVertices;
 
-extern cvar_t *cl_spawns_render, *cl_spawns_wireframe;
-extern std::vector<vec3_t> spawns;
-
 void DrawRulerPoints( void )
 {
 	if ( cl_ruler_render->value )
 	{
-		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
-		gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
+		glDisable( GL_TEXTURE_2D );
 
-		gEngfuncs.pTriAPI->Color4f( 1.0, 1.0, 0.0, 1.0 );
+		glColor4f( 1.0, 1.0, 0.0, 1.0 );
+
+		gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
 
 		cl_rulerPoint *curPoint = firstRulerPoint.pNext;
 
@@ -331,25 +347,10 @@ void DrawRulerPoints( void )
 				DrawSphere( autostopsaveSphereVertices, autostopsaveSphere->iRings, autostopsaveSphere->iSectors );
 			}
 		}
-	}
 
-	if ( cl_spawns_render->value )
-	{
-		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
-		gEngfuncs.pTriAPI->RenderMode( kRenderNormal );
-
-		gEngfuncs.pTriAPI->Color4f( 0.0, 1.0, 0.0, 1.0 );
-
-		if ( spawns.size() != 0 )
-		{
-			for( std::vector<vec3_t>::iterator it = spawns.begin(); it < spawns.end(); ++it )
-			{
-				DrawCube( *it, 10, cl_spawns_wireframe->value );
-			}
-		}
+		glEnable( GL_TEXTURE_2D );
 	}
 }
-
 
 /*
 RenderAutocmdPlane
@@ -367,37 +368,41 @@ void RenderAutocmdPlane( void )
 
 		sscanf( cl_autocmd_plane->string, "%c", &plane );
 
-		gEngfuncs.pTriAPI->CullFace( TRI_NONE );
+		glDisable( GL_TEXTURE_2D );
+		glDisable( GL_CULL_FACE );
+		// glColor4f( 1.0, 0.0, 0.0, 0.1 );
+
 		gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
 		gEngfuncs.pTriAPI->Color4f( 1.0, 0.0, 0.0, 0.5 );
-		gEngfuncs.pTriAPI->Begin( TRI_QUADS );
+
+		glBegin( GL_QUADS );
 
 		switch ( plane )
 		{
 			case 'X':
 			case 'x':
-				gEngfuncs.pTriAPI->Vertex3f( coord, -50000.0, -50000.0 );
-				gEngfuncs.pTriAPI->Vertex3f( coord, -50000.0, 50000.0 );
-				gEngfuncs.pTriAPI->Vertex3f( coord, 50000.0, 50000.0 );
-				gEngfuncs.pTriAPI->Vertex3f( coord, 50000.0, -50000.0 );
+				glVertex3f( coord, -50000.0, -50000.0 );
+				glVertex3f( coord, -50000.0, 50000.0 );
+				glVertex3f( coord, 50000.0, 50000.0 );
+				glVertex3f( coord, 50000.0, -50000.0 );
 
 				break;
 
 			case 'Y':
 			case 'y':
-				gEngfuncs.pTriAPI->Vertex3f( -50000.0, coord, -50000.0 );
-				gEngfuncs.pTriAPI->Vertex3f( -50000.0, coord, 50000.0 );
-				gEngfuncs.pTriAPI->Vertex3f( 50000.0, coord, 50000.0 );
-				gEngfuncs.pTriAPI->Vertex3f( 50000.0, coord, -50000.0 );
+				glVertex3f( -50000.0, coord, -50000.0 );
+				glVertex3f( -50000.0, coord, 50000.0 );
+				glVertex3f( 50000.0, coord, 50000.0 );
+				glVertex3f( 50000.0, coord, -50000.0 );
 
 				break;
 
 			case 'Z':
 			case 'z':
-				gEngfuncs.pTriAPI->Vertex3f( -50000.0, -50000.0, coord );
-				gEngfuncs.pTriAPI->Vertex3f( -50000.0, 50000.0, coord );
-				gEngfuncs.pTriAPI->Vertex3f( 50000.0, 50000.0, coord );
-				gEngfuncs.pTriAPI->Vertex3f( 50000.0, -50000.0, coord );
+				glVertex3f( -50000.0, -50000.0, coord );
+				glVertex3f( -50000.0, 50000.0, coord );
+				glVertex3f( 50000.0, 50000.0, coord );
+				glVertex3f( 50000.0, -50000.0, coord );
 
 				break;
 
@@ -405,7 +410,50 @@ void RenderAutocmdPlane( void )
 				;
 		}
 
-		gEngfuncs.pTriAPI->End();
+		glEnd();
+
+		glEnable( GL_CULL_FACE );
+		glEnable( GL_TEXTURE_2D );
+	}
+}
+
+/*
+RenderSpawns
+Renders spawn points.
+*/
+extern cvar_t *cl_spawns_render, *cl_spawns_wireframe;
+extern std::vector<vec3_t> spawns;
+extern std::vector<vec3_t*> spawnCrossPoints;
+
+void RenderSpawns( void )
+{
+	if ( cl_spawns_render->value )
+	{
+		glDisable( GL_TEXTURE_2D );
+
+		glColor4f( 0.0, 1.0, 0.0, 1.0 );
+
+		gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
+
+		if ( spawns.size() != 0 )
+		{
+			for ( std::vector<vec3_t>::iterator it = spawns.begin(); it < spawns.end(); ++it )
+			{
+				DrawCube( *it, 10, cl_spawns_wireframe->value );
+			}
+
+			for ( std::vector<vec3_t*>::iterator it1 = spawnCrossPoints.begin(); it1 < spawnCrossPoints.end(); ++it1 )
+			{
+				if ( *it1 != NULL )
+				{
+					DrawLine( ( *it1 )[0], ( *it1 )[3] );
+					DrawLine( ( *it1 )[1], ( *it1 )[4] );
+					DrawLine( ( *it1 )[2], ( *it1 )[5] );
+				}
+			}
+		}
+
+		glEnable( GL_TEXTURE_2D );
 	}
 }
 
@@ -420,8 +468,6 @@ void DLLEXPORT HUD_DrawNormalTriangles( void )
 {
 
 	gHUD.m_Spectator.DrawOverview();
-
-	DrawRulerPoints();
 	
 #if defined( TEST_IT )
 	// Draw_Triangles();
@@ -439,6 +485,9 @@ void DLLEXPORT HUD_DrawTransparentTriangles( void )
 {
 	// DrawRulerPoints();
 	RenderAutocmdPlane();
+
+	DrawRulerPoints();
+	RenderSpawns();
 
 #if defined( TEST_IT )
 	// Draw_Triangles();

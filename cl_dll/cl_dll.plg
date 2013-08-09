@@ -6,7 +6,13 @@
 --------------------Configuration: cl_dll - Win32 Release--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "D:\WINDOW~1\Temp\RSP4349.tmp" with contents
+Creating temporary file "D:\WINDOW~1\Temp\RSPB163.tmp" with contents
+[
+/nologo /MT /W3 /GX /Zi /O2 /I "..\utils\vgui\include" /I "..\engine" /I "..\common" /I "..\pm_shared" /I "..\dlls" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "CLIENT_DLL" /D "CLIENT_WEAPONS" /FR".\Release/" /Fo".\Release/" /Fd".\Release/" /FD /c 
+"D:\Users\YaLTeR\Documents\BunnyMod Pro\cl_dll\tri.cpp"
+]
+Creating command line "cl.exe @D:\WINDOW~1\Temp\RSPB163.tmp" 
+Creating temporary file "D:\WINDOW~1\Temp\RSPB164.tmp" with contents
 [
 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib winmm.lib ../utils/vgui/lib/win32_vc6/vgui.lib wsock32.lib /nologo /subsystem:windows /dll /incremental:no /pdb:".\Release/client.pdb" /map:".\Release/client.map" /machine:I386 /out:"C:\Games\Half-Life\hlspbunny\cl_dlls\client.dll" /implib:".\Release/client.lib" 
 ".\Release\crossbow.obj"
@@ -93,15 +99,107 @@ kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32
 ".\Release\vgui_teammenu.obj"
 ".\Release\view.obj"
 ]
-Creating command line "link.exe @D:\WINDOW~1\Temp\RSP4349.tmp"
+Creating command line "link.exe @D:\WINDOW~1\Temp\RSPB164.tmp"
 <h3>Output Window</h3>
+Compiling...
+tri.cpp
+D:\Users\YaLTeR\Documents\BunnyMod Pro\cl_dll\tri.cpp(442) : warning C4800: 'float' : forcing value to bool 'true' or 'false' (performance warning)
 Linking...
    Creating library .\Release/client.lib and object .\Release/client.exp
+Creating temporary file "D:\WINDOW~1\Temp\RSPB51E.tmp" with contents
+[
+/nologo /o".\Release/cl_dll.bsc" 
+".\Release\crossbow.sbr"
+".\Release\crowbar.sbr"
+".\Release\egon.sbr"
+".\Release\ev_hldm.sbr"
+".\Release\gauss.sbr"
+".\Release\handgrenade.sbr"
+".\Release\hl_baseentity.sbr"
+".\Release\hl_events.sbr"
+".\Release\hl_objects.sbr"
+".\Release\hl_weapons.sbr"
+".\Release\hl_wpn_glock.sbr"
+".\Release\hornetgun.sbr"
+".\Release\interface.sbr"
+".\Release\mp5.sbr"
+".\Release\python.sbr"
+".\Release\rpg.sbr"
+".\Release\satchel.sbr"
+".\Release\shotgun.sbr"
+".\Release\squeakgrenade.sbr"
+".\Release\tripmine.sbr"
+".\Release\vgui_scrollbar2.sbr"
+".\Release\vgui_slider2.sbr"
+".\Release\voice_banmgr.sbr"
+".\Release\voice_status.sbr"
+".\Release\ammo.sbr"
+".\Release\ammo_secondary.sbr"
+".\Release\ammohistory.sbr"
+".\Release\battery.sbr"
+".\Release\cdll_int.sbr"
+".\Release\com_weapons.sbr"
+".\Release\custom_hud.sbr"
+".\Release\death.sbr"
+".\Release\demo.sbr"
+".\Release\entity.sbr"
+".\Release\ev_common.sbr"
+".\Release\events.sbr"
+".\Release\flashlight.sbr"
+".\Release\GameStudioModelRenderer.sbr"
+".\Release\geiger.sbr"
+".\Release\health.sbr"
+".\Release\hud.sbr"
+".\Release\hud_msg.sbr"
+".\Release\hud_redraw.sbr"
+".\Release\hud_servers.sbr"
+".\Release\hud_spectator.sbr"
+".\Release\hud_update.sbr"
+".\Release\in_camera.sbr"
+".\Release\input.sbr"
+".\Release\inputw32.sbr"
+".\Release\menu.sbr"
+".\Release\message.sbr"
+".\Release\parsemsg.sbr"
+".\Release\pm_debug.sbr"
+".\Release\pm_math.sbr"
+".\Release\pm_shared.sbr"
+".\Release\ruler.sbr"
+".\Release\saytext.sbr"
+".\Release\status_icons.sbr"
+".\Release\statusbar.sbr"
+".\Release\studio_util.sbr"
+".\Release\StudioModelRenderer.sbr"
+".\Release\text_message.sbr"
+".\Release\train.sbr"
+".\Release\tri.sbr"
+".\Release\util.sbr"
+".\Release\vgui_checkbutton2.sbr"
+".\Release\vgui_ClassMenu.sbr"
+".\Release\vgui_ConsolePanel.sbr"
+".\Release\vgui_ControlConfigPanel.sbr"
+".\Release\vgui_CustomObjects.sbr"
+".\Release\vgui_grid.sbr"
+".\Release\vgui_helpers.sbr"
+".\Release\vgui_int.sbr"
+".\Release\vgui_listbox.sbr"
+".\Release\vgui_loadtga.sbr"
+".\Release\vgui_MOTDWindow.sbr"
+".\Release\vgui_SchemeManager.sbr"
+".\Release\vgui_ScorePanel.sbr"
+".\Release\vgui_ServerBrowser.sbr"
+".\Release\vgui_SpectatorPanel.sbr"
+".\Release\vgui_TeamFortressViewport.sbr"
+".\Release\vgui_teammenu.sbr"
+".\Release\view.sbr"]
+Creating command line "bscmake.exe @D:\WINDOW~1\Temp\RSPB51E.tmp"
+Creating browse info file...
+<h3>Output Window</h3>
 
 
 
 <h3>Results</h3>
-client.dll - 0 error(s), 0 warning(s)
+client.dll - 0 error(s), 1 warning(s)
 </pre>
 </body>
 </html>

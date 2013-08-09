@@ -47,6 +47,7 @@ void CalcSphereVertices( cl_sphere *sphere );
 
 void FindSpawnsInMap( void );
 int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins );
+void CalculateCrossPoints( vec3_t vecCenter, vec3_t *vecOut );
 
 void UTIL_StringToVector_( float *pVector, const char *pString );
 

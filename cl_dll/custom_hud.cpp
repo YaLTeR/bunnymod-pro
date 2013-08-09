@@ -11,9 +11,6 @@
 #define DAMAGE_MOVE_TIME	1
 #define DAMAGE_MOVE_ACCEL	-4
 
-float m_fEntityHealth;
-int m_iNumFires;
-
 char m_sEntityName[32];
 char m_sEntityModel[32];
 

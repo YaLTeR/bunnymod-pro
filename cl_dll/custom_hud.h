@@ -23,6 +23,8 @@ public:
 
 	int g_iHealthDifference;
 
+	HSPRITE g_hsprWhite;
+
 private:
 	float m_fJumpspeedFadeGreen;
 	float m_fJumpspeedFadeRed;
@@ -32,4 +34,8 @@ private:
 	float m_fDamageAnimTime;
 	float m_fChargingTime;
 	bool m_bChargingHealth;
+
+	float m_fEntityHealth;
+
+	int m_iNumFires;
 };

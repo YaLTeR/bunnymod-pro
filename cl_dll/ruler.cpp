@@ -38,6 +38,7 @@ bool autocmdCmdExecuted = false;
 double flRulerOldTime = 0.0, flRulerTime, flRulerTimeDelta;
 
 std::vector<vec3_t> spawns;
+std::vector<vec3_t*> spawnCrossPoints;
 
 /*
 ResetRuler
@@ -582,19 +583,35 @@ void FindSpawnsInMap( void )
 	else
 	{
 		gEngfuncs.Con_Printf( "Found %d info_player_deathmatch entities!\n", spawns.size() );
+
+		for ( std::vector<vec3_t*>::iterator it = spawnCrossPoints.begin(); it < spawnCrossPoints.end(); ++it )
+		{
+			delete [] *it;
+		}
+
+		spawnCrossPoints.clear();
+
+		for ( std::vector<vec3_t>::iterator it1 = spawns.begin(); it1 < spawns.end(); ++it1 )
+		{
+			vec3_t *crossPoints = new vec3_t[5];
+			CalculateCrossPoints( *it1, crossPoints );
+			spawnCrossPoints.push_back( crossPoints );
+		}
 	}
 }
 
 /*
 FindEntitiesInMap
 Finds the origin of each entity in map of the specified classname.
-Arguments: char *name - classname, std::vector<vec3_t> &origins - output vector.
+Arguments: char *name - classname; std::vector<vec3_t> &origins - output vector.
 */
 int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins )
 {
 	int				n,found = 0;
 	char			keyname[256];
 	char			token[1024];
+	vec3_t			origin;
+	bool			gotorigin = false;
 
 	cl_entity_t *	pEnt = gEngfuncs.GetEntityByIndex( 0 );	// get world model
 
@@ -672,15 +689,24 @@ int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins )
 				}
 			}
 			
-			if (!strcmp(keyname,"origin") && found)
+			if (!strcmp(keyname,"origin"))
 			{
-				vec3_t origin;
 				UTIL_StringToVector_(origin, token);
-				origins.push_back( origin );
-				found = 0;
+				gotorigin = true;
 			}
 				
 		} // while (1)
+
+		if ( gotorigin )
+		{
+			if ( found )
+			{
+				origins.push_back( origin );
+				found = 0;
+			}
+
+			gotorigin = false;
+		}
 
 	}
 
@@ -694,6 +720,32 @@ int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins )
 		return 1;
 	}
 
+}
+
+/*
+CalculateCrossPoints
+Calculates 6 end points for a cross that is centered in the point with a given origin.
+Arguments: vec3_t vecCenter - the origin of the cross center; vec3_t *vecOut - a pointer to an array of 6 origins
+*/
+void CalculateCrossPoints( vec3_t vecCenter, vec3_t *vecOut )
+{
+	vec3_t vecEnd;	// End point for the trace
+	pmtrace_t tr;	// Trace result
+
+	gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
+
+	for ( int i = 0; i < 3; ++i )
+	{
+		VectorCopy( vecCenter, vecEnd );
+
+		vecEnd[i] = vecEnd[i] - 5000; // 5000 units is enough for most cases
+		gEngfuncs.pEventAPI->EV_PlayerTrace( vecCenter, vecEnd, PM_WORLD_ONLY, -1, &tr ); // Trace
+		VectorCopy( tr.endpos, vecOut[i] ); // Store the point
+
+		vecEnd[i] = vecEnd[i] + 10000; // 5000 units to the opposite direction
+		gEngfuncs.pEventAPI->EV_PlayerTrace( vecCenter, vecEnd, PM_WORLD_ONLY, -1, &tr ); // Trace
+		VectorCopy( tr.endpos, vecOut[i + 3] ); // Store the point
+	}
 }
 
 void UTIL_StringToVector_( float * pVector, const char *pString )
