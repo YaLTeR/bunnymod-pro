@@ -325,6 +325,8 @@ cvar_t *cl_autocmd_enable, *cl_autocmd_render;
 cvar_t *cl_autocmd_plane, *cl_autocmd_coord, *cl_autocmd_distance, *cl_autocmd_cmd;
 
 cvar_t *cl_spawns_render, *cl_spawns_wireframe;
+cvar_t *cl_spawns_drawcross;
+cvar_t *cl_spawns_alpha;
 
 bool g_bResetDemorecCounter = false;
  
@@ -568,6 +570,8 @@ hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 
 cl_spawns_render = CVAR_CREATE( "cl_spawns_render", "0", FCVAR_ARCHIVE );
 cl_spawns_wireframe = CVAR_CREATE( "cl_spawns_wireframe", "1", FCVAR_ARCHIVE );
+cl_spawns_drawcross = CVAR_CREATE( "cl_spawns_drawcross", "1", FCVAR_ARCHIVE );
+cl_spawns_alpha = CVAR_CREATE( "cl_spawns_alpha", "0.2", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);

@@ -422,33 +422,45 @@ RenderSpawns
 Renders spawn points.
 */
 extern cvar_t *cl_spawns_render, *cl_spawns_wireframe;
+extern cvar_t *cl_spawns_drawcross;
+extern cvar_t *cl_spawns_alpha;
 extern std::vector<vec3_t> spawns;
 extern std::vector<vec3_t*> spawnCrossPoints;
 
 void RenderSpawns( void )
 {
-	if ( cl_spawns_render->value )
+	if ( cl_spawns_render->value == 1 && cl_spawns_alpha->value > 0 )
 	{
 		glDisable( GL_TEXTURE_2D );
 
-		glColor4f( 0.0, 1.0, 0.0, 1.0 );
-
-		gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
+		if ( cl_spawns_alpha->value == 1.0 )
+		{
+			gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
+			glColor3ub( 0, 255, 0 );
+		}
+		else
+		{
+			gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );
+			gEngfuncs.pTriAPI->Color4f( 0.0, 1.0, 0.0, cl_spawns_alpha->value );
+		}
 
 		if ( spawns.size() != 0 )
 		{
 			for ( std::vector<vec3_t>::iterator it = spawns.begin(); it < spawns.end(); ++it )
 			{
-				DrawCube( *it, 10, cl_spawns_wireframe->value );
+				DrawCube( *it, 10, cl_spawns_wireframe->value == 1 );
 			}
 
-			for ( std::vector<vec3_t*>::iterator it1 = spawnCrossPoints.begin(); it1 < spawnCrossPoints.end(); ++it1 )
+			if ( cl_spawns_drawcross->value == 1 )
 			{
-				if ( *it1 != NULL )
+				for ( std::vector<vec3_t*>::iterator it1 = spawnCrossPoints.begin(); it1 < spawnCrossPoints.end(); ++it1 )
 				{
-					DrawLine( ( *it1 )[0], ( *it1 )[3] );
-					DrawLine( ( *it1 )[1], ( *it1 )[4] );
-					DrawLine( ( *it1 )[2], ( *it1 )[5] );
+					if ( *it1 != NULL )
+					{
+						DrawLine( ( *it1 )[0], ( *it1 )[3] );
+						DrawLine( ( *it1 )[1], ( *it1 )[4] );
+						DrawLine( ( *it1 )[2], ( *it1 )[5] );
+					}
 				}
 			}
 		}
