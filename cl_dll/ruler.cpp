@@ -37,8 +37,8 @@ bool autocmdCmdExecuted = false;
 
 double flRulerOldTime = 0.0, flRulerTime, flRulerTimeDelta;
 
-std::vector<vec3_t> spawns;
-std::vector<vec3_t*> spawnCrossPoints;
+// std::vector<vec3_t> spawns;
+// std::vector<vec3_t*> spawnCrossPoints;
 
 /*
 ResetRuler
@@ -574,31 +574,31 @@ void CalcSphereVertices( cl_sphere *sphere )
 FindSpawnsInMap
 Finds every info_player_deathmatch on the map and stores its coordinates so that they can be rendered.
 */
-void FindSpawnsInMap( void )
-{
-	if ( FindEntitiesInMap( "info_player_deathmatch", spawns ) == 0 )
-	{
-		gEngfuncs.Con_Printf( "Something went wrong in FindEntitiesInMap.\n" );
-	}
-	else
-	{
-		gEngfuncs.Con_Printf( "Found %d info_player_deathmatch entities!\n", spawns.size() );
+// void FindSpawnsInMap( void )
+// {
+// 	if ( FindEntitiesInMap( "info_player_deathmatch", spawns ) == 0 )
+// 	{
+// 		gEngfuncs.Con_Printf( "Something went wrong in FindEntitiesInMap.\n" );
+// 	}
+// 	else
+// 	{
+// 		gEngfuncs.Con_Printf( "Found %d info_player_deathmatch entities!\n", spawns.size() );
 
-		for ( std::vector<vec3_t*>::iterator it = spawnCrossPoints.begin(); it < spawnCrossPoints.end(); ++it )
-		{
-			delete [] *it;
-		}
+// 		for ( std::vector<vec3_t*>::iterator it = spawnCrossPoints.begin(); it < spawnCrossPoints.end(); ++it )
+// 		{
+// 			delete [] *it;
+// 		}
 
-		spawnCrossPoints.clear();
+// 		spawnCrossPoints.clear();
 
-		for ( std::vector<vec3_t>::iterator it1 = spawns.begin(); it1 < spawns.end(); ++it1 )
-		{
-			vec3_t *crossPoints = new vec3_t[5];
-			CalculateCrossPoints( *it1, crossPoints );
-			spawnCrossPoints.push_back( crossPoints );
-		}
-	}
-}
+// 		for ( std::vector<vec3_t>::iterator it1 = spawns.begin(); it1 < spawns.end(); ++it1 )
+// 		{
+// 			vec3_t *crossPoints = new vec3_t[5];
+// 			CalculateCrossPoints( *it1, crossPoints );
+// 			spawnCrossPoints.push_back( crossPoints );
+// 		}
+// 	}
+// }
 
 /*
 FindEntitiesInMap

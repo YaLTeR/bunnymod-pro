@@ -423,10 +423,10 @@ void HealthDifference( void )
 	gHUD.m_CustomHud.HealthDifference();
 }
 
-void FindSpawns( void )
-{
-	FindSpawnsInMap();
-}
+// void FindSpawns( void )
+// {
+// 	FindSpawnsInMap();
+// }
  
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
@@ -568,10 +568,10 @@ hud_ammo_difference = CVAR_CREATE( "hud_ammo_difference", "0", FCVAR_ARCHIVE );
 hud_firemon = CVAR_CREATE( "hud_firemon", "0", FCVAR_ARCHIVE );
 hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 
-cl_spawns_render = CVAR_CREATE( "cl_spawns_render", "0", FCVAR_ARCHIVE );
-cl_spawns_wireframe = CVAR_CREATE( "cl_spawns_wireframe", "1", FCVAR_ARCHIVE );
-cl_spawns_drawcross = CVAR_CREATE( "cl_spawns_drawcross", "1", FCVAR_ARCHIVE );
-cl_spawns_alpha = CVAR_CREATE( "cl_spawns_alpha", "0.2", FCVAR_ARCHIVE );
+// cl_spawns_render = CVAR_CREATE( "cl_spawns_render", "0", FCVAR_ARCHIVE );
+// cl_spawns_wireframe = CVAR_CREATE( "cl_spawns_wireframe", "1", FCVAR_ARCHIVE );
+// cl_spawns_drawcross = CVAR_CREATE( "cl_spawns_drawcross", "1", FCVAR_ARCHIVE );
+// cl_spawns_alpha = CVAR_CREATE( "cl_spawns_alpha", "0.2", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
@@ -593,7 +593,7 @@ gEngfuncs.pfnAddCommand( "cl_autostopsave_addpoint", RulerAutostopsaveAddPoint )
 gEngfuncs.pfnAddCommand( "cl_autostopsave_delpoint", RulerAutostopsaveDeletePoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_printorigin", RulerAutostopsavePrintOrigin );
 
-gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
+// gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 
 	m_pSpriteList = NULL;
 
