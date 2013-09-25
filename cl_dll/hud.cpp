@@ -328,6 +328,8 @@ cvar_t *cl_spawns_render, *cl_spawns_wireframe;
 cvar_t *cl_spawns_drawcross;
 cvar_t *cl_spawns_alpha;
 
+cvar_t *cl_gauss_tracer;
+
 bool g_bResetDemorecCounter = false;
  
 void ResetDemorecCounter( void )
@@ -572,6 +574,8 @@ hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 // cl_spawns_wireframe = CVAR_CREATE( "cl_spawns_wireframe", "1", FCVAR_ARCHIVE );
 // cl_spawns_drawcross = CVAR_CREATE( "cl_spawns_drawcross", "1", FCVAR_ARCHIVE );
 // cl_spawns_alpha = CVAR_CREATE( "cl_spawns_alpha", "0.2", FCVAR_ARCHIVE );
+
+cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);

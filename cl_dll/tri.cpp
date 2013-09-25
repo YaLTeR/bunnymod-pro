@@ -25,6 +25,8 @@
 #include "com_model.h"
 #include "studio_util.h"
 #include "event_api.h"
+#include "pm_defs.h"
+#include "pmtrace.h"
 
 #define DLLEXPORT __declspec( dllexport )
 
@@ -470,6 +472,180 @@ Renders spawn points.
 // }
 
 /*
+RenderGaussBeam
+Renders a beam that behaves just like the gauss beam.
+*/
+extern cvar_t *cl_gauss_tracer;
+extern vec3_t g_vecViewAngle;
+
+void RenderGaussBeam()
+{
+	if ( !cl_gauss_tracer->value )
+		return;
+	
+	cl_entity_t *player;
+	vec3_t org, ang;
+	vec3_t forward, right, up;
+
+	vec3_t vecSrc;
+	vec3_t vecDest;
+
+	std::vector<vec3_t> vertices;
+	bool bWallgauss = false;
+
+	pmtrace_t tr, beam_tr;
+
+	int fFirstBeam = 1;
+	int	nMaxHits = 10;
+	float flDamage = 200;
+	float flMaxFrac = 1.0;
+	int fHasPunched = 0;
+
+	physent_t *pEntity;
+
+	player = gEngfuncs.GetLocalPlayer();
+	if (!player)
+		return;
+
+	VectorCopy(player->origin, org);
+	VectorCopy(g_vecViewAngle, ang);
+
+	vec3_t view_ofs;
+	VectorClear( view_ofs );
+	view_ofs[2] = 28;
+	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( view_ofs );
+	VectorAdd( org, view_ofs, vecSrc );
+
+	AngleVectors( ang, forward, right, up );
+	VectorMA( vecSrc, 8192, forward, vecDest );
+
+	while (flDamage > 10 && nMaxHits > 0)
+	{
+		nMaxHits--;
+
+		gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
+		gEngfuncs.pEventAPI->EV_PlayerTrace( vecSrc, vecDest, PM_STUDIO_BOX, -1, &tr );
+
+		if ( tr.allsolid )
+			break;
+
+		if (fFirstBeam)
+		{
+			fFirstBeam = 0;
+
+			vertices.push_back( org );
+			vertices.push_back( tr.endpos );
+		}
+		else
+		{
+			vertices.push_back( vecSrc );
+			vertices.push_back( tr.endpos );
+		}
+
+		pEntity = gEngfuncs.pEventAPI->EV_GetPhysent( tr.ent );
+		if ( pEntity == NULL )
+			break;
+
+		if ( pEntity->solid == SOLID_BSP )
+		{
+			float n;
+
+			n = -DotProduct( tr.plane.normal, forward );
+
+			if (n < 0.5) // 60 degrees	
+			{
+				// ALERT( at_console, "reflect %f\n", n );
+				// reflect
+				vec3_t r;
+			
+				VectorMA( forward, 2.0 * n, tr.plane.normal, r );
+
+				flMaxFrac = flMaxFrac - tr.fraction;
+				
+				VectorCopy( r, forward );
+
+				VectorMA( tr.endpos, 8.0, forward, vecSrc );
+				VectorMA( vecSrc, 8192.0, forward, vecDest );
+
+				// lose energy
+				if ( n == 0 )
+				{
+					n = 0.1;
+				}
+				
+				flDamage = flDamage * (1 - n);
+
+			}
+			else
+			{
+				// limit it to one hole punch
+				if (fHasPunched)
+				{
+					break;
+				}
+				fHasPunched = 1;
+				
+				// try punching through wall if secondary attack (primary is incapable of breaking through)
+				vec3_t start;
+
+				VectorMA( tr.endpos, 8.0, forward, start );
+
+				gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
+				gEngfuncs.pEventAPI->EV_PlayerTrace( start, vecDest, PM_STUDIO_BOX, -1, &beam_tr );
+
+				if ( !beam_tr.allsolid )
+				{
+					vec3_t delta;
+					float n;
+
+					// trace backwards to find exit point
+
+					gEngfuncs.pEventAPI->EV_PlayerTrace( beam_tr.endpos, tr.endpos, PM_STUDIO_BOX, -1, &beam_tr );
+
+					VectorSubtract( beam_tr.endpos, tr.endpos, delta );
+					
+					n = Length( delta );
+
+					if (n < flDamage)
+					{
+						if (n == 0)
+							n = 1;
+						flDamage -= n;
+
+//////////////////////////////////// WHAT TO DO HERE
+
+						bWallgauss = true;
+						
+						VectorAdd( beam_tr.endpos, forward, vecSrc );
+					}
+				}
+				else
+				{
+					flDamage = 0;
+				}
+			}
+		}
+		else
+		{
+			VectorAdd( tr.endpos, forward, vecSrc );
+		}
+	}
+
+
+	glDisable(GL_TEXTURE_2D);
+	gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
+
+	glColor3ub( bWallgauss ? 255 : 0, bWallgauss ? 0 : 255, 0 );
+
+	for ( std::vector<vec3_t>::iterator it = vertices.begin(); it < vertices.end(); it++ )
+	{
+		DrawLine( *it, *(it++) );
+	}
+
+	glEnable(GL_TEXTURE_2D);
+}
+
+/*
 =================
 HUD_DrawNormalTriangles
 
@@ -500,6 +676,8 @@ void DLLEXPORT HUD_DrawTransparentTriangles( void )
 
 	DrawRulerPoints();
 	// RenderSpawns();
+
+	RenderGaussBeam();
 
 #if defined( TEST_IT )
 	// Draw_Triangles();
