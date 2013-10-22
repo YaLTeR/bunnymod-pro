@@ -53,11 +53,19 @@ void WeaponsResource :: LoadAllWeaponSprites( void )
 
 // YaLTeR
 extern cvar_t *hud_ammo_difference;
+extern cvar_t *hud_ammo_difference_gauss;
+bool g_bHoldingGaussCannon = false;
 
 int WeaponsResource :: CountAmmo( int iId ) 
 { 
 	if ( iId < 0 )
 		return 0;
+
+	// YaLTeR
+	if ( g_bHoldingGaussCannon )
+	{
+		return riAmmo[iId] + hud_ammo_difference_gauss->value;
+	}
 
 	return riAmmo[iId] + hud_ammo_difference->value; // YaLTeR
 }
@@ -845,7 +853,6 @@ float gaussboost_ammoConsumed;
 int startAmmo = -1;
 extern bool g_bGausscharge;
 bool oldGausscharge = false;
-bool g_bHoldingGaussCannon = false;
 float timeTillNextAmmoConsume;
 float timeAmmoConsumed;
 
@@ -909,6 +916,9 @@ int CHudAmmo::Draw(float flTime)
 		
 		if (pw->iClip >= 0)
 		{
+			// YaLTeR
+			g_bHoldingGaussCannon = false;
+
 			// room for the number and the '|' and the current ammo
 			
 			x = ScreenWidth - (8 * AmmoWidth) - iIconWidth;
@@ -935,17 +945,15 @@ int CHudAmmo::Draw(float flTime)
 			// GL Seems to need this
 			ScaleColors(r, g, b, a );
 			x = gHUD.DrawHudNumber(x, y, iFlags | DHN_3DIGITS, gWR.CountAmmo(pw->iAmmoType), r, g, b);
-
-			g_bHoldingGaussCannon = false;
 		}
 		else
 		{
+			// YaLTeR
+			g_bHoldingGaussCannon = !strcmp(pw->szName, "weapon_gauss");
+
 			// SPR_Draw a bullets only line
 			x = ScreenWidth - 4 * AmmoWidth - iIconWidth;
 			x = gHUD.DrawHudNumber(x, y, iFlags | DHN_3DIGITS, gWR.CountAmmo(pw->iAmmoType), r, g, b);
-
-			// YaLTeR
-			g_bHoldingGaussCannon = !strcmp(pw->szName, "weapon_gauss");
 
 			if (g_bGausscharge)
 			{

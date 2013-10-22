@@ -292,6 +292,7 @@ cvar_t *hud_health_5dig;
 cvar_t *hud_battery_5dig;
 
 cvar_t *hud_ammo_difference;
+cvar_t *hud_ammo_difference_gauss;
 
 cvar_t *hud_demorec_counter;
 cvar_t *hud_demorec_counter_pos;
@@ -566,6 +567,7 @@ cl_autocmd_distance = gEngfuncs.pfnRegisterVariable( "cl_autocmd_distance", "34.
 cl_autocmd_cmd = gEngfuncs.pfnRegisterVariable( "cl_autocmd_cmd", "stop;save autocmdsave", FCVAR_ARCHIVE );
 
 hud_ammo_difference = CVAR_CREATE( "hud_ammo_difference", "0", FCVAR_ARCHIVE );
+hud_ammo_difference_gauss = CVAR_CREATE( "hud_ammo_difference_gauss", "0", FCVAR_ARCHIVE );
 
 hud_firemon = CVAR_CREATE( "hud_firemon", "0", FCVAR_ARCHIVE );
 hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
