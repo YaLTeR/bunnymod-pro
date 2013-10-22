@@ -1,0 +1,10 @@
+# Sublime Text Files
+*.sublime*
+
+# Visual C++ 6.0 Files
+*.ncb
+*.opt
+*.plg
+Debug/
+Release/
+Releasehl/
