@@ -9,7 +9,6 @@
 #define JUMPSPEED_FADE_TIME 7
 
 #define DAMAGE_MOVE_TIME	1
-#define DAMAGE_MOVE_ACCEL	-4
 
 char m_sEntityName[32];
 char m_sEntityModel[32];
@@ -673,13 +672,15 @@ int CHudCustom::Draw( float fTime )
 			sscanf( hud_health_pos->string, "%i %i", &dx, &dy );
 		}
 
-		float v0 = 0, sf = 0, s = 0;
+		float a = 0, v0 = 0, sf = 0, s = 0, t = 0;
 
 		if ( m_fDamageAnimTime > 0 )
 		{
-			v0 = -1 * DAMAGE_MOVE_ACCEL * DAMAGE_MOVE_TIME;
-			sf = v0 * DAMAGE_MOVE_TIME + ( DAMAGE_MOVE_ACCEL * DAMAGE_MOVE_TIME * DAMAGE_MOVE_TIME ) / 2;
-			s = v0 * ( DAMAGE_MOVE_TIME - m_fDamageAnimTime ) + ( DAMAGE_MOVE_ACCEL * ( DAMAGE_MOVE_TIME - m_fDamageAnimTime ) * ( DAMAGE_MOVE_TIME - m_fDamageAnimTime ) ) / 2;
+			t = DAMAGE_MOVE_TIME - m_fDamageAnimTime;
+			v0 = ( ( 2 * gHUD.m_iFontHeight ) / DAMAGE_MOVE_TIME ); // v0 = 2h / n
+			a = -1 * ( v0 / DAMAGE_MOVE_TIME ); // a = -2h / (n*n)
+			s = v0 * t + ( ( a * t * t ) / 2 ); // s changes from 0 to h
+			sf = gHUD.m_iFontHeight;
 		}
 
 		for ( int i = 0; i < m_ivDamage.size(); ++i )
@@ -704,7 +705,7 @@ int CHudCustom::Draw( float fTime )
 
 			if ( m_fDamageAnimTime > 0 )
 			{
-				currentY += gHUD.m_iFontHeight * ( 1 - ( s / sf ) );
+				currentY += gHUD.m_iFontHeight - s;
 
 				if ( i == 0 )
 				{
