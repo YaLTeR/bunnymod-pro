@@ -8,3 +8,6 @@
 Debug/
 Release/
 Releasehl/
+
+# Visual Studio 2010 Files
+ipch/
