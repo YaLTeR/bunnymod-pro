@@ -11,3 +11,4 @@ Releasehl/
 
 # Visual Studio 2010 Files
 ipch/
+*.sdf
