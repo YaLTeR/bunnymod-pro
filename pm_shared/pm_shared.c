@@ -37,10 +37,6 @@
 
 static int pm_shared_initialized = 0;
 
-// YaLTeR
-int g_iCustomJumpvel = -1;
-int g_iAutoJump = 0;
-
 #pragma warning( disable : 4305 )
 
 typedef enum {mod_brush, mod_sprite, mod_alias, mod_studio} modtype_t;
@@ -2555,7 +2551,7 @@ void PM_Jump (void)
 		return;		// in air, so no effect
 	}
 
-	if ( ( pmove->oldbuttons & IN_JUMP ) && !g_iAutoJump )
+	if ( pmove->oldbuttons & IN_JUMP )
 		return;		// don't pogo stick
 
 	// In the air now.
@@ -2605,14 +2601,7 @@ void PM_Jump (void)
 	}
 	else
 	{
-		if (g_iCustomJumpvel != -1)
-		{
-			pmove->velocity[2] = g_iCustomJumpvel;
-		}
-		else
-		{
-			pmove->velocity[2] = sqrt(2 * 800 * 45.0);
-		}
+		pmove->velocity[2] = sqrt(2 * 800 * 45.0);
 	}
 
 	// Decay it for simulation

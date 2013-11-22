@@ -24,8 +24,6 @@ extern cvar_t *cl_autocmd_enable;
 extern cvar_t *cl_autocmd_plane, *cl_autocmd_coord, *cl_autocmd_distance;
 extern cvar_t *cl_autocmd_cmd;
 
-extern "C" int g_iAutoJump;
-
 cl_rulerPoint firstRulerPoint;
 
 cl_rulerPoint *autostopsavePoint = NULL;
@@ -229,8 +227,6 @@ void RulerAutoFunc( double flTime )
 			CalcSphereVertices( autostopsaveSphere );
 		}
 	}
-
-	g_iAutoJump = CVAR_GET_FLOAT( "sv_autojump" );
 }
 
 /*
