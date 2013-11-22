@@ -1006,6 +1006,8 @@ void PM_Accelerate (vec3_t wishdir, float wishspeed, float accel)
 
 	// Determine amount of accleration.
 	accelspeed = accel * pmove->frametime * wishspeed * pmove->friction;
+
+	//pmove->Con_Printf("accelspeed: %f; friction: %f\n", accelspeed, pmove->friction);
 	
 	// Cap at addspeed
 	if (accelspeed > addspeed)
@@ -1274,8 +1276,6 @@ void PM_AirAccelerate (vec3_t wishdir, float wishspeed, float accel)
 {
 	int			i;
 	float		addspeed, accelspeed, currentspeed, wishspd = wishspeed;
-
-	float preSpeed, postSpeed;
 		
 	if (pmove->dead)
 		return;
@@ -1304,17 +1304,12 @@ void PM_AirAccelerate (vec3_t wishdir, float wishspeed, float accel)
 	// Cap it
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
-	
-	//preSpeed = sqrt(pmove->velocity[0]*pmove->velocity[0] + pmove->velocity[1]*pmove->velocity[1]);
 
 	// Adjust pmove vel.
 	for (i=0 ; i<3 ; i++)
 	{
 		pmove->velocity[i] += accelspeed*wishdir[i];	
 	}
-
-	//postSpeed = sqrt(pmove->velocity[0]*pmove->velocity[0] + pmove->velocity[1]*pmove->velocity[1]);
-	// pmove->Con_Printf("AirAccelerate delta: %f; addspeed: %f; accelspeed: %f; aa: %f\n", postSpeed - preSpeed, addspeed, accelspeed, accel);
 }
 
 /*
