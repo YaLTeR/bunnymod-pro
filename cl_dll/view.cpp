@@ -558,6 +558,8 @@ V_CalcRefdef
 ==================
 */
 
+bool g_bOnGroundDemoInaccurate = true; // YaLTeR
+
 //cl_entity_t *view;
 vec3_t g_vel,g_org;
 cl_entity_t *view;
@@ -574,6 +576,8 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	vec3_t			angles;
 	float			bob, waterOffset;
 	static viewinterp_t		ViewInterp;
+
+	g_bOnGroundDemoInaccurate = pparams->onground; // YaLTeR
 
 	static float oldz = 0;
 	static float lasttime;
