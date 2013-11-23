@@ -48,6 +48,7 @@ extern bool g_bPaused;
 bool g_bPerfectstrafe = false;
 bool g_bAutostrafe = false;
 bool g_bInBhop = false;
+bool g_bGroundduck = false;
 // YaLTeR End
 
 extern "C" 
@@ -695,7 +696,9 @@ if active == 1 then we are 1) not playing back demos ( where our commands are ig
 // YaLTeR Start
 extern vec3_t g_vel, g_vecViewAngle;
 extern bool g_bOnGroundDemoInaccurate;
+extern bool g_bOldOnGroundDemoInaccurate;
 extern cvar_t *tas_perfectstrafe_maxspeed;
+extern cvar_t *tas_perfectstrafe_friction;
 // YaLTeR End
 
 void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int active )
@@ -720,6 +723,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		float speed = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );
 		float maxspeed = tas_perfectstrafe_maxspeed->value;
+		float friction = tas_perfectstrafe_friction->value;
 
 		vec3_t viewOfs;
 		VectorClear(viewOfs);
@@ -799,7 +803,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		}
 		else if ( ( g_bAutostrafe || g_bPerfectstrafe ) && ( g_bOnGroundDemoInaccurate && !g_bInBhop ) && (in_moveleft.state ^ in_moveright.state) && (in_forward.state & 1) )
 		{
-			float frictiondrop = speed * 4 * frametime;
+			float frictiondrop = speed * friction * frametime;
 			float actualspeed = speed - frictiondrop;
 			float A = 10 * maxspeed * frametime;
 			float alpha = rad2deg(acos((maxspeed - A) / actualspeed));
@@ -811,7 +815,15 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			VectorAngles( velDir, velAng );
 
 			float phi = (in_moveright.state & 1) ? (45 - (viewangles[YAW] - velAng[YAW])) : (45 + (viewangles[YAW] - velAng[YAW]));
-			yawRotation = (in_moveright.state & 1) ? (phi - alpha) : (alpha - phi);
+
+			if (!g_bPaused)
+			{
+				yawRotation = (in_moveright.state & 1) ? (phi - alpha) : (alpha - phi);
+			}
+			else
+			{
+				yawRotation = 0;
+			}
 		}
 		else
 		{
@@ -903,6 +915,16 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 	// set button and flag bits
 	//
 	cmd->buttons = CL_ButtonBits( 1 );
+
+	// YaLTeR Start
+	if ( g_bOnGroundDemoInaccurate != g_bOldOnGroundDemoInaccurate )
+	{
+		if ( g_bOnGroundDemoInaccurate && g_bGroundduck )
+		{
+			cmd->buttons |= IN_DUCK;
+		}
+	}
+	// YaLTeR End
 
 	// If they're in a modal dialog, ignore the attack button.
 	if(GetClientVoiceMgr()->IsInSquelchMode())

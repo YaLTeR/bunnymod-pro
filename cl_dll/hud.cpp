@@ -332,6 +332,9 @@ cvar_t *cl_spawns_alpha;
 cvar_t *cl_gauss_tracer;
 
 cvar_t *tas_perfectstrafe_maxspeed;
+cvar_t *tas_perfectstrafe_friction;
+
+cvar_t *tas_autogroundduck;
 
 bool g_bResetDemorecCounter = false;
  
@@ -458,9 +461,22 @@ void DeactivateAutostrafe( void )
 }
 
 extern bool g_bInBhop;
+
 void DisableInBhop( void )
 {
 	g_bInBhop = false;
+}
+
+extern bool g_bGroundduck;
+
+void ActivateGroundduck( void )
+{
+	g_bGroundduck = true;
+}
+
+void DeactivateGroundduck( void )
+{
+	g_bGroundduck = false;
 }
  
  // This is called every time the DLL is loaded
@@ -612,6 +628,7 @@ hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
 tas_perfectstrafe_maxspeed = CVAR_CREATE( "tas_perfectstrafe_maxspeed", "320", 0 );
+tas_perfectstrafe_friction = CVAR_CREATE( "tas_perfectstrafe_friction", "4", 0 );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
@@ -638,6 +655,9 @@ gEngfuncs.pfnAddCommand( "-tas_perfectstrafe", DeactivatePerfectstrafe );
 gEngfuncs.pfnAddCommand( "+tas_autostrafe", ActivateAutostrafe );
 gEngfuncs.pfnAddCommand( "-tas_autostrafe", DeactivateAutostrafe );
 gEngfuncs.pfnAddCommand( "tas_stopbhop", DisableInBhop );
+
+gEngfuncs.pfnAddCommand( "+tas_groundduck", ActivateGroundduck );
+gEngfuncs.pfnAddCommand( "-tas_groundduck", DeactivateGroundduck );
 
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 
