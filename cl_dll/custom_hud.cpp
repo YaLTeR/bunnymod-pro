@@ -11,6 +11,7 @@
 #define DAMAGE_MOVE_TIME	1
 
 const char BUNNYMOD_VERSION[5] = "v1.0";
+const char HLTASMOD_VERSION[5] = "v1.0";
 
 char m_sEntityName[32];
 char m_sEntityModel[32];
@@ -51,7 +52,8 @@ int CHudCustom::VidInit( void )
 	if ( !bPrintedVersion )
 	{
 		bPrintedVersion = true;
-		gEngfuncs.Con_Printf( "\nBunnymod Pro %s\n\n", BUNNYMOD_VERSION );
+		gEngfuncs.Con_Printf( "\nBunnymod Pro %s\n", BUNNYMOD_VERSION );
+		gEngfuncs.Con_Printf( "Half-Life TAS Mod %s\n\n", HLTASMOD_VERSION );
 	}
 
 	return 1;
