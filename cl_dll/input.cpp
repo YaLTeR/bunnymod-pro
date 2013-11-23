@@ -37,8 +37,7 @@ extern int _mx;
 
 // YaLTeR Start
 float yawRotation = 0.0f;
-float autostrafe_maxYawRotation = 0.0f;
-float autostrafe_totalYawRotation = 0.0f;
+byte autostrafe_numRotations = 0;
 bool autostrafe_firstRotation = true;
 bool autostrafe_switchSidesNextFrame = false;
 bool autostrafe_turningLeft = true;
@@ -763,17 +762,17 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 					{
 						autostrafe_firstRotation = false;
 
-						autostrafe_maxYawRotation = 2 * fabs(yawRotation - 180);
+						autostrafe_numRotations = 0;
 						autostrafe_turningLeft = (in_moveleft.state & 1);
 						autostrafe_switchSidesNextFrame = true;
 					}
 					else
 					{
-						autostrafe_totalYawRotation += (yawRotation - 180);
-						if ( fabs( autostrafe_totalYawRotation ) >= autostrafe_maxYawRotation )
+						autostrafe_numRotations++;
+						if ( autostrafe_numRotations == 2 )
 						{
 							autostrafe_switchSidesNextFrame = true;
-							autostrafe_totalYawRotation = 0.0f;
+							autostrafe_numRotations = 0;
 						}
 					}
 				}
