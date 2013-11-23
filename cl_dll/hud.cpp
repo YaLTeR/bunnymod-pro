@@ -456,6 +456,12 @@ void DeactivateAutostrafe( void )
 {
 	g_bAutostrafe = false;
 }
+
+extern bool g_bInBhop;
+void DisableInBhop( void )
+{
+	g_bInBhop = false;
+}
  
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
@@ -631,6 +637,7 @@ gEngfuncs.pfnAddCommand( "+tas_perfectstrafe", ActivatePerfectstrafe );
 gEngfuncs.pfnAddCommand( "-tas_perfectstrafe", DeactivatePerfectstrafe );
 gEngfuncs.pfnAddCommand( "+tas_autostrafe", ActivateAutostrafe );
 gEngfuncs.pfnAddCommand( "-tas_autostrafe", DeactivateAutostrafe );
+gEngfuncs.pfnAddCommand( "tas_stopbhop", DisableInBhop );
 
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 

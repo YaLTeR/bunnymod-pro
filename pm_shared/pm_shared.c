@@ -986,6 +986,9 @@ void PM_Accelerate (vec3_t wishdir, float wishspeed, float accel)
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
 
+	//float uncappedaccelspeed, prespeed, postspeed;
+	
+
 	// Dead player's don't accelerate
 	if (pmove->dead)
 		return;
@@ -1007,17 +1010,22 @@ void PM_Accelerate (vec3_t wishdir, float wishspeed, float accel)
 	// Determine amount of accleration.
 	accelspeed = accel * pmove->frametime * wishspeed * pmove->friction;
 
-	//pmove->Con_Printf("accelspeed: %f; friction: %f\n", accelspeed, pmove->friction);
+	//uncappedaccelspeed = accelspeed;
 	
 	// Cap at addspeed
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 	
+	//prespeed = Length(pmove->velocity);
+
 	// Adjust velocity.
 	for (i=0 ; i<3 ; i++)
 	{
 		pmove->velocity[i] += accelspeed * wishdir[i];	
 	}
+
+	//postspeed = Length(pmove->velocity);
+	//pmove->Con_Printf("Accelspeed: %f; wishspeed: %f; currentspeed: %f; addspeed: %f; prespeed: %f; postspeed: %f\n", uncappedaccelspeed, wishspeed, currentspeed, addspeed, prespeed, postspeed);
 }
 
 /*
@@ -1202,6 +1210,8 @@ void PM_Friction (void)
 	float	friction;
 	float	drop;
 	vec3_t newvel;
+
+	//float prespeed, postspeed;
 	
 	// If we are in water jump cycle, don't apply friction
 	if (pmove->waterjumptime)
@@ -1264,10 +1274,15 @@ void PM_Friction (void)
 	// Determine proportion of old speed we are using.
 	newspeed /= speed;
 
+	//prespeed = Length(vel);
+
 	// Adjust velocity according to proportion.
 	newvel[0] = vel[0] * newspeed;
 	newvel[1] = vel[1] * newspeed;
 	newvel[2] = vel[2] * newspeed;
+
+	//postspeed = Length(newvel);
+	//pmove->Con_Printf("Newspeed: %f; drop: %f; prespeed: %f; postspeed: %f;\n", newspeed, drop, prespeed, postspeed);
 
 	VectorCopy( newvel, pmove->velocity );
 }
