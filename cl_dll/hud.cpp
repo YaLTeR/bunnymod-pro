@@ -331,6 +331,8 @@ cvar_t *cl_spawns_alpha;
 
 cvar_t *cl_gauss_tracer;
 
+cvar_t *tas_perfectstrafe_maxspeed;
+
 bool g_bResetDemorecCounter = false;
  
 void ResetDemorecCounter( void )
@@ -430,6 +432,18 @@ void HealthDifference( void )
 // {
 // 	FindSpawnsInMap();
 // }
+
+extern bool g_bAutostrafe;
+
+void ActivateAutostrafe( void )
+{
+	g_bAutostrafe = true;
+}
+
+void DeactivateAutostrafe( void )
+{
+	g_bAutostrafe = false;
+}
  
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
@@ -579,6 +593,8 @@ hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 
 cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
+tas_perfectstrafe_maxspeed = CVAR_CREATE( "tas_perfectstrafe_maxspeed", "320", 0 );
+
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
 gEngfuncs.pfnAddCommand("hud_dontchange_changelevel_occured", ChangelevelOccured);
@@ -598,6 +614,9 @@ gEngfuncs.pfnAddCommand( "cl_ruler_addorigin", RulerAddOrigin );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_addpoint", RulerAutostopsaveAddPoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_delpoint", RulerAutostopsaveDeletePoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_printorigin", RulerAutostopsavePrintOrigin );
+
+gEngfuncs.pfnAddCommand( "+tas_perfectstrafe", ActivateAutostrafe );
+gEngfuncs.pfnAddCommand( "-tas_perfectstrafe", DeactivateAutostrafe );
 
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 

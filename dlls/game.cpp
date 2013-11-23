@@ -48,6 +48,8 @@ cvar_t	autorecord={"sv_autorecord", "0", FCVAR_SERVER };
 cvar_t	autosave	= { "sv_autosave", "1", FCVAR_SERVER };
 
 // YaLTeR
+cvar_t jumpvelocity = { "sv_jumpvelocity", "-1", FCVAR_SERVER };
+cvar_t autojump = { "sv_autojump", "0", FCVAR_SERVER };
 cvar_t sethealth = { "sv_sethealth", "-1", FCVAR_SERVER };
 cvar_t setbattery = { "sv_setbattery", "-1", FCVAR_SERVER };
 cvar_t firemon_target = { "sv_firemon_target", "", FCVAR_SERVER };
@@ -521,6 +523,8 @@ void GameDLLInit( void )
 	CVAR_REGISTER (&autosave);
 	
 	// YaLTeR
+	CVAR_REGISTER (&jumpvelocity);
+	CVAR_REGISTER (&autojump);
 	CVAR_REGISTER (&sethealth);
 	CVAR_REGISTER (&setbattery);
 	CVAR_REGISTER (&firemon_target);

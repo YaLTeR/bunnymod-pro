@@ -29,8 +29,19 @@ extern "C"
 
 #include "vgui_TeamFortressViewport.h"
 
+#include "event_api.h" // YaLTeR
+#include "eventscripts.h" // YaLTeR
+
 //rofi
 extern int _mx;
+
+// YaLTeR Start
+float yawRotation = 0.0f;
+#define PI 3.1415926535
+#define rad2deg(x) x*180/PI
+extern bool g_bPaused;
+bool g_bAutostrafe = false;
+// YaLTeR End
 
 extern "C" 
 {
@@ -627,6 +638,13 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 		viewangles[YAW] -= speed*cl_yawspeed->value*CL_KeyState (&in_right);
 		viewangles[YAW] += speed*cl_yawspeed->value*CL_KeyState (&in_left);
 
+		// YaLTeR Start
+		/*if (!g_bPaused)
+			gEngfuncs.Con_Printf("Yaw: %f; yawRot: %f\n", viewangles[YAW], yawRotation);*/
+
+		viewangles[YAW] += yawRotation;
+		// YaLTeR End
+
 		if( _mx != -1 )
 			viewangles[YAW] = anglemod(viewangles[YAW]);
 	}
@@ -666,6 +684,10 @@ if active == 1 then we are 1) not playing back demos ( where our commands are ig
 2 ) we have finished signing on to server
 ================
 */
+
+extern vec3_t g_vel, g_vecViewAngle;
+extern cvar_t *tas_perfectstrafe_maxspeed;
+
 void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int active )
 {	
 	float spd;
@@ -678,6 +700,42 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		//memset( viewangles, 0, sizeof( vec3_t ) );
 		//viewangles[ 0 ] = viewangles[ 1 ] = viewangles[ 2 ] = 0.0;
 		gEngfuncs.GetViewAngles( (float *)viewangles );
+
+		// YaLTeR Start
+		float speed = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );
+		float maxspeed = tas_perfectstrafe_maxspeed->value;
+
+		vec3_t viewOfs;
+		VectorClear(viewOfs);
+		gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOfs );
+		if (viewOfs[2] != DEFAULT_VIEWHEIGHT)
+		{
+			maxspeed *= 0.333;
+		}
+
+		if ( g_bAutostrafe && (speed > maxspeed) && (in_moveleft.state ^ in_moveright.state) && !(in_forward.state & 1) )
+		{
+			float A = 10 * maxspeed * frametime;
+			float alpha = rad2deg(acos((30 - A) / speed));
+		
+			vec3_t velDir, angDir;
+			vec3_t velAng;
+			VectorCopy(g_vel, velDir);
+			velDir[2] = 0;
+			VectorAngles( velDir, velAng );
+
+			float phi = (in_moveright.state & 1) ? (90 - (viewangles[YAW] - velAng[YAW])) : (90 + (viewangles[YAW] - velAng[YAW]));
+
+			if (!g_bPaused)
+				yawRotation = (in_moveright.state & 1) ? (phi - alpha) : (alpha - phi);
+			else
+				yawRotation = 0;
+		}
+		else
+		{
+			yawRotation = 0;
+		}
+		// YaLTeR End
 
 		CL_AdjustAngles ( frametime, viewangles );
 
