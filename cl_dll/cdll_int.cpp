@@ -136,32 +136,11 @@ char DLLEXPORT HUD_PlayerMoveTexture( char *name )
 	return PM_FindTextureType( name );
 }
 
-int g_onground=0,g_oldground=0;
-
 void DLLEXPORT HUD_PlayerMove( struct playermove_s *ppmove, int server )
 {
-	g_oldground = g_onground;
 	PM_Move( ppmove, server );
-g_onground = ppmove->onground;
-/*
-if (g_onground!=g_oldground)
-{
-//	if (g_oldground == -1)
-//	gEngfuncs.Con_Printf("LAND!!!!\n");	if (g_oldground != -1)
-	{
-		jspeed = sqrt(((int)ppmove->velocity[0]*(int)ppmove->velocity[0])+(((int)ppmove->velocity[1])*(int)ppmove->velocity[1])); 
-		//gEngfuncs.Con_Printf("JUMP!!!! jspeed %i\n",jspeed);
 }
 
-}
-*/
-}
-
-
-
-///	int							( *pfnClientCmd )			( char *szCmdString ); todo: steal clientcmd in initialize
-
-//int 							*hook_pfnClientCmd 			( char *szCmdString );
 int DLLEXPORT Initialize( cl_enginefunc_t *pEnginefuncs, int iVersion )
 {
 	gEngfuncs = *pEnginefuncs;

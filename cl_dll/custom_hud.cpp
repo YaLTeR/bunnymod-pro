@@ -10,6 +10,8 @@
 
 #define DAMAGE_MOVE_TIME	1
 
+const char BUNNYMOD_VERSION[5] = "v1.0";
+
 char m_sEntityName[32];
 char m_sEntityModel[32];
 
@@ -44,6 +46,13 @@ int CHudCustom::Init( void )
 int CHudCustom::VidInit( void )
 {
 	m_iNumFires = 0;
+
+	static bool bPrintedVersion = false;
+	if ( !bPrintedVersion )
+	{
+		bPrintedVersion = true;
+		gEngfuncs.Con_Printf( "\nBunnymod Pro %s\n\n", BUNNYMOD_VERSION );
+	}
 
 	return 1;
 }
