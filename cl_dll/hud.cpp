@@ -433,6 +433,18 @@ void HealthDifference( void )
 // 	FindSpawnsInMap();
 // }
 
+extern bool g_bPerfectstrafe;
+
+void ActivatePerfectstrafe( void )
+{
+	g_bPerfectstrafe = true;
+}
+
+void DeactivatePerfectstrafe( void )
+{
+	g_bPerfectstrafe = false;
+}
+
 extern bool g_bAutostrafe;
 
 void ActivateAutostrafe( void )
@@ -615,8 +627,10 @@ gEngfuncs.pfnAddCommand( "cl_autostopsave_addpoint", RulerAutostopsaveAddPoint )
 gEngfuncs.pfnAddCommand( "cl_autostopsave_delpoint", RulerAutostopsaveDeletePoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_printorigin", RulerAutostopsavePrintOrigin );
 
-gEngfuncs.pfnAddCommand( "+tas_perfectstrafe", ActivateAutostrafe );
-gEngfuncs.pfnAddCommand( "-tas_perfectstrafe", DeactivateAutostrafe );
+gEngfuncs.pfnAddCommand( "+tas_perfectstrafe", ActivatePerfectstrafe );
+gEngfuncs.pfnAddCommand( "-tas_perfectstrafe", DeactivatePerfectstrafe );
+gEngfuncs.pfnAddCommand( "+tas_autostrafe", ActivateAutostrafe );
+gEngfuncs.pfnAddCommand( "-tas_autostrafe", DeactivateAutostrafe );
 
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 

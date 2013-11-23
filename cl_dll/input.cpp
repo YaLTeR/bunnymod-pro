@@ -37,9 +37,15 @@ extern int _mx;
 
 // YaLTeR Start
 float yawRotation = 0.0f;
+float autostrafe_maxYawRotation = 0.0f;
+float autostrafe_totalYawRotation = 0.0f;
+bool autostrafe_firstRotation = true;
+bool autostrafe_switchSidesNextFrame = false;
+bool autostrafe_turningLeft = true;
 #define PI 3.1415926535
 #define rad2deg(x) x*180/PI
 extern bool g_bPaused;
+bool g_bPerfectstrafe = false;
 bool g_bAutostrafe = false;
 // YaLTeR End
 
@@ -702,6 +708,12 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		gEngfuncs.GetViewAngles( (float *)viewangles );
 
 		// YaLTeR Start
+		if ( autostrafe_switchSidesNextFrame && !g_bPaused )
+		{
+			autostrafe_switchSidesNextFrame = false;
+			autostrafe_turningLeft = !autostrafe_turningLeft;
+		}
+
 		float speed = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );
 		float maxspeed = tas_perfectstrafe_maxspeed->value;
 
@@ -713,7 +725,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			maxspeed *= 0.333;
 		}
 
-		if ( g_bAutostrafe && (speed > maxspeed) && (in_moveleft.state ^ in_moveright.state) && !(in_forward.state & 1) )
+		if ( ( g_bAutostrafe || g_bPerfectstrafe ) && (speed > maxspeed) && (in_moveleft.state ^ in_moveright.state) && !(in_forward.state & 1) )
 		{
 			float A = 10 * maxspeed * frametime;
 			float alpha = rad2deg(acos((30 - A) / speed));
@@ -724,16 +736,61 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			velDir[2] = 0;
 			VectorAngles( velDir, velAng );
 
-			float phi = (in_moveright.state & 1) ? (90 - (viewangles[YAW] - velAng[YAW])) : (90 + (viewangles[YAW] - velAng[YAW]));
+			float phi;
+			if ( g_bAutostrafe && !autostrafe_firstRotation )
+			{
+				phi = ( !(autostrafe_turningLeft) ) ? (90 - (viewangles[YAW] - velAng[YAW])) : (90 + (viewangles[YAW] - velAng[YAW]));
+			}
+			else
+			{
+				phi = (in_moveright.state & 1) ? (90 - (viewangles[YAW] - velAng[YAW])) : (90 + (viewangles[YAW] - velAng[YAW]));
+			}
 
 			if (!g_bPaused)
-				yawRotation = (in_moveright.state & 1) ? (phi - alpha) : (alpha - phi);
+			{
+				if ( g_bAutostrafe )
+				{
+					if ( autostrafe_firstRotation )
+					{
+						yawRotation = (in_moveright.state & 1) ? (phi - alpha) : (alpha - phi);
+					}
+					else
+					{
+						yawRotation = ( !(autostrafe_turningLeft) ) ? (phi - alpha) : (alpha - phi);
+					}
+
+					if ( autostrafe_firstRotation )
+					{
+						autostrafe_firstRotation = false;
+
+						autostrafe_maxYawRotation = 2 * fabs(yawRotation - 180);
+						autostrafe_turningLeft = (in_moveleft.state & 1);
+						autostrafe_switchSidesNextFrame = true;
+					}
+					else
+					{
+						autostrafe_totalYawRotation += (yawRotation - 180);
+						if ( fabs( autostrafe_totalYawRotation ) >= autostrafe_maxYawRotation )
+						{
+							autostrafe_switchSidesNextFrame = true;
+							autostrafe_totalYawRotation = 0.0f;
+						}
+					}
+				}
+				else
+				{
+					yawRotation = (in_moveright.state & 1) ? (phi - alpha) : (alpha - phi);
+				}
+			}
 			else
+			{
 				yawRotation = 0;
+			}
 		}
 		else
 		{
 			yawRotation = 0;
+			autostrafe_firstRotation = true;
 		}
 		// YaLTeR End
 
@@ -749,8 +806,24 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_left);
 		}
 
-		cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_moveright);
-		cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_moveleft);
+		// YaLTeR Start
+		if ( g_bAutostrafe )
+		{
+			if ( autostrafe_turningLeft )
+			{
+				cmd->sidemove -= cl_sidespeed->value;
+			}
+			else
+			{
+				cmd->sidemove += cl_sidespeed->value;
+			}
+		}
+		else
+		{
+			cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_moveright);
+			cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_moveleft);
+		}
+		// YaLTeR End
 
 		cmd->upmove += cl_upspeed->value * CL_KeyState (&in_up);
 		cmd->upmove -= cl_upspeed->value * CL_KeyState (&in_down);
