@@ -180,6 +180,7 @@
     <ClCompile Include="hud_servers.cpp" />
     <ClCompile Include="hud_spectator.cpp" />
     <ClCompile Include="hud_update.cpp" />
+    <ClCompile Include="interpolation.cpp" />
     <ClCompile Include="in_camera.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="inputw32.cpp" />
@@ -223,6 +224,7 @@
     <ClCompile Include="view.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="interpolation.h" />
     <ClInclude Include="parsemsg.h" />
     <ClInclude Include="ammo.h" />
     <ClInclude Include="ammohistory.h" />
