@@ -334,7 +334,7 @@ cvar_t *cl_gauss_tracer;
 cvar_t *tas_perfectstrafe_maxspeed;
 cvar_t *tas_perfectstrafe_friction;
 
-cvar_t *tas_autogroundduck;
+cvar_t *tas_autostrafe_desiredviewangle;
 
 bool g_bResetDemorecCounter = false;
  
@@ -629,6 +629,8 @@ cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
 tas_perfectstrafe_maxspeed = CVAR_CREATE( "tas_perfectstrafe_maxspeed", "320", 0 );
 tas_perfectstrafe_friction = CVAR_CREATE( "tas_perfectstrafe_friction", "4", 0 );
+
+tas_autostrafe_desiredviewangle = CVAR_CREATE( "tas_autostrafe_desiredviewangle", "0.0", 0 );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);

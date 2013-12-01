@@ -1291,6 +1291,8 @@ void PM_AirAccelerate (vec3_t wishdir, float wishspeed, float accel)
 {
 	int			i;
 	float		addspeed, accelspeed, currentspeed, wishspd = wishspeed;
+
+	float uncappedaccelspeed, prespeed, postspeed;
 		
 	if (pmove->dead)
 		return;
@@ -1314,17 +1316,27 @@ void PM_AirAccelerate (vec3_t wishdir, float wishspeed, float accel)
 
 	accelspeed = accel * wishspeed * pmove->frametime * pmove->friction;
 
-	// pmove->Con_Printf("Accelspeed: %f\n", accelspeed);
+	uncappedaccelspeed = accelspeed;
 
 	// Cap it
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
+
+	prespeed = sqrt(((pmove->velocity[0]*pmove->velocity[0])+(pmove->velocity[1]*pmove->velocity[1])));
 
 	// Adjust pmove vel.
 	for (i=0 ; i<3 ; i++)
 	{
 		pmove->velocity[i] += accelspeed*wishdir[i];	
 	}
+
+	postspeed = sqrt(((pmove->velocity[0]*pmove->velocity[0])+(pmove->velocity[1]*pmove->velocity[1])));
+
+#ifdef CLIENT_DLL
+	pmove->Con_Printf("CLIENT Uncappedaccelspeed: %f; addspeed: %f; prespeed: %f; postspeed: %f; frametime: %f;\n", uncappedaccelspeed, addspeed, prespeed, postspeed, pmove->frametime);
+#else
+	//pmove->Con_Printf("SERVER Uncappedaccelspeed: %f; addspeed: %f; prespeed: %f; postspeed: %f; frametime: %f;\n", uncappedaccelspeed, addspeed, prespeed, postspeed, pmove->frametime);
+#endif
 }
 
 /*
