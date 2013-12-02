@@ -120,6 +120,8 @@ float gaussboost_resultingSpeedWithOptimalViewanglesBB;
 int recording = 0, oldrecording = 0;
 int playingback = 0;
 
+unsigned long int g_ullFramecounter = 0;
+
 int CHudCustom::Draw( float fTime )
 {
 	int x = 0, y = 0;
@@ -421,6 +423,8 @@ int CHudCustom::Draw( float fTime )
 	if ((recording || playingback) && !g_bPaused)
 	{
 		demorec_counter_delta += demorec_delta;
+
+		g_ullFramecounter++;
 	}
 
 	if (hud_demorec_counter->value)

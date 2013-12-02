@@ -38,10 +38,9 @@ extern int _mx;
 // YaLTeR Start
 float yawRotation = 0.0f;
 bool firstRotationInTheAir = true;
-byte autostrafe_numRotations = 0;
-bool autostrafe_firstRotation = true;
-bool autostrafe_switchSidesNextFrame = false;
+bool shouldForceJump = false;
 bool autostrafe_turningRight = true;
+float autostrafe_desiredViewangle = 0.0;
 #define PI 3.1415926535
 #define rad2deg(x) (x*180.0f)/PI
 #define deg2rad(x) (x/180.0f)*PI
@@ -50,10 +49,13 @@ bool autostrafe_turningRight = true;
 extern bool g_bPaused;
 bool g_bPerfectstrafe = false;
 bool g_bAutostrafe = false;
+bool g_bOldAutostrafe = false;
+bool g_bOldUnpausedAutostrafe = false;
 bool g_bInBhop = false;
 bool g_bGroundduck = false;
 
 extern cvar_t *tas_autostrafe_desiredviewangle;
+extern cvar_t *tas_autostrafe_manualangle;
 // YaLTeR End
 
 extern "C" 
@@ -704,6 +706,7 @@ extern bool g_bOnGroundDemoInaccurate;
 extern bool g_bOldOnGroundDemoInaccurate;
 extern cvar_t *tas_perfectstrafe_maxspeed;
 extern cvar_t *tas_perfectstrafe_friction;
+extern cvar_t *tas_perfectstrafe_autojump;
 // YaLTeR End
 
 void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int active )
@@ -720,15 +723,10 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		gEngfuncs.GetViewAngles( (float *)viewangles );
 
 		// YaLTeR Start
-		if ( !g_bOnGroundDemoInaccurate && autostrafe_switchSidesNextFrame && !g_bPaused )
-		{
-			autostrafe_switchSidesNextFrame = false;
-			autostrafe_turningRight = !autostrafe_turningRight;
-		}
-
-		float v0 = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );
 		float maxspeed = tas_perfectstrafe_maxspeed->value;
 		float friction = tas_perfectstrafe_friction->value;
+		float A = 10 * maxspeed * frametime;
+		float v0 = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );
 
 		vec3_t viewOfs;
 		VectorClear(viewOfs);
@@ -736,6 +734,39 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		if (viewOfs[2] != DEFAULT_VIEWHEIGHT)
 		{
 			maxspeed *= 0.333;
+		}
+
+		// Same condition as below, to check if we're groundstrafing
+		if ( !g_bPaused && ( g_bAutostrafe || g_bPerfectstrafe ) && ( g_bOnGroundDemoInaccurate && !g_bInBhop ) && ( g_bAutostrafe || ((in_moveleft.state ^ in_moveright.state) & 1) ) )
+		{
+			if ( tas_perfectstrafe_autojump->value )
+			{
+				float bordervel = (sqrt(2) * sqrt(maxspeed * A - 30 * A)) / sqrt(2 * friction * frametime - (friction*frametime)*(friction*frametime));
+				if (v0 >= bordervel)
+				{
+					shouldForceJump = true;
+					g_bInBhop = true;
+				}
+			}
+		}
+		
+		if ( g_bAutostrafe && !g_bOldAutostrafe )
+		{
+			if ( tas_autostrafe_manualangle->value )
+			{
+				autostrafe_desiredViewangle = tas_autostrafe_desiredviewangle->value;
+			}
+			else
+			{
+				autostrafe_desiredViewangle = viewangles[YAW];
+			}
+		}
+
+		g_bOldAutostrafe = g_bAutostrafe;
+
+		if ( !g_bPaused )
+		{
+			g_bOldUnpausedAutostrafe = g_bAutostrafe;
 		}
 
 		if ( ( g_bAutostrafe || g_bPerfectstrafe ) && ( !g_bOnGroundDemoInaccurate || g_bInBhop ) && ( g_bAutostrafe || ((in_moveleft.state ^ in_moveright.state) & 1) ) )
@@ -746,11 +777,22 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				g_bInBhop = true;
 			}
 
-			float A = 10 * maxspeed * frametime;
 			float alpha = rad2deg(acos((30 - A) / v0));
+		
+			vec3_t velDir, angDir;
+			vec3_t velAng;
+			VectorCopy(g_vel, velDir);
+			velDir[2] = 0;
+			VectorAngles( velDir, velAng );
+
+			if ( g_bAutostrafe )
+			{
+				float v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
+				autostrafe_turningRight = (v0delta < 0);
+			}
 
 			float wishang;
-			if ( g_bAutostrafe && !autostrafe_firstRotation )
+			if ( g_bAutostrafe )
 			{
 				wishang = (autostrafe_turningRight) ? normangleengine(viewangles[YAW] - 90) : normangleengine(viewangles[YAW] + 90);
 			}
@@ -758,90 +800,100 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			{
 				wishang = (in_moveright.state & 1) ? normangleengine(viewangles[YAW] - 90) : normangleengine(viewangles[YAW] + 90);
 			}
-		
-			vec3_t velDir, angDir;
-			vec3_t velAng;
-			VectorCopy(g_vel, velDir);
-			velDir[2] = 0;
-			VectorAngles( velDir, velAng );
 
 			float phi = normangle(velAng[YAW] - wishang);
 			
 			if (!g_bPaused)
 			{
-				gEngfuncs.Con_Printf("Current client speed: %f; predicted client speed: %f\n", v0, sqrt(v0*v0 + A*A + 2*v0*A*cos(deg2rad(alpha))));
-				gEngfuncs.Con_Printf("wishang: %f; phi: %f\n", wishang, phi);
+				//gEngfuncs.Con_Printf("Current client speed: %f; predicted client speed: %f\n", v0, sqrt(v0*v0 + A*A + 2*v0*A*cos(deg2rad(alpha))));
 			}
 
 			if (!g_bPaused)
 			{
-				if ( g_bAutostrafe )
-				{
-					if ( autostrafe_firstRotation )
-					{
-						yawRotation = (in_moveright.state & 1) ? (phi - alpha) : (alpha - phi);
-					}
-					else
-					{
-						yawRotation = (autostrafe_turningRight) ? (phi - alpha) : (alpha - phi);
-					}
-
-					if ( autostrafe_firstRotation )
-					{
-						autostrafe_firstRotation = false;
-
-						autostrafe_numRotations = 0;
-						autostrafe_turningRight = (in_moveright.state & 1);
-						autostrafe_switchSidesNextFrame = true;
-					}
-					else
-					{
-						autostrafe_numRotations++;
-						if ( autostrafe_numRotations == 2 )
-						{
-							autostrafe_switchSidesNextFrame = true;
-							autostrafe_numRotations = 0;
-						}
-					}
-				}
-				else
-				{
-					yawRotation = (phi > 0) ? (phi - alpha) : (phi + alpha);
-				}
+				yawRotation = (phi > 0) ? (phi - alpha) : (phi + alpha);
 			}
 			else
 			{
 				yawRotation = 0;
 			}
 		}
-		else if ( ( g_bAutostrafe || g_bPerfectstrafe ) && ( g_bOnGroundDemoInaccurate && !g_bInBhop ) && ((in_moveleft.state ^ in_moveright.state) & 1) && (in_forward.state & 1) )
+		else if ( ( g_bAutostrafe || g_bPerfectstrafe ) && ( g_bOnGroundDemoInaccurate && !g_bInBhop ) && ( g_bAutostrafe || ((in_moveleft.state ^ in_moveright.state) & 1) ) )
 		{
 			float frictiondrop = v0 * friction * frametime;
 			float actualspeed = v0 - frictiondrop;
-			float A = 10 * maxspeed * frametime;
-			float alpha = rad2deg(acos( (maxspeed - A) / actualspeed ));
-		
-			vec3_t velDir, angDir;
-			vec3_t velAng;
-			VectorCopy(g_vel, velDir);
-			velDir[2] = 0;
-			VectorAngles( velDir, velAng );
-
-			float phi = (in_moveright.state & 1) ? (45 - (viewangles[YAW] - velAng[YAW])) : (45 + (viewangles[YAW] - velAng[YAW]));
-
-			if (!g_bPaused)
+			float alpha = 0.0f;
+			if (actualspeed != 0)
 			{
-				yawRotation = (in_moveright.state & 1) ? (phi - alpha) : (alpha - phi);
+				alpha = rad2deg(acos( (maxspeed - A) / actualspeed ));
+			}
+		
+			vec3_t velAng;
+			if (v0 != 0)
+			{
+				vec3_t velDir, angDir;
+				VectorCopy(g_vel, velDir);
+				velDir[2] = 0;
+				VectorAngles( velDir, velAng );
 			}
 			else
 			{
-				yawRotation = 0;
+				velAng[YAW] = viewangles[YAW];
+			}
+			
+			float v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
+			if ( g_bAutostrafe )
+			{
+				autostrafe_turningRight = (v0delta < 0);
+			}
+
+			if (!g_bPaused)
+			{
+				//gEngfuncs.Con_Printf("Veldir: %f; v0: %f; viewangles: %f; v0delta: %f; turningRight: %d\n", velAng[YAW], v0, viewangles[YAW], v0delta, autostrafe_turningRight);
+			}
+			
+			float wishang;
+			if ( g_bAutostrafe )
+			{
+				wishang = (autostrafe_turningRight) ? normangleengine(viewangles[YAW] - 45) : normangleengine(viewangles[YAW] + 45);
+			}
+			else
+			{
+				wishang = (in_moveright.state & 1) ? normangleengine(viewangles[YAW] - 45) : normangleengine(viewangles[YAW] + 45);
+			}
+
+			if ( (actualspeed == 0) || (((maxspeed - A) / actualspeed) > 1) )
+			{
+				if (!g_bPaused)
+				{
+					yawRotation = normangle(autostrafe_desiredViewangle - wishang);
+				}
+				else
+				{
+					yawRotation = 0;
+				}
+			}
+			else
+			{
+				float phi = normangle(velAng[YAW] - wishang);
+			
+				if (!g_bPaused)
+				{
+					//gEngfuncs.Con_Printf("Current client speed: %f; predicted client speed: %f\n", v0, sqrt(v0*v0 + A*A + 2*v0*A*cos(deg2rad(alpha))));
+				}
+
+				if (!g_bPaused)
+				{
+					yawRotation = (phi > 0) ? (phi - alpha) : (phi + alpha);
+				}
+				else
+				{
+					yawRotation = 0;
+				}
 			}
 		}
 		else
 		{
 			yawRotation = 0;
-			autostrafe_firstRotation = true;
 			firstRotationInTheAir = true;
 			g_bInBhop = false;
 		}
@@ -860,15 +912,18 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		}
 
 		// YaLTeR Start
-		if ( !g_bOnGroundDemoInaccurate && g_bAutostrafe )
+		if ( g_bAutostrafe )
 		{
-			if ( autostrafe_turningRight )
+			if ( g_bOldUnpausedAutostrafe )
 			{
-				cmd->sidemove += cl_sidespeed->value;
-			}
-			else
-			{
-				cmd->sidemove -= cl_sidespeed->value;
+				if ( autostrafe_turningRight )
+				{
+					cmd->sidemove += cl_sidespeed->value;
+				}
+				else
+				{
+					cmd->sidemove -= cl_sidespeed->value;
+				}
 			}
 		}
 		else
@@ -883,13 +938,18 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		if ( !(in_klook.state & 1 ) )
 		{	
-			if ( ( !(g_bPerfectstrafe || g_bAutostrafe) || g_bOnGroundDemoInaccurate ) && !g_bInBhop ) // YaLTeR
+			if ( ( ( !(g_bPerfectstrafe || g_bAutostrafe) || g_bOnGroundDemoInaccurate ) && !g_bInBhop ) ) // YaLTeR
 			{
 				cmd->forwardmove += cl_forwardspeed->value * CL_KeyState (&in_forward);
+
+				if ( g_bAutostrafe && g_bOldUnpausedAutostrafe && g_bOnGroundDemoInaccurate && !g_bInBhop && !(in_forward.state & 1) )
+				{
+					cmd->forwardmove += cl_forwardspeed->value;
+				}
 			}
 
 			cmd->forwardmove -= cl_backspeed->value * CL_KeyState (&in_back);
-		}	
+		}
 
 		// adjust for speed key
 		if ( in_speed.state & 1 )
@@ -936,6 +996,16 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		{
 			cmd->buttons |= IN_DUCK;
 		}
+	}
+
+	if ( shouldForceJump )
+	{
+		if ( !g_bOnGroundDemoInaccurate )
+		{
+			shouldForceJump = false;
+		}
+
+		cmd->buttons |= IN_JUMP;
 	}
 	// YaLTeR End
 

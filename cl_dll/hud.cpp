@@ -333,8 +333,10 @@ cvar_t *cl_gauss_tracer;
 
 cvar_t *tas_perfectstrafe_maxspeed;
 cvar_t *tas_perfectstrafe_friction;
+cvar_t *tas_perfectstrafe_autojump;
 
 cvar_t *tas_autostrafe_desiredviewangle;
+cvar_t *tas_autostrafe_manualangle;
 
 bool g_bResetDemorecCounter = false;
  
@@ -435,6 +437,17 @@ void HealthDifference( void )
 // {
 // 	FindSpawnsInMap();
 // }
+
+extern unsigned long int g_ullFramecounter;
+void ResetFrameCounter( void )
+{
+	g_ullFramecounter = 0;
+}
+
+void DumpFrameCounter( void )
+{
+	gEngfuncs.Con_Printf("Frame counter is at: %u\n", g_ullFramecounter);
+}
 
 extern bool g_bPerfectstrafe;
 
@@ -629,8 +642,10 @@ cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
 tas_perfectstrafe_maxspeed = CVAR_CREATE( "tas_perfectstrafe_maxspeed", "320", 0 );
 tas_perfectstrafe_friction = CVAR_CREATE( "tas_perfectstrafe_friction", "4", 0 );
+tas_perfectstrafe_autojump = CVAR_CREATE( "tas_perfectstrafe_autojump", "0", FCVAR_ARCHIVE );
 
 tas_autostrafe_desiredviewangle = CVAR_CREATE( "tas_autostrafe_desiredviewangle", "0.0", 0 );
+tas_autostrafe_manualangle = CVAR_CREATE( "tas_autostrafe_manualangle", "0", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
@@ -651,6 +666,9 @@ gEngfuncs.pfnAddCommand( "cl_ruler_addorigin", RulerAddOrigin );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_addpoint", RulerAutostopsaveAddPoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_delpoint", RulerAutostopsaveDeletePoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_printorigin", RulerAutostopsavePrintOrigin );
+
+gEngfuncs.pfnAddCommand("hud_framecounter_reset", ResetFrameCounter);
+gEngfuncs.pfnAddCommand("hud_framecounter_dump", DumpFrameCounter);
 
 gEngfuncs.pfnAddCommand( "+tas_perfectstrafe", ActivatePerfectstrafe );
 gEngfuncs.pfnAddCommand( "-tas_perfectstrafe", DeactivatePerfectstrafe );
