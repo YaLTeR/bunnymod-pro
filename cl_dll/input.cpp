@@ -54,6 +54,9 @@ bool g_bOldUnpausedAutostrafe = false;
 bool g_bInBhop = false;
 bool g_bGroundduck = false;
 
+const float anglemod_prefactor  = (360.0 / 65536);
+const float anglemod_postfactor = (65536 / 360.0);
+
 extern cvar_t *tas_autostrafe_desiredviewangle;
 extern cvar_t *tas_autostrafe_manualangle;
 // YaLTeR End
@@ -657,7 +660,19 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 		/*if (!g_bPaused)
 			gEngfuncs.Con_Printf("Yaw: %f; yawRot: %f\n", viewangles[YAW], yawRotation);*/
 
-		viewangles[YAW] += yawRotation;
+		if (yawRotation != 0.0f)
+		{
+			viewangles[YAW] += yawRotation;
+			//viewangles[YAW] = normangleengine( viewangles[YAW] );
+
+			//gEngfuncs.Con_Printf("Pre-deanglemod: %f; ", viewangles[YAW]);
+
+			float temp = viewangles[YAW] / anglemod_prefactor;
+			temp = floor(temp + 0.5);
+			viewangles[YAW] = temp / anglemod_postfactor;
+
+			//gEngfuncs.Con_Printf("post-deanglemod: %f\n", viewangles[YAW]);
+		}
 		// YaLTeR End
 
 		if( _mx != -1 )
@@ -704,8 +719,10 @@ if active == 1 then we are 1) not playing back demos ( where our commands are ig
 extern vec3_t g_vel, g_vecViewAngle;
 extern bool g_bOnGroundDemoInaccurate;
 extern bool g_bOldOnGroundDemoInaccurate;
-extern cvar_t *tas_perfectstrafe_maxspeed;
+extern cvar_t *tas_perfectstrafe_accel;
+extern cvar_t *tas_perfectstrafe_airaccel;
 extern cvar_t *tas_perfectstrafe_friction;
+extern cvar_t *tas_perfectstrafe_maxspeed;
 extern cvar_t *tas_perfectstrafe_autojump;
 // YaLTeR End
 
@@ -725,8 +742,28 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		// YaLTeR Start
 		float maxspeed = tas_perfectstrafe_maxspeed->value;
 		float friction = tas_perfectstrafe_friction->value;
-		float A = 10 * maxspeed * frametime;
+		float A = tas_perfectstrafe_airaccel->value * maxspeed * frametime;
+		float Agr = tas_perfectstrafe_accel->value * maxspeed * frametime;
 		float v0 = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );
+
+		// Air acceleration
+		float alphacos = (30 - A) / v0; // TODO: handle the situation where the key is just pressed, and so wishspeed is not maxspeed (makes sence only on low sv_maxspeed)
+		if (alphacos > 1) alphacos = 1;
+		if (alphacos < 0) alphacos = 0;
+		float alpha = rad2deg( acos(alphacos) );
+		
+		// Ground acceleration
+		float frictiondrop = v0 * friction * frametime;
+		float actualspeed = v0 - frictiondrop;
+		float alpha_gr = 0.0f;
+		if (actualspeed != 0)
+		{
+			float alphacos_gr = (maxspeed - Agr) / actualspeed; // TODO: handle the situation where the key is just pressed, and so wishspeed is not maxspeed
+			if (alphacos_gr > 1) alphacos_gr = 1;
+			if (alphacos_gr < 0) alphacos_gr = 0;
+
+			alpha_gr = rad2deg( acos(alphacos_gr) );
+		}
 
 		vec3_t viewOfs;
 		VectorClear(viewOfs);
@@ -741,8 +778,41 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		{
 			if ( tas_perfectstrafe_autojump->value )
 			{
-				float bordervel = (sqrt(2) * sqrt(maxspeed * A - 30 * A)) / sqrt(2 * friction * frametime - (friction*frametime)*(friction*frametime));
-				if (v0 >= bordervel)
+				float ff = friction * frametime;
+				float bordervel = -1.0f;
+
+				if ((A < 30) && (Agr < maxspeed))
+				{
+					float temp = fabs(60*A - A*A + Agr*Agr - 2*Agr*maxspeed);
+					bordervel = sqrt(temp) / sqrt(2*ff - ff*ff);
+				}
+				else if ((A >= 30) && (Agr < maxspeed))
+				{
+					if (v0 < (maxspeed - Agr))
+					{
+						float temp = fabs(Agr*Agr - 1800*ff + 900*ff*ff);
+						bordervel = fabs( (-Agr + Agr*ff - sqrt(temp)) / (-2*ff + ff*ff) );
+					}
+					else
+					{
+						bordervel = sqrt( fabs( 900 + Agr*Agr - 2*Agr*maxspeed ) ) / ( sqrt( fabs(ff - 2) ) * sqrt( fabs(ff) ) );
+					}
+				}
+				else if ((A < 30) && (Agr >= maxspeed))
+				{
+					bordervel = sqrt( fabs( 60*A - A*A - maxspeed*maxspeed ) ) / sqrt( fabs(-2*ff + ff*ff) );
+				}
+				else if ((A >= 30) && (Agr >= maxspeed))
+				{
+					bordervel = sqrt( fabs(900 - maxspeed*maxspeed) ) / sqrt( fabs(-2*ff + ff*ff) );
+				}
+
+				/*if (!g_bPaused)
+				{
+					gEngfuncs.Con_Printf("Bordervel: %f\n", bordervel);
+				}*/
+
+				if ((bordervel != -1.0f) && (v0 >= bordervel))
 				{
 					shouldForceJump = true;
 					g_bInBhop = true;
@@ -776,8 +846,6 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				firstRotationInTheAir = false;
 				g_bInBhop = true;
 			}
-
-			float alpha = rad2deg(acos((30 - A) / v0));
 		
 			vec3_t velDir, angDir;
 			vec3_t velAng;
@@ -803,10 +871,10 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 			float phi = normangle(velAng[YAW] - wishang);
 			
-			if (!g_bPaused)
+			/*if (!g_bPaused)
 			{
-				//gEngfuncs.Con_Printf("Current client speed: %f; predicted client speed: %f\n", v0, sqrt(v0*v0 + A*A + 2*v0*A*cos(deg2rad(alpha))));
-			}
+				gEngfuncs.Con_Printf("alpha: %f\n", alpha);
+			}*/
 
 			if (!g_bPaused)
 			{
@@ -819,14 +887,6 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		}
 		else if ( ( g_bAutostrafe || g_bPerfectstrafe ) && ( g_bOnGroundDemoInaccurate && !g_bInBhop ) && ( g_bAutostrafe || ((in_moveleft.state ^ in_moveright.state) & 1) ) )
 		{
-			float frictiondrop = v0 * friction * frametime;
-			float actualspeed = v0 - frictiondrop;
-			float alpha = 0.0f;
-			if (actualspeed != 0)
-			{
-				alpha = rad2deg(acos( (maxspeed - A) / actualspeed ));
-			}
-		
 			vec3_t velAng;
 			if (v0 != 0)
 			{
@@ -846,10 +906,10 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				autostrafe_turningRight = (v0delta < 0);
 			}
 
-			if (!g_bPaused)
+			/*if (!g_bPaused)
 			{
-				//gEngfuncs.Con_Printf("Veldir: %f; v0: %f; viewangles: %f; v0delta: %f; turningRight: %d\n", velAng[YAW], v0, viewangles[YAW], v0delta, autostrafe_turningRight);
-			}
+				gEngfuncs.Con_Printf("alpha: %f\n", alpha);
+			}*/
 			
 			float wishang;
 			if ( g_bAutostrafe )
@@ -861,7 +921,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				wishang = (in_moveright.state & 1) ? normangleengine(viewangles[YAW] - 45) : normangleengine(viewangles[YAW] + 45);
 			}
 
-			if ( (actualspeed == 0) || (((maxspeed - A) / actualspeed) > 1) )
+			if ( (actualspeed == 0) || (((maxspeed - Agr) / actualspeed) > 1) )
 			{
 				if (!g_bPaused)
 				{
@@ -883,7 +943,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 				if (!g_bPaused)
 				{
-					yawRotation = (phi > 0) ? (phi - alpha) : (phi + alpha);
+					yawRotation = (phi > 0) ? (phi - alpha_gr) : (phi + alpha_gr);
 				}
 				else
 				{

@@ -331,8 +331,11 @@ cvar_t *cl_spawns_alpha;
 
 cvar_t *cl_gauss_tracer;
 
-cvar_t *tas_perfectstrafe_maxspeed;
+cvar_t *tas_perfectstrafe_accel;
+cvar_t *tas_perfectstrafe_airaccel;
 cvar_t *tas_perfectstrafe_friction;
+cvar_t *tas_perfectstrafe_maxspeed;
+
 cvar_t *tas_perfectstrafe_autojump;
 
 cvar_t *tas_autostrafe_desiredviewangle;
@@ -640,8 +643,10 @@ hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 
 cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
-tas_perfectstrafe_maxspeed = CVAR_CREATE( "tas_perfectstrafe_maxspeed", "320", 0 );
+tas_perfectstrafe_accel = CVAR_CREATE( "tas_perfectstrafe_accel", "10", 0 );
+tas_perfectstrafe_airaccel = CVAR_CREATE( "tas_perfectstrafe_airaccel", "10", 0 );
 tas_perfectstrafe_friction = CVAR_CREATE( "tas_perfectstrafe_friction", "4", 0 );
+tas_perfectstrafe_maxspeed = CVAR_CREATE( "tas_perfectstrafe_maxspeed", "320", 0 );
 tas_perfectstrafe_autojump = CVAR_CREATE( "tas_perfectstrafe_autojump", "0", FCVAR_ARCHIVE );
 
 tas_autostrafe_desiredviewangle = CVAR_CREATE( "tas_autostrafe_desiredviewangle", "0.0", 0 );

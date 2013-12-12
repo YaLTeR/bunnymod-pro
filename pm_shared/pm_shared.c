@@ -1006,6 +1006,8 @@ void PM_Accelerate (vec3_t wishdir, float wishspeed, float accel)
 	// If not going to add any speed, done.
 	if (addspeed <= 0)
 		return;
+	
+	//pmove->Con_Printf("currentspeed: %f\n", currentspeed);
 
 	// Determine amount of accleration.
 	accelspeed = accel * pmove->frametime * wishspeed * pmove->friction;
@@ -2466,6 +2468,10 @@ void PM_PreventMegaBunnyJumping( void )
 	fraction = ( maxscaledspeed / spd ) * 0.65; //Returns the modifier for the velocity
 	
 	VectorScale( pmove->velocity, fraction, pmove->velocity ); //Crop it down!.
+
+#ifdef CLIENT_DLL
+	pmove->Con_Printf("Prevented mega bunny jump!\n");
+#endif
 }
 
 // YaLTeR
