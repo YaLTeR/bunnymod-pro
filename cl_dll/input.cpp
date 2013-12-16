@@ -773,6 +773,11 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			maxspeed *= 0.333;
 		}
 
+		if ( tas_autostrafe_manualangle->value != 0.0f )
+		{
+			autostrafe_desiredViewangle = tas_autostrafe_desiredviewangle->value;
+		}
+
 		// Same condition as below, to check if we're groundstrafing
 		if ( !g_bPaused && ( g_bAutostrafe || g_bPerfectstrafe ) && ( g_bOnGroundDemoInaccurate && !g_bInBhop ) && ( g_bAutostrafe || ((in_moveleft.state ^ in_moveright.state) & 1) ) )
 		{
