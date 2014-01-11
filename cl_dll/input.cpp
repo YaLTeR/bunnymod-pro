@@ -53,6 +53,9 @@ bool g_bOldAutostrafe = false;
 bool g_bOldUnpausedAutostrafe = false;
 bool g_bInBhop = false;
 bool g_bGroundduck = false;
+bool g_bOldGroundduck = false;
+bool g_bClAutojump = false;
+bool g_bOldClAutojump = false;
 
 const float anglemod_prefactor  = (360.0 / 65536);
 const float anglemod_postfactor = (65536 / 360.0);
@@ -1057,11 +1060,31 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 	// YaLTeR Start
 	if ( g_bOnGroundDemoInaccurate != g_bOldOnGroundDemoInaccurate )
 	{
-		if ( g_bOnGroundDemoInaccurate && g_bGroundduck )
+		if ( g_bOnGroundDemoInaccurate )
 		{
-			cmd->buttons |= IN_DUCK;
+			if ( g_bGroundduck )
+			{
+				cmd->buttons |= IN_DUCK;
+			}
+			else if ( g_bClAutojump)
+			{
+				cmd->buttons |= IN_JUMP;
+			}
 		}
 	}
+
+	if ( (g_bGroundduck != g_bOldGroundduck) && g_bGroundduck )
+	{
+		cmd->buttons |= IN_DUCK;
+	}
+
+	if ( (g_bClAutojump != g_bOldClAutojump) && g_bClAutojump )
+	{
+		cmd->buttons |= IN_JUMP;
+	}
+
+	g_bOldGroundduck = g_bGroundduck;
+	g_bOldClAutojump = g_bClAutojump;
 
 	if ( shouldForceJump )
 	{

@@ -494,6 +494,18 @@ void DeactivateGroundduck( void )
 {
 	g_bGroundduck = false;
 }
+
+extern bool g_bClAutojump;
+
+void ActivateClAutojump( void )
+{
+	g_bClAutojump = true;
+}
+
+void DeactivateClAutojump( void )
+{
+	g_bClAutojump = false;
+}
  
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
@@ -683,6 +695,8 @@ gEngfuncs.pfnAddCommand( "tas_stopbhop", DisableInBhop );
 
 gEngfuncs.pfnAddCommand( "+tas_groundduck", ActivateGroundduck );
 gEngfuncs.pfnAddCommand( "-tas_groundduck", DeactivateGroundduck );
+gEngfuncs.pfnAddCommand( "+tas_autojump", ActivateClAutojump );
+gEngfuncs.pfnAddCommand( "-tas_autojump", DeactivateClAutojump );
 
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 
