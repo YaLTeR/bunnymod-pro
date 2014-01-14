@@ -325,11 +325,13 @@ cvar_t *cl_autostopsave_radius;
 cvar_t *cl_autocmd_enable, *cl_autocmd_render;
 cvar_t *cl_autocmd_plane, *cl_autocmd_coord, *cl_autocmd_distance, *cl_autocmd_cmd;
 
-cvar_t *cl_spawns_render, *cl_spawns_wireframe;
+/*cvar_t *cl_spawns_render, *cl_spawns_wireframe;
 cvar_t *cl_spawns_drawcross;
-cvar_t *cl_spawns_alpha;
+cvar_t *cl_spawns_alpha;*/
 
 cvar_t *cl_gauss_tracer;
+
+cvar_t *cl_boxes_render;
 
 bool g_bResetDemorecCounter = false;
  
@@ -471,6 +473,7 @@ void CHud :: Init( void )
 	CVAR_CREATE( "hud_takesshots", "0", FCVAR_ARCHIVE );		// controls whether or not to automatically take screenshots at the end of a round
 
 	InitRuler();
+	InitBoxes();
 
 	m_iLogo = 0;
 	m_iFOV = 0;
@@ -579,6 +582,8 @@ hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 
 cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
+cl_boxes_render = CVAR_CREATE( "cl_boxes_render", "1", FCVAR_ARCHIVE );
+
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
 gEngfuncs.pfnAddCommand("hud_dontchange_changelevel_occured", ChangelevelOccured);
@@ -598,6 +603,10 @@ gEngfuncs.pfnAddCommand( "cl_ruler_addorigin", RulerAddOrigin );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_addpoint", RulerAutostopsaveAddPoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_delpoint", RulerAutostopsaveDeletePoint );
 gEngfuncs.pfnAddCommand( "cl_autostopsave_printorigin", RulerAutostopsavePrintOrigin );
+
+gEngfuncs.pfnAddCommand( "cl_boxes_reset", ResetBoxes );
+gEngfuncs.pfnAddCommand( "cl_boxes_dellast", DeleteLastBox );
+gEngfuncs.pfnAddCommand( "cl_boxes_add", AddBox );
 
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 
@@ -651,6 +660,7 @@ gEngfuncs.pfnAddCommand( "cl_autostopsave_printorigin", RulerAutostopsavePrintOr
 CHud :: ~CHud()
 {
 	ResetRuler();
+	ResetBoxes();
 	AutostopsaveDeletePoint();
 
 	delete [] m_rghSprites;

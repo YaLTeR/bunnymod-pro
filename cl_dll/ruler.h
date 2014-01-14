@@ -26,6 +26,26 @@ typedef struct cl_sphere
 	int iSectors;
 } cl_sphere_t;
 
+typedef struct cl_box
+{
+	vec3_t vecPoint1;
+	vec3_t vecPoint2;
+	vec3_t vecPoint3;
+	vec3_t vecPoint4;
+	vec3_t vecPoint5;
+	vec3_t vecPoint6;
+	vec3_t vecPoint7;
+	vec3_t vecPoint8;
+
+	int r;
+	int g;
+	int b;
+	float opacity;
+
+	cl_box *pNext;
+	cl_box *pPrev;
+} cl_box_t;
+
 void StorePoint( vec3_t vecPoint );
 void DeleteLast( void );
 void AimPos( void );
@@ -48,6 +68,12 @@ void CalcSphereVertices( cl_sphere *sphere );
 // void FindSpawnsInMap( void );
 int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins );
 void CalculateCrossPoints( vec3_t vecCenter, vec3_t *vecOut );
+
+void InitBoxes( void );
+void ResetBoxes( void );
+void DeleteLastBox( void );
+void StoreBox( vec3_t vecPoint1, vec3_t vecPoint2, int r, int g, int b, float opacity );
+void AddBox( void );
 
 void UTIL_StringToVector_( float *pVector, const char *pString );
 

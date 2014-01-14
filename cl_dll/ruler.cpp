@@ -35,6 +35,8 @@ bool autocmdCmdExecuted = false;
 
 double flRulerOldTime = 0.0, flRulerTime, flRulerTimeDelta;
 
+cl_box firstBox;
+
 // std::vector<vec3_t> spawns;
 // std::vector<vec3_t*> spawnCrossPoints;
 
@@ -230,7 +232,7 @@ void RulerAutoFunc( double flTime )
 }
 
 /*
-StorePos
+StorePoint
 Stores the position of the point into memory.
 Arguments: vec3_t vecPoint - coordinates of a point.
 */
@@ -742,6 +744,158 @@ void CalculateCrossPoints( vec3_t vecCenter, vec3_t *vecOut )
 		gEngfuncs.pEventAPI->EV_PlayerTrace( vecCenter, vecEnd, PM_WORLD_ONLY, -1, &tr ); // Trace
 		VectorCopy( tr.endpos, vecOut[i + 3] ); // Store the point
 	}
+}
+
+/*
+ResetBoxes
+Resets boxes and cleans the memory.
+*/
+void ResetBoxes( void )
+{
+	cl_box *delBox = firstBox.pNext;
+	firstBox.pNext = NULL;
+
+	while ( delBox != NULL )
+	{
+		cl_box *nextBox = delBox->pNext;
+		delete delBox;
+		delBox = nextBox;
+	}
+
+	InitBoxes();
+	return;
+}
+
+/*
+InitBoxes
+Initializes the variables with zero values.
+*/
+void InitBoxes( void )
+{
+	VectorClear( firstBox.vecPoint1 );
+	VectorClear( firstBox.vecPoint2 );
+	VectorClear( firstBox.vecPoint3 );
+	VectorClear( firstBox.vecPoint4 );
+	VectorClear( firstBox.vecPoint5 );
+	VectorClear( firstBox.vecPoint6 );
+	VectorClear( firstBox.vecPoint7 );
+	VectorClear( firstBox.vecPoint8 );
+	firstBox.r = 0;
+	firstBox.g = 0;
+	firstBox.b = 0;
+	firstBox.opacity = 0.0f;
+	firstBox.pNext = NULL;
+	firstBox.pPrev = NULL;
+
+	return;
+}
+
+/*
+StoreBox
+Stores the position of the point into memory.
+Arguments: vec3_t vecPoint1 - coordinates of the first point, vec3_t vecPoint2 - coordinates of the second point, r, g, b, opacity - colour.
+*/
+void StoreBox( vec3_t vecPoint1, vec3_t vecPoint2, int r, int g, int b, float opacity )
+{
+	cl_box *newBox = new cl_box;
+
+	if ( !newBox )
+	{
+		gEngfuncs.Con_Printf( "Error: Failed to allocate memory for a new box!\n" );
+		return;
+	}
+
+	VectorCopy( vecPoint1, newBox->vecPoint1 );
+	VectorCopy( vecPoint1, newBox->vecPoint2 );
+	VectorCopy( vecPoint1, newBox->vecPoint4 );
+	VectorCopy( vecPoint1, newBox->vecPoint5 );
+	VectorCopy( vecPoint2, newBox->vecPoint3 );
+	VectorCopy( vecPoint2, newBox->vecPoint6 );
+	VectorCopy( vecPoint2, newBox->vecPoint7 );
+	VectorCopy( vecPoint2, newBox->vecPoint8 );
+
+	newBox->vecPoint2[2] = newBox->vecPoint7[2];
+	newBox->vecPoint3[1] = newBox->vecPoint1[1];
+	newBox->vecPoint4[0] = newBox->vecPoint7[0];
+	newBox->vecPoint5[1] = newBox->vecPoint7[1];
+	newBox->vecPoint6[0] = newBox->vecPoint1[0];
+	newBox->vecPoint8[2] = newBox->vecPoint1[2];
+
+	newBox->r = r;
+	newBox->g = g;
+	newBox->b = b;
+	newBox->opacity = opacity;
+
+	cl_box *curBox = firstBox.pNext;
+
+	newBox->pNext = curBox;
+	newBox->pPrev = &firstBox;
+
+	if ( curBox != NULL )
+	{
+		curBox->pPrev = newBox;
+	}
+
+	firstBox.pNext = newBox;
+}
+
+/*
+DeleteLastBox
+Deletes the last added box from memory.
+*/
+void DeleteLastBox( void )
+{
+	cl_box *delBox = firstBox.pNext;
+
+	if ( delBox != NULL )
+	{
+		cl_box *nextBox = delBox->pNext;
+
+		if ( nextBox != NULL )
+		{
+			nextBox->pPrev = &firstBox;
+		}
+
+		firstBox.pNext = nextBox;
+
+		delete delBox;
+	}
+}
+
+/*
+AddBox
+Adds a box by given through cmd arguments origins and colour.
+*/
+void AddBox( void )
+{
+	if ( gEngfuncs.Cmd_Argc() != 11 )
+	{
+		gEngfuncs.Con_Printf( "Usage: cl_boxes_add <x1> <y1> <z1> <x2> <y2> <z2> <r> <g> <b> <opacity>\n" );
+		return;
+	}
+
+	float x1 = 0, y1 = 0, z1 = 0, x2 = 0, y2 = 0, z2 = 0, opacity = 0;
+	int r = 0, g = 0, b = 0;
+	sscanf( gEngfuncs.Cmd_Argv( 1 ),  "%f", &x1 );
+	sscanf( gEngfuncs.Cmd_Argv( 2 ),  "%f", &y1 );
+	sscanf( gEngfuncs.Cmd_Argv( 3 ),  "%f", &z1 );
+	sscanf( gEngfuncs.Cmd_Argv( 4 ),  "%f", &x2 );
+	sscanf( gEngfuncs.Cmd_Argv( 5 ),  "%f", &y2 );
+	sscanf( gEngfuncs.Cmd_Argv( 6 ),  "%f", &z2 );
+	sscanf( gEngfuncs.Cmd_Argv( 7 ),  "%d", &r );
+	sscanf( gEngfuncs.Cmd_Argv( 8 ),  "%d", &g );
+	sscanf( gEngfuncs.Cmd_Argv( 9 ),  "%d", &b );
+	sscanf( gEngfuncs.Cmd_Argv( 10 ), "%f", &opacity );
+
+	vec3_t vecPoint1, vecPoint2;
+	vecPoint1[0] = x1;
+	vecPoint1[1] = y1;
+	vecPoint1[2] = z1;
+	vecPoint2[0] = x2;
+	vecPoint2[1] = y2;
+	vecPoint2[2] = z2;
+
+	StoreBox( vecPoint1, vecPoint2, r, g, b, opacity );
 }
 
 void UTIL_StringToVector_( float * pVector, const char *pString )
