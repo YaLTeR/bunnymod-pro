@@ -11,6 +11,9 @@
 
 #include "cl_entity.h"
 
+// YaLTeR Start - Campath fix
+#include "interpolation.h"
+// YaLTeR End
 
 
 #define INSET_OFF				0
@@ -25,6 +28,10 @@
 
 #define OVERVIEW_TILE_SIZE		128		// don't change this
 #define OVERVIEW_MAX_LAYERS		1
+
+// YaLTeR Start - Campath fix
+extern "C" void NormalizeAngles( float *angles );
+// YaLTeR End
 
 //-----------------------------------------------------------------------------
 // Purpose: Handles the drawing of the spectator stuff (camera & top-down map and all the things on it )
@@ -51,6 +58,19 @@ typedef struct overviewEntity_s {
 	struct cl_entity_s *	entity;
 	double					killTime;
 } overviewEntity_t;
+
+// YaLTeR Start - Campath fix
+typedef struct cameraWayPoint_s 
+{
+	float	time;
+	vec3_t	position;
+	vec3_t	angle;
+	float	fov;
+	int		flags;
+} cameraWayPoint_t;
+
+#define	 MAX_CAM_WAYPOINTS			32
+// YaLTeR End
 
 #define	 MAX_OVERVIEW_ENTITIES		128
 
@@ -80,6 +100,13 @@ public:
 	void SetSpectatorStartPosition();
 	int Init();
 	int VidInit();
+	
+	// YaLTeR Start - Campath fix
+	void SetCameraView( vec3_t pos, vec3_t angle, float fov);
+	void AddWaypoint( float time, vec3_t pos, vec3_t angle, float fov, int flags );
+	void SetWayInterpolation(cameraWayPoint_t * prev, cameraWayPoint_t * start, cameraWayPoint_t * end, cameraWayPoint_t * next);
+	bool GetDirectorCamera(vec3_t &position, vec3_t &angle);
+	// YaLTeR End
 
 	int Draw(float flTime);
 
@@ -102,6 +129,15 @@ public:
 	
 
 	qboolean			m_chatEnabled;
+
+	// YaLTeR Start - Campath fix
+	qboolean                      m_IsInterpolating;
+    int                           m_ChaseEntity;         // if != 0, follow this entity with viewangles
+    int                           m_WayPoint;            // current waypoint 1
+    int                           m_NumWayPoints;        // current number of waypoints
+    CInterpolation                m_WayInterpolation;
+	cameraWayPoint_t	m_CamPath[MAX_CAM_WAYPOINTS];
+	// YaLTeR End
 
 	vec3_t				m_cameraOrigin;	// a help camera
 	vec3_t				m_cameraAngles;	// and it's angles

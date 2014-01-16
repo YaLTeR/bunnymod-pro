@@ -265,6 +265,48 @@ void DrawCube( vec3_t vecCenter, float flHalfsize, bool wireframe )
 }
 
 /*
+DrawBox
+Renders a box with given coordinates of its 8 corners.
+Arguments: coordinates.
+*/
+void DrawBox( vec3_t A, vec3_t B, vec3_t C, vec3_t D, vec3_t A1, vec3_t B1, vec3_t C1, vec3_t D1 )
+{
+	glBegin( GL_QUADS );
+
+			glVertex3fv( A );
+			glVertex3fv( B );
+			glVertex3fv( C );
+			glVertex3fv( D );
+
+			glVertex3fv( D1 );
+			glVertex3fv( C1 );
+			glVertex3fv( B1 );
+			glVertex3fv( A1 );
+
+			glVertex3fv( D );
+			glVertex3fv( D1 );
+			glVertex3fv( A1 );
+			glVertex3fv( A );
+
+			glVertex3fv( B );
+			glVertex3fv( B1 );
+			glVertex3fv( C1 );
+			glVertex3fv( C );
+
+			glVertex3fv( C );
+			glVertex3fv( C1 );
+			glVertex3fv( D1 );
+			glVertex3fv( D );
+
+			glVertex3fv( A );
+			glVertex3fv( A1 );
+			glVertex3fv( B1 );
+			glVertex3fv( B );
+
+		glEnd();
+}
+
+/*
 DrawSphere
 Renders a sphere with given vertex array, ring and sector counts.
 Arguments: std::vector<float> vertices - the vertex array; int iRings - the amount of rings; int iSectors - the amount of sectors.
@@ -350,6 +392,33 @@ void DrawRulerPoints( void )
 			}
 		}
 
+		glEnable( GL_TEXTURE_2D );
+	}
+}
+
+/*
+DrawBoxes
+Draws boxes.
+*/
+extern cl_box firstBox;
+extern cvar_t *cl_boxes_render;
+
+void DrawBoxes( void )
+{
+	if ( cl_boxes_render->value )
+	{
+		glDisable( GL_TEXTURE_2D );
+		gEngfuncs.pTriAPI->RenderMode( kRenderTransColor );
+
+		cl_box *curBox = firstBox.pNext;
+
+		while ( curBox != NULL )
+		{
+			glColor4ub( curBox->r, curBox->g, curBox->b, curBox->opacity );
+			DrawBox( curBox->vecPoint1, curBox->vecPoint2, curBox->vecPoint3, curBox->vecPoint4, curBox->vecPoint5, curBox->vecPoint6, curBox->vecPoint7, curBox->vecPoint8 );
+			curBox = curBox->pNext;
+		}
+		
 		glEnable( GL_TEXTURE_2D );
 	}
 }
@@ -676,6 +745,8 @@ void DLLEXPORT HUD_DrawTransparentTriangles( void )
 
 	DrawRulerPoints();
 	// RenderSpawns();
+
+	DrawBoxes();
 
 	RenderGaussBeam();
 

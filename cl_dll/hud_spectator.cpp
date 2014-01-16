@@ -459,11 +459,192 @@ int CHudSpectator::Draw(float flTime)
 	return 1;
 }
 
+// YaLTeR Start - Campath fix
+void CHudSpectator::SetCameraView( vec3_t pos, vec3_t angle, float fov)
+{
+        VectorCopy(pos, vJumpOrigin);
+        VectorCopy(angle, vJumpAngles);
+        gEngfuncs.SetViewAngles( vJumpAngles );
+        iJumpSpectator = 1;        // jump anyway
+}
+
+void CHudSpectator::AddWaypoint( float time, vec3_t pos, vec3_t angle, float fov, int flags )
+{
+        if ( !flags == 0 && time == 0.0f)
+        {
+                // switch instantly to this camera view
+                SetCameraView( pos, angle, fov );
+                return;
+        }
+
+        if ( m_NumWayPoints >= MAX_CAM_WAYPOINTS )
+        {
+                gEngfuncs.Con_Printf( "Too many camera waypoints!\n" );        
+                return;
+        }
+
+        VectorCopy( angle, m_CamPath[ m_NumWayPoints ].angle );
+        VectorCopy( pos, m_CamPath[ m_NumWayPoints ].position );
+        m_CamPath[ m_NumWayPoints ].flags = flags;
+        m_CamPath[ m_NumWayPoints ].fov = fov;
+        m_CamPath[ m_NumWayPoints ].time = time;
+
+        gEngfuncs.Con_DPrintf("Added waypoint %i\n", m_NumWayPoints );
+
+        m_NumWayPoints++;
+}
+
+void CHudSpectator::SetWayInterpolation(cameraWayPoint_t * prev, cameraWayPoint_t * start, cameraWayPoint_t * end, cameraWayPoint_t * next)
+{
+        m_WayInterpolation.SetViewAngles( start->angle, end->angle );
+
+        m_WayInterpolation.SetFOVs( start->fov, end->fov );
+
+        m_WayInterpolation.SetSmoothing( ( start->flags & DRC_FLAG_SLOWSTART ) != 0,
+                ( start->flags & DRC_FLAG_SLOWEND ) != 0);
+
+        if ( prev && next )
+        {
+                m_WayInterpolation.SetWaypoints(&prev->position, start->position, end->position, &next->position);
+        }
+        else if ( prev )
+        {
+                m_WayInterpolation.SetWaypoints(&prev->position, start->position, end->position, NULL );
+        }
+        else if ( next )
+        {
+                m_WayInterpolation.SetWaypoints(NULL, start->position, end->position, &next->position );
+        }
+        else
+        {
+                m_WayInterpolation.SetWaypoints(NULL, start->position, end->position, NULL );
+        }
+}
+
+bool CHudSpectator::GetDirectorCamera(vec3_t &position, vec3_t &angle)
+{
+	float now = gHUD.m_flTime;
+	float fov = 90.0f;
+
+	if ( m_ChaseEntity )
+	{
+		cl_entity_t	 *	ent = gEngfuncs.GetEntityByIndex( m_ChaseEntity );
+		
+		if ( ent )
+		{
+			vec3_t vt = ent->curstate.origin;
+		
+			if ( m_ChaseEntity <= gEngfuncs.GetMaxClients() )
+			{			
+				if ( ent->curstate.solid == SOLID_NOT )
+				{
+					vt[2]+= -8 ; // PM_DEAD_VIEWHEIGHT
+				}
+				else if (ent->curstate.usehull == 1 )
+				{
+					vt[2]+= 12; // VEC_DUCK_VIEW;
+				}
+				else
+				{
+					vt[2]+= 28; // DEFAULT_VIEWHEIGHT
+				}
+			}
+			
+			vt = vt - position;
+			VectorAngles(vt, angle);
+			angle[0] = -angle[0];
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	if ( !m_IsInterpolating )
+		return false;
+
+	if ( m_WayPoint < 0 || m_WayPoint >= (m_NumWayPoints-1) )
+		return false;	
+
+	cameraWayPoint_t * wp1 = &m_CamPath[m_WayPoint];
+	cameraWayPoint_t * wp2 = &m_CamPath[m_WayPoint+1];
+
+	if ( now < wp1->time )
+		return false;	
+
+	while ( now > wp2->time )
+	{
+		// go to next waypoint, if possible
+		m_WayPoint++;
+
+		if ( m_WayPoint >= (m_NumWayPoints-1) )
+		{
+			m_IsInterpolating = false;
+			return false;	// there is no following waypoint
+		}
+			
+		wp1 = wp2;
+		wp2 = &m_CamPath[m_WayPoint+1];
+
+		if ( m_WayPoint > 0 )
+		{
+			// we have a predecessor
+
+			if ( m_WayPoint < (m_NumWayPoints-1) )
+			{
+				// we have also a successor
+				SetWayInterpolation( &m_CamPath[m_WayPoint-1], wp1, wp2, &m_CamPath[m_WayPoint+2] );
+			}
+			else
+			{
+				SetWayInterpolation( &m_CamPath[m_WayPoint-1], wp1, wp2, NULL );
+			}	
+		}
+		else if ( m_WayPoint < (m_NumWayPoints-1) )
+		{
+			// we only have a successor
+			SetWayInterpolation( NULL, wp1, wp2, &m_CamPath[m_WayPoint+2] );
+				
+		}
+		else 
+		{
+			// we have only two waypoints
+			SetWayInterpolation( NULL, wp1, wp2, NULL );
+		}
+	}
+
+	if ( wp2->time <= wp1->time )
+		return false;	
+
+	float fraction = (now - wp1->time) / (wp2->time - wp1->time);
+
+	if ( fraction < 0.0f )
+		fraction = 0.0f;
+	else if ( fraction > 1.0f )
+		fraction = 1.0f;
+
+	m_WayInterpolation.Interpolate( fraction, position, angle, &fov );
+
+	// gEngfuncs.Con_Printf("Interpolate time: %.2f, fraction %.2f, point : %.2f,%.2f,%.2f\n", now, fraction, position[0], position[1], position[2] );
+
+	SetCameraView( position, angle, fov );
+	
+	return true;
+
+}
+// YaLTeR End
 
 void CHudSpectator::DirectorMessage( int iSize, void *pbuf )
 {
 	float	value;
 	char *	string;
+
+	// YaLTeR Start - Campath fix
+	float        f1,f2;
+    vec3_t       v1,v2;
+    int          i1,i2,i3;
+	// YaLTeR End
 
 	BEGIN_READ( pbuf, iSize );
 
@@ -494,6 +675,11 @@ void CHudSpectator::DirectorMessage( int iSize, void *pbuf )
 
 								g_iUser2 = m_lastPrimaryObject;
 								g_iUser3 = m_lastSecondaryObject;
+
+								// YaLTeR Start - Campath fix
+								m_IsInterpolating = false;
+                                m_ChaseEntity = 0;
+								// YaLTeR End
 							}
 
 							// gEngfuncs.Con_Printf("Director Camera: %i %i\n", firstObject, secondObject);
@@ -507,20 +693,24 @@ void CHudSpectator::DirectorMessage( int iSize, void *pbuf )
 							break;
 
 		case DRC_CMD_CAMERA	:
+							// YaLTeR Start - Campath fix
+							v1[0] = READ_COORD();	// position
+							v1[1] = READ_COORD();
+							v1[2] = READ_COORD();	// vJumpOrigin
+
+							v2[0] = READ_COORD();	// view angle
+							v2[1] = READ_COORD();   // vJumpAngles
+							v2[2] = READ_COORD();
+							f1    = READ_BYTE();	// fov
+							i1    = READ_WORD();	// target
+								
 							if ( m_autoDirector->value )
 							{
-								vJumpOrigin[0] = READ_COORD();	// position
-								vJumpOrigin[1] = READ_COORD();
-								vJumpOrigin[2] = READ_COORD();
-
-								vJumpAngles[0] = READ_COORD();	// view angle
-								vJumpAngles[1] = READ_COORD();
-								vJumpAngles[2] = READ_COORD();
-
-								gEngfuncs.SetViewAngles( vJumpAngles );
-
-								iJumpSpectator = 1;
+								SetModes( OBS_ROAMING, -1 );
+								SetCameraView(v1, v2, f1);
+								m_ChaseEntity = i1;
 							}
+							// YaLTeR End
 							break;
 
 		case DRC_CMD_MESSAGE:
@@ -593,6 +783,69 @@ void CHudSpectator::DirectorMessage( int iSize, void *pbuf )
 		case DRC_CMD_STUFFTEXT:
 							ClientCmd( READ_STRING() );
 							break;
+
+// YaLTeR Start - Campath fix
+		case DRC_CMD_CAMPATH:
+                                    v1[0] = READ_COORD();        // position
+                                    v1[1] = READ_COORD();
+                                    v1[2] = READ_COORD();        // vJumpOrigin
+
+                                    v2[0] = READ_COORD();        // view angle
+                                    v2[1] = READ_COORD(); // vJumpAngles
+                                    v2[2] = READ_COORD();
+                                    f1 = READ_BYTE();        // FOV
+                                    i1 = READ_BYTE();        // flags
+                                                                
+                                    if ( m_autoDirector->value )
+                                    {
+                                            SetModes( OBS_ROAMING, -1 );
+                                            SetCameraView(v1, v2, f1);
+                                    }
+                                    break;
+
+		case DRC_CMD_WAYPOINTS :
+                                    i1 = READ_BYTE();
+                                    m_NumWayPoints = 0;
+                                    m_WayPoint = 0;
+                                    for ( i2=0; i2<i1; i2++ )
+                                    {
+                                            f1 = gHUD.m_flTime + (float)(READ_SHORT())/100.0f;
+
+                                            v1[0] = READ_COORD();        // position
+                                            v1[1] = READ_COORD();
+                                            v1[2] = READ_COORD();        // vJumpOrigin
+
+                                            v2[0] = READ_COORD();        // view angle
+                                            v2[1] = READ_COORD(); // vJumpAngles
+                                            v2[2] = READ_COORD();
+                                            f2 = READ_BYTE();        // fov
+                                            i3 = READ_BYTE();        // flags
+                                                                
+                                            AddWaypoint( f1, v1, v2, f2, i3);
+                                    }
+
+                                    // gEngfuncs.Con_Printf("CHudSpectator::DirectorMessage: waypoints %i.\n", m_NumWayPoints );
+                                    if ( !m_autoDirector->value )
+                                    {
+                                            // ignore waypoints
+                                            m_NumWayPoints = 0;
+                                            break;        
+                                    }
+                                                                
+                                    SetModes( OBS_ROAMING, -1 );
+                                                        
+                                    m_IsInterpolating = true;
+                                                
+                                    if ( m_NumWayPoints > 2 )
+                                    {
+                                            SetWayInterpolation( NULL, &m_CamPath[0], &m_CamPath[1], &m_CamPath[2] );
+                                    }
+                                    else
+                                    {
+                                            SetWayInterpolation( NULL, &m_CamPath[0], &m_CamPath[1], NULL );
+                                    }
+                                    break;
+// YaLTeR End
 
 		default			:	gEngfuncs.Con_DPrintf("CHudSpectator::DirectorMessage: unknown command %i.\n", cmd );
 	}
@@ -800,6 +1053,11 @@ void CHudSpectator::SetModes(int iNewMainMode, int iNewInsetMode)
 		gEngfuncs.Con_Printf("Invalid spectator mode.\n");
 		return;
 	}
+
+	// YaLTeR Start - Campath fix
+	m_IsInterpolating = false;
+    m_ChaseEntity = 0;
+	// YaLTeR End
 	
 	// main modes ettings will override inset window settings
 	if ( iNewMainMode != g_iUser1 )
@@ -1591,6 +1849,11 @@ void CHudSpectator::Reset()
 	}
 
 	memset( &m_OverviewEntities, 0, sizeof(m_OverviewEntities));
+
+	// YaLTeR Start - Campath fix
+    m_IsInterpolating = false;
+    m_ChaseEntity = 0;
+	// YaLTeR End
 
 	SetSpectatorStartPosition();
 }

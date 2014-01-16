@@ -35,6 +35,11 @@
 #define DRC_CMD_SHAKE				11	// send screen shake command
 #define DRC_CMD_STUFFTEXT			12	// like the normal svc_stufftext but as director command
 
+// YaLTeR Start - Campath fix
+#define DRC_CMD_CAMPATH             14        // define camera waypoint
+#define DRC_CMD_WAYPOINTS           15        // start moving camera, inetranl message
+// YaLTeR End
+
 #define DRC_CMD_LAST				12
 
 
@@ -52,6 +57,13 @@
 
 #define MAX_DIRECTOR_CMD_PARAMETERS		4
 #define MAX_DIRECTOR_CMD_STRING			128
+
+// YaLTeR Start - Campath fix
+// DRC_CMD_WAYPOINT flags
+#define DRC_FLAG_STARTPATH		1	// end with speed 0.0
+#define DRC_FLAG_SLOWSTART		2	// start with speed 0.0
+#define DRC_FLAG_SLOWEND		4	// end with speed 0.0
+// YaLTeR End
 
 
 #endif // HLTV_H
