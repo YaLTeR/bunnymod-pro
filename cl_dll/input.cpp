@@ -41,9 +41,6 @@ bool firstRotationInTheAir = true;
 bool shouldForceJump = false;
 bool autostrafe_turningRight = true;
 float autostrafe_desiredViewangle = 0.0;
-#define PI 3.1415926535
-#define rad2deg(x) (x*180.0f)/PI
-#define deg2rad(x) (x/180.0f)*PI
 #define normangle(x) (x>=180)?(x-360):((x<(-180))?(x+360):x)
 #define normangleengine(x) (x>=360)?(x-360):((x<0)?(x+360):x)
 extern bool g_bPaused;
@@ -57,8 +54,11 @@ bool g_bOldGroundduck = false;
 bool g_bClAutojump = false;
 bool g_bOldClAutojump = false;
 
-const float anglemod_prefactor  = (360.0 / 65536);
-const float anglemod_postfactor = (65536 / 360.0);
+#define M_PI         3.1415926535897
+#define M_RAD2DEG   57.2957795130823
+#define M_DEG2RAD    0.0174532925199
+#define M_U          0.0054931640625
+#define M_INVU     182.0444444444444
 
 extern cvar_t *tas_autostrafe_desiredviewangle;
 extern cvar_t *tas_autostrafe_manualangle;
@@ -670,9 +670,9 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 
 			//gEngfuncs.Con_Printf("Pre-deanglemod: %f; ", viewangles[YAW]);
 
-			float temp = viewangles[YAW] / anglemod_prefactor;
+			float temp = viewangles[YAW] * M_INVU;
 			temp = floor(temp + 0.5);
-			viewangles[YAW] = temp / anglemod_postfactor;
+			viewangles[YAW] = temp * M_U;
 
 			//gEngfuncs.Con_Printf("post-deanglemod: %f\n", viewangles[YAW]);
 		}
@@ -745,27 +745,27 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		// YaLTeR Start
 		float maxspeed = tas_perfectstrafe_maxspeed->value;
 		float friction = tas_perfectstrafe_friction->value;
-		float A = tas_perfectstrafe_airaccel->value * maxspeed * frametime;
-		float Agr = tas_perfectstrafe_accel->value * maxspeed * frametime;
-		float v0 = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );
+		double A = tas_perfectstrafe_airaccel->value * maxspeed * frametime;
+		double Agr = tas_perfectstrafe_accel->value * maxspeed * frametime;
+		double v0 = hypot(g_vel[0], g_vel[1]);
 
 		// Air acceleration
-		float alphacos = (30 - A) / v0; // TODO: handle the situation where the key is just pressed, and so wishspeed is not maxspeed (makes sence only on low sv_maxspeed)
+		double alphacos = (30 - A) / v0;
 		if (alphacos > 1) alphacos = 1;
 		if (alphacos < 0) alphacos = 0;
-		float alpha = rad2deg( acos(alphacos) );
+		double alpha = acos(alphacos) * M_RAD2DEG;
 		
 		// Ground acceleration
-		float frictiondrop = v0 * friction * frametime;
-		float actualspeed = v0 - frictiondrop;
-		float alpha_gr = 0.0f;
+		double frictiondrop = v0 * friction * frametime; // TODO: edgefriction
+		double actualspeed = v0 - frictiondrop;
+		double alpha_gr = 0.0f;
 		if (actualspeed != 0)
 		{
-			float alphacos_gr = (maxspeed - Agr) / actualspeed; // TODO: handle the situation where the key is just pressed, and so wishspeed is not maxspeed
+			double alphacos_gr = (maxspeed - Agr) / actualspeed;
 			if (alphacos_gr > 1) alphacos_gr = 1;
 			if (alphacos_gr < 0) alphacos_gr = 0;
 
-			alpha_gr = rad2deg( acos(alphacos_gr) );
+			alpha_gr = acos(alphacos_gr) * M_RAD2DEG;
 		}
 
 		vec3_t viewOfs;
@@ -786,19 +786,19 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		{
 			if ( tas_perfectstrafe_autojump->value )
 			{
-				float ff = friction * frametime;
-				float bordervel = -1.0f;
+				double ff = friction * frametime;
+				double bordervel = -1.0f;
 
 				if ((A < 30) && (Agr < maxspeed))
 				{
-					float temp = fabs(60*A - A*A + Agr*Agr - 2*Agr*maxspeed);
+					double temp = fabs(60*A - A*A + Agr*Agr - 2*Agr*maxspeed);
 					bordervel = sqrt(temp) / sqrt(2*ff - ff*ff);
 				}
 				else if ((A >= 30) && (Agr < maxspeed))
 				{
 					if (v0 < (maxspeed - Agr))
 					{
-						float temp = fabs(Agr*Agr - 1800*ff + 900*ff*ff);
+						double temp = fabs(Agr*Agr - 1800*ff + 900*ff*ff);
 						bordervel = fabs( (-Agr + Agr*ff - sqrt(temp)) / (-2*ff + ff*ff) );
 					}
 					else
@@ -863,11 +863,11 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 			if ( g_bAutostrafe )
 			{
-				float v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
+				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 				autostrafe_turningRight = (v0delta < 0);
 			}
 
-			float wishang;
+			double wishang;
 			if ( g_bAutostrafe )
 			{
 				wishang = (autostrafe_turningRight) ? normangleengine(viewangles[YAW] - 90) : normangleengine(viewangles[YAW] + 90);
@@ -877,7 +877,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				wishang = (in_moveright.state & 1) ? normangleengine(viewangles[YAW] - 90) : normangleengine(viewangles[YAW] + 90);
 			}
 
-			float phi = normangle(velAng[YAW] - wishang);
+			double phi = normangle(velAng[YAW] - wishang);
 			
 			/*if (!g_bPaused)
 			{
@@ -908,7 +908,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				velAng[YAW] = viewangles[YAW];
 			}
 			
-			float v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
+			double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 			if ( g_bAutostrafe )
 			{
 				autostrafe_turningRight = (v0delta < 0);
@@ -919,7 +919,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				gEngfuncs.Con_Printf("alpha: %f\n", alpha);
 			}*/
 			
-			float wishang;
+			double wishang;
 			if ( g_bAutostrafe )
 			{
 				wishang = (autostrafe_turningRight) ? normangleengine(viewangles[YAW] - 45) : normangleengine(viewangles[YAW] + 45);
@@ -942,7 +942,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			}
 			else
 			{
-				float phi = normangle(velAng[YAW] - wishang);
+				double phi = normangle(velAng[YAW] - wishang);
 			
 				if (!g_bPaused)
 				{
@@ -971,7 +971,10 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		memset (cmd, 0, sizeof(*cmd));
 		
+		//vec3_t angpost;
 		gEngfuncs.SetViewAngles( (float *)viewangles );
+		//gEngfuncs.GetViewAngles( (float *)angpost );
+		//gEngfuncs.Con_DPrintf("Angles pre: %f; %f; angles post: %f; %f;\n", viewangles[0], viewangles[1], angpost[0], angpost[1]);
 
 		if ( in_strafe.state & 1 )
 		{
