@@ -3364,6 +3364,15 @@ void PM_Move ( struct playermove_s *ppmove, int server )
 	assert( pm_shared_initialized );
 
 	pmove = ppmove;
+
+	/*if ( hypot(pmove->velocity[0], pmove->velocity[1]) != 0.0f )
+	{
+#ifdef CLIENT_DLL
+		pmove->Con_DPrintf("PM_Move: velocity %f; %f\n", pmove->velocity[0], pmove->velocity[1]);
+#else
+		pmove->Con_DPrintf("SV PM_Move: velocity %f; %f\n", pmove->velocity[0], pmove->velocity[1]);
+#endif
+	}*/
 	
 	PM_PlayerMove( ( server != 0 ) ? true : false );
 

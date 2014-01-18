@@ -719,7 +719,7 @@ if active == 1 then we are 1) not playing back demos ( where our commands are ig
 */
 
 // YaLTeR Start
-extern vec3_t g_vel, g_vecViewAngle;
+extern vec3_t g_org, g_vel, g_vecViewAngle;
 extern bool g_bOnGroundDemoInaccurate;
 extern bool g_bOldOnGroundDemoInaccurate;
 extern cvar_t *tas_perfectstrafe_accel;
@@ -745,6 +745,15 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		// YaLTeR Start
 		float maxspeed = tas_perfectstrafe_maxspeed->value;
 		float friction = tas_perfectstrafe_friction->value;
+
+		vec3_t viewOfs;
+		VectorClear(viewOfs);
+		gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOfs );
+		if (viewOfs[2] != DEFAULT_VIEWHEIGHT)
+		{
+			maxspeed *= 0.333;
+		}
+
 		double A = tas_perfectstrafe_airaccel->value * maxspeed * frametime;
 		double Agr = tas_perfectstrafe_accel->value * maxspeed * frametime;
 		double v0 = hypot(g_vel[0], g_vel[1]);
@@ -766,14 +775,6 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			if (alphacos_gr < 0) alphacos_gr = 0;
 
 			alpha_gr = acos(alphacos_gr) * M_RAD2DEG;
-		}
-
-		vec3_t viewOfs;
-		VectorClear(viewOfs);
-		gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOfs );
-		if (viewOfs[2] != DEFAULT_VIEWHEIGHT)
-		{
-			maxspeed *= 0.333;
 		}
 
 		if ( tas_autostrafe_manualangle->value != 0.0f )
@@ -972,9 +973,15 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		memset (cmd, 0, sizeof(*cmd));
 		
 		//vec3_t angpost;
+		//vec3_t angpre;
+		//gEngfuncs.GetViewAngles( (float *)angpre );
 		gEngfuncs.SetViewAngles( (float *)viewangles );
-		//gEngfuncs.GetViewAngles( (float *)angpost );
-		//gEngfuncs.Con_DPrintf("Angles pre: %f; %f; angles post: %f; %f;\n", viewangles[0], viewangles[1], angpost[0], angpost[1]);
+		//if (!g_bPaused)
+		//{
+			//gEngfuncs.GetViewAngles( (float *)angpost );
+			//gEngfuncs.Con_DPrintf("Angles pre: %f; %f; viewangles: %f; %f; angles post: %f; %f;\n", angpre[0], angpre[1], viewangles[0], viewangles[1], angpost[0], angpost[1]);
+			//gEngfuncs.Con_DPrintf("Velocity: %f; %f\n", g_vel[0], g_vel[1]);
+		//}
 
 		if ( in_strafe.state & 1 )
 		{
