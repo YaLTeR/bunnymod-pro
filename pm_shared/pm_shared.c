@@ -3361,6 +3361,10 @@ and client.  This will ensure that prediction behaves appropriately.
 
 void PM_Move ( struct playermove_s *ppmove, int server )
 {
+/*#ifndef CLIENT_DLL
+	vec3_t prevel;
+#endif*/
+
 	assert( pm_shared_initialized );
 
 	pmove = ppmove;
@@ -3373,8 +3377,16 @@ void PM_Move ( struct playermove_s *ppmove, int server )
 		pmove->Con_DPrintf("SV PM_Move: velocity %f; %f\n", pmove->velocity[0], pmove->velocity[1]);
 #endif
 	}*/
+
+/*#ifndef CLIENT_DLL
+	VectorCopy(pmove->velocity, prevel);
+#endif*/
 	
 	PM_PlayerMove( ( server != 0 ) ? true : false );
+
+/*#ifndef CLIENT_DLL
+	pmove->Con_DPrintf("Prevel: %f; postvel: %f\n", Length(prevel), Length(pmove->velocity));
+#endif*/
 
 	if ( pmove->onground != -1 )
 	{

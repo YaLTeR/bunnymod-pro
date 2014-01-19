@@ -20,6 +20,7 @@ DECLARE_MESSAGE( m_CustomHud, EntHealth )
 DECLARE_MESSAGE( m_CustomHud, EntInfo )
 DECLARE_MESSAGE( m_CustomHud, EntFired )
 DECLARE_MESSAGE( m_CustomHud, FireReset )
+DECLARE_MESSAGE( m_CustomHud, PlrSpeed )
 
 int CHudCustom::Init( void )
 {
@@ -27,6 +28,7 @@ int CHudCustom::Init( void )
 	HOOK_MESSAGE( EntInfo )
 	HOOK_MESSAGE( EntFired )
 	HOOK_MESSAGE( FireReset )
+	HOOK_MESSAGE( PlrSpeed )
 
 	m_iFlags = HUD_ACTIVE;
 	m_fJumpspeedFadeGreen = 0;
@@ -101,6 +103,8 @@ extern float g_fGaussStart;
 extern float gaussboost_ammoConsumed;
 extern bool g_bHoldingGaussCannon;
 extern bool g_bGaussboostReset;
+
+bool g_bDontUpdateVelThisTime = false;
 
 double demorec_counter_delta = 0.0;
 double demorec_delta;
@@ -943,6 +947,19 @@ int CHudCustom::MsgFunc_EntFired( const char *pszName, int iSize, void *pbuf )
 int CHudCustom::MsgFunc_FireReset( const char *pszName, int iSize, void *pbuf )
 {
 	m_iNumFires = 0;
+
+	return 1;
+}
+
+int CHudCustom::MsgFunc_PlrSpeed( const char *pszName, int iSize, void *pbuf )
+{
+	BEGIN_READ( pbuf, iSize );
+
+	g_vel[0] = READ_FLOAT();
+	g_vel[1] = READ_FLOAT();
+	g_vel[2] = READ_FLOAT();
+
+	g_bDontUpdateVelThisTime = true;
 
 	return 1;
 }

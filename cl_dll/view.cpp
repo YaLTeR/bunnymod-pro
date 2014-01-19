@@ -561,6 +561,8 @@ V_CalcRefdef
 bool g_bOnGroundDemoInaccurate = true; // YaLTeR
 bool g_bOldOnGroundDemoInaccurate = true; // YaLTeR
 
+extern bool g_bDontUpdateVelThisTime;
+
 //cl_entity_t *view;
 vec3_t g_vel,g_org;
 cl_entity_t *view;
@@ -620,13 +622,20 @@ hack=true;
 
 	CalcAccel(pparams);
 
-	if (pparams->simvel)
-{
-	VectorCopy(pparams->simvel,g_vel);
-}
+	if (!g_bDontUpdateVelThisTime)
+	{
+		if (pparams->simvel)
+		{
+			VectorCopy(pparams->simvel,g_vel);
+		}
+		else
+		{
+			VectorClear(g_vel);
+		}
+	}
 	else
 	{
-		VectorClear(g_vel);
+		g_bDontUpdateVelThisTime = false;
 	}
 
 	VectorCopy(ent->origin,g_org);

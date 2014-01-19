@@ -209,6 +209,8 @@ int gmsgEntityInfo = 0;
 int gmsgEntityFired = 0;
 int gmsgEntityFireReset = 0;
 
+int gmsgPlayerSpeed = 0;
+
 char m_szLastFiremonTarget[128];
 
 extern cvar_t firemon_target;
@@ -263,6 +265,7 @@ void LinkUserMessages( void )
 	gmsgEntityInfo = REG_USER_MSG("EntInfo", -1);
 	gmsgEntityFired = REG_USER_MSG("EntFired", 0);
 	gmsgEntityFireReset = REG_USER_MSG("FireReset", 0);
+	gmsgPlayerSpeed = REG_USER_MSG("PlrSpeed", 12);
 	// ALERT(at_console, "Msg registered: %d, health: %d, statusvalue: %d\n", gmsgEntityHealth, gmsgHealth, gmsgStatusValue);
 }
 
