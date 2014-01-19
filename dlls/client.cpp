@@ -531,6 +531,8 @@ void ClientUserInfoChanged( edict_t *pEntity, char *infobuffer )
 
 static int g_serveractive = 0;
 
+extern FILE *pTriggerLogFile;
+
 void ServerDeactivate( void )
 {
 	// It's possible that the engine will call this function more times than is necessary
@@ -544,6 +546,14 @@ void ServerDeactivate( void )
 
 	// Peform any shutdown operations here...
 	//
+
+	// YaLTeR Start
+	if (pTriggerLogFile)
+	{
+		fclose(pTriggerLogFile);
+		pTriggerLogFile = NULL;
+	}
+	// YaLTeR End
 }
 
 void ServerActivate( edict_t *pEdictList, int edictCount, int clientMax )

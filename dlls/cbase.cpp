@@ -128,6 +128,10 @@ int GetEntityAPI2( DLL_FUNCTIONS *pFunctionTable, int *interfaceVersion )
 }
 #endif
 
+// YaLTeR Start
+extern cvar_t sv_dumptriggers;
+FILE *pTriggerLogFile = NULL;
+// YaLTeR End
 
 int DispatchSpawn( edict_t *pent )
 {
@@ -152,6 +156,42 @@ int DispatchSpawn( edict_t *pent )
 				return -1;	// return that this entity should be deleted
 			if ( pEntity->pev->flags & FL_KILLME )
 				return -1;
+			
+			if (sv_dumptriggers.value != 0.0f)
+			{
+				if ( strstr(STRING(pEntity->pev->classname), "trigger_") != NULL )
+				{
+					if (!pTriggerLogFile)
+					{
+						char szFilename[MAX_PATH], szTemp[MAX_PATH];
+						g_engfuncs.pfnGetGameDir(szFilename);
+						sprintf(szTemp, "/%s.cfg", STRING(gpGlobals->mapname));
+						strcat(szFilename, szTemp);
+
+						pTriggerLogFile = fopen(szFilename, "w");
+					}
+
+					if (!pTriggerLogFile)
+					{
+						ALERT(at_console, "Could not open the trigger log file!\n");
+					}
+					else
+					{
+						unsigned char r = 255, g = 255, b = 255;
+						if ( FStrEq(STRING(pEntity->pev->classname), "trigger_once") )					{ r = 255; g = 255; b = 0  ; }
+						else if ( FStrEq(STRING(pEntity->pev->classname), "trigger_multiple") )			{ r = 255; g = 128; b = 0  ; }
+						else if ( FStrEq(STRING(pEntity->pev->classname), "trigger_changelevel") )		{ r = 0  ; g = 255; b = 0  ; }
+						else if ( FStrEq(STRING(pEntity->pev->classname), "trigger_transition") )		{ r = 0  ; g = 255; b = 255; }
+						else if ( FStrEq(STRING(pEntity->pev->classname), "trigger_hurt") )				{ r = 255; g = 0  ; b = 0  ; }
+						else if ( FStrEq(STRING(pEntity->pev->classname), "trigger_push") )				{ r = 0  ; g = 0  ; b = 255; }
+						else if ( FStrEq(STRING(pEntity->pev->classname), "trigger_teleport") )			{ r = 255; g = 0  ; b = 255; }
+
+						char szLine[1024];
+						sprintf(szLine, "cl_boxes_add %f %f %f %f %f %f %d %d %d 128\n", pEntity->pev->mins.x, pEntity->pev->mins.y, pEntity->pev->mins.z, pEntity->pev->maxs.x, pEntity->pev->maxs.y, pEntity->pev->maxs.z, r, g, b);
+						fputs(szLine, pTriggerLogFile);
+					}
+				}
+			}
 		}
 
 
