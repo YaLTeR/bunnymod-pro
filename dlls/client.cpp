@@ -549,6 +549,7 @@ void ServerDeactivate( void )
 	if (pTriggerLogFile)
 	{
 		fclose(pTriggerLogFile);
+		pTriggerLogFile = NULL;
 	}
 	// YaLTeR End
 }
