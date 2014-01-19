@@ -163,10 +163,12 @@ int DispatchSpawn( edict_t *pent )
 				{
 					if (!pTriggerLogFile)
 					{
-						char szTemp[MAX_PATH];
-						sprintf(szTemp, "%s.cfg", STRING(gpGlobals->mapname));
+						char szFilename[MAX_PATH], szTemp[MAX_PATH];
+						g_engfuncs.pfnGetGameDir(szFilename);
+						sprintf(szTemp, "/%s.cfg", STRING(gpGlobals->mapname));
+						strcat(szFilename, szTemp);
 
-						pTriggerLogFile = fopen(szTemp, "w");
+						pTriggerLogFile = fopen(szFilename, "w");
 					}
 
 					if (!pTriggerLogFile)
