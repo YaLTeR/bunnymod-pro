@@ -58,6 +58,16 @@ bool g_bOldClAutojump = false;
 #define M_U          0.0054931640625
 #define M_INVU     182.0444444444444
 
+extern vec3_t g_org, g_vel, g_vecViewAngle;
+extern bool g_bOnGroundDemoInaccurate;
+extern bool g_bOldOnGroundDemoInaccurate;
+extern cvar_t *tas_perfectstrafe_accel;
+extern cvar_t *tas_perfectstrafe_airaccel;
+extern cvar_t *tas_perfectstrafe_friction;
+extern cvar_t *tas_perfectstrafe_maxspeed;
+extern cvar_t *tas_perfectstrafe_autojump;
+extern cvar_t *tas_perfectstrafe_movetype;
+
 extern cvar_t *tas_autostrafe_desiredviewangle;
 extern cvar_t *tas_autostrafe_manualangle;
 
@@ -737,15 +747,6 @@ if active == 1 then we are 1) not playing back demos ( where our commands are ig
 */
 
 // YaLTeR Start
-extern vec3_t g_org, g_vel, g_vecViewAngle;
-extern bool g_bOnGroundDemoInaccurate;
-extern bool g_bOldOnGroundDemoInaccurate;
-extern cvar_t *tas_perfectstrafe_accel;
-extern cvar_t *tas_perfectstrafe_airaccel;
-extern cvar_t *tas_perfectstrafe_friction;
-extern cvar_t *tas_perfectstrafe_maxspeed;
-extern cvar_t *tas_perfectstrafe_autojump;
-
 double CL_GetBorderVelocity(double v0, double A, double Agr, float maxspeed, float friction, float frametime)
 {
 	double ff = friction * frametime;
@@ -791,6 +792,11 @@ double CL_GetOptimalAngle(float maxspeed, double A, double v0)
 
 	return (acos(alphacos) * M_RAD2DEG);
 }
+
+double CL_GetMaximumAngle(float maxspeed, double A, double v0)
+{
+	return 135;
+}
 // YaLTeR End
 
 void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int active )
@@ -823,12 +829,29 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		double v0 = hypot(g_vel[0], g_vel[1]);
 
 		// Air acceleration
-		double alpha = CL_GetOptimalAngle(30, A, v0);
+		double alpha;
+		if (tas_perfectstrafe_movetype->value == 1.0f)
+		{
+			alpha = CL_GetMaximumAngle(30, A, v0);
+		}
+		else
+		{
+			alpha = CL_GetOptimalAngle(30, A, v0);
+		}
 		
 		// Ground acceleration
 		double frictiondrop = v0 * friction * frametime; // TODO: edgefriction
 		double actualspeed = v0 - frictiondrop;
-		double alpha_gr = CL_GetOptimalAngle(maxspeed, Agr, actualspeed);
+		double alpha_gr;
+		
+		if (tas_perfectstrafe_movetype->value == 1.0f)
+		{
+			alpha_gr = CL_GetMaximumAngle(maxspeed, Agr, actualspeed);
+		}
+		else
+		{
+			alpha_gr = CL_GetOptimalAngle(maxspeed, Agr, actualspeed);
+		}
 
 		if ( tas_autostrafe_manualangle->value != 0.0f )
 		{
