@@ -745,6 +745,52 @@ extern cvar_t *tas_perfectstrafe_airaccel;
 extern cvar_t *tas_perfectstrafe_friction;
 extern cvar_t *tas_perfectstrafe_maxspeed;
 extern cvar_t *tas_perfectstrafe_autojump;
+
+double CL_GetBorderVelocity(double v0, double A, double Agr, float maxspeed, float friction, float frametime)
+{
+	double ff = friction * frametime;
+	double bordervel = -1.0;
+
+	if ((A < 30) && (Agr < maxspeed))
+	{
+		double temp = fabs(60*A - A*A + Agr*Agr - 2*Agr*maxspeed);
+		bordervel = sqrt(temp) / sqrt(2*ff - ff*ff);
+	}
+	else if ((A >= 30) && (Agr < maxspeed))
+	{
+		if (v0 < (maxspeed - Agr))
+		{
+			double temp = fabs(Agr*Agr - 1800*ff + 900*ff*ff);
+			bordervel = fabs( (-Agr + Agr*ff - sqrt(temp)) / (-2*ff + ff*ff) );
+		}
+		else
+		{
+			bordervel = sqrt( fabs( 900 + Agr*Agr - 2*Agr*maxspeed ) ) / ( sqrt( fabs(ff - 2) ) * sqrt( fabs(ff) ) );
+		}
+	}
+	else if ((A < 30) && (Agr >= maxspeed))
+	{
+		bordervel = sqrt( fabs( 60*A - A*A - maxspeed*maxspeed ) ) / sqrt( fabs(-2*ff + ff*ff) );
+	}
+	else if ((A >= 30) && (Agr >= maxspeed))
+	{
+		bordervel = sqrt( fabs(900 - maxspeed*maxspeed) ) / sqrt( fabs(-2*ff + ff*ff) );
+	}
+
+	return bordervel;
+}
+
+double CL_GetOptimalAngle(float maxspeed, double A, double v0)
+{
+	if (v0 == 0)
+		return 0;
+
+	double alphacos = (maxspeed - A) / v0;
+	if (alphacos >= 1) return 0;
+	if (alphacos <= 0) return 90;
+
+	return (acos(alphacos) * M_RAD2DEG);
+}
 // YaLTeR End
 
 void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int active )
@@ -777,23 +823,12 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		double v0 = hypot(g_vel[0], g_vel[1]);
 
 		// Air acceleration
-		double alphacos = (30 - A) / v0;
-		if (alphacos > 1) alphacos = 1;
-		if (alphacos < 0) alphacos = 0;
-		double alpha = acos(alphacos) * M_RAD2DEG;
+		double alpha = CL_GetOptimalAngle(30, A, v0);
 		
 		// Ground acceleration
 		double frictiondrop = v0 * friction * frametime; // TODO: edgefriction
 		double actualspeed = v0 - frictiondrop;
-		double alphacos_gr = 1.0;
-		if (actualspeed != 0)
-		{
-			alphacos_gr = (maxspeed - Agr) / actualspeed;
-			if (alphacos_gr > 1) alphacos_gr = 1;
-			if (alphacos_gr < 0) alphacos_gr = 0;
-		}
-		
-		double alpha_gr = acos(alphacos_gr) * M_RAD2DEG;
+		double alpha_gr = CL_GetOptimalAngle(maxspeed, Agr, actualspeed);
 
 		if ( tas_autostrafe_manualangle->value != 0.0f )
 		{
@@ -805,34 +840,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		{
 			if ( tas_perfectstrafe_autojump->value )
 			{
-				double ff = friction * frametime;
-				double bordervel = -1.0f;
-
-				if ((A < 30) && (Agr < maxspeed))
-				{
-					double temp = fabs(60*A - A*A + Agr*Agr - 2*Agr*maxspeed);
-					bordervel = sqrt(temp) / sqrt(2*ff - ff*ff);
-				}
-				else if ((A >= 30) && (Agr < maxspeed))
-				{
-					if (v0 < (maxspeed - Agr))
-					{
-						double temp = fabs(Agr*Agr - 1800*ff + 900*ff*ff);
-						bordervel = fabs( (-Agr + Agr*ff - sqrt(temp)) / (-2*ff + ff*ff) );
-					}
-					else
-					{
-						bordervel = sqrt( fabs( 900 + Agr*Agr - 2*Agr*maxspeed ) ) / ( sqrt( fabs(ff - 2) ) * sqrt( fabs(ff) ) );
-					}
-				}
-				else if ((A < 30) && (Agr >= maxspeed))
-				{
-					bordervel = sqrt( fabs( 60*A - A*A - maxspeed*maxspeed ) ) / sqrt( fabs(-2*ff + ff*ff) );
-				}
-				else if ((A >= 30) && (Agr >= maxspeed))
-				{
-					bordervel = sqrt( fabs(900 - maxspeed*maxspeed) ) / sqrt( fabs(-2*ff + ff*ff) );
-				}
+				double bordervel = CL_GetBorderVelocity(v0, A, Agr, maxspeed, friction, frametime);
 
 				/*if (!g_bPaused)
 				{
@@ -885,14 +893,14 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 				autostrafe_turningRight = (v0delta < 0);
 
-				if (autostrafe_turningRight)
+				if (!autostrafe_turningRight)
 				{
 					alpha = -alpha;
 				}
 			}
 			else
 			{
-				if (in_moveright.state & 1)
+				if (!(in_moveright.state & 1))
 				{
 					alpha = -alpha;
 				}
@@ -917,7 +925,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 			if (!g_bPaused)
 			{
-				yawRotation = alpha + phi;
+				yawRotation = phi - alpha;
 			}
 			else
 			{
@@ -944,14 +952,14 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 				autostrafe_turningRight = (v0delta < 0);
 
-				if (autostrafe_turningRight)
+				if (!autostrafe_turningRight)
 				{
 					alpha_gr = -alpha_gr;
 				}
 			}
 			else
 			{
-				if (in_moveright.state & 1)
+				if (!(in_moveright.state & 1))
 				{
 					alpha_gr = -alpha_gr;
 				}
@@ -972,7 +980,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				wishang = (in_moveright.state & 1) ? normangleengine(viewangles[YAW] - 45) : normangleengine(viewangles[YAW] + 45);
 			}
 
-			if ( (actualspeed == 0) || (alphacos_gr >= 1) )
+			if ( (actualspeed == 0) || (alpha_gr == 0) )
 			{
 				if (!g_bPaused)
 				{
@@ -994,7 +1002,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 				if (!g_bPaused)
 				{
-					yawRotation = alpha_gr + phi;
+					yawRotation = phi - alpha_gr;
 					//gEngfuncs.Con_Printf("phi: %f; yawRot: %f; wishang: %f; velang: %f; alpha: %f\n", phi, yawRotation, wishang, velAng[YAW], alpha_gr);
 				}
 				else
