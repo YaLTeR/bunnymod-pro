@@ -41,8 +41,6 @@ bool firstRotationInTheAir = true;
 bool shouldForceJump = false;
 bool autostrafe_turningRight = true;
 float autostrafe_desiredViewangle = 0.0;
-#define normangle(x) (x>=180)?(x-360):((x<(-180))?(x+360):x)
-#define normangleengine(x) (x>=360)?(x-360):((x<0)?(x+360):x)
 extern bool g_bPaused;
 bool g_bPerfectstrafe = false;
 bool g_bAutostrafe = false;
@@ -62,6 +60,26 @@ bool g_bOldClAutojump = false;
 
 extern cvar_t *tas_autostrafe_desiredviewangle;
 extern cvar_t *tas_autostrafe_manualangle;
+
+double normangle(double angle)
+{
+	if (angle >= 180)
+		angle -= 360;
+	else if (angle < -180)
+		angle += 360;
+
+	return angle;
+}
+
+double normangleengine(double angle)
+{
+	if (angle >= 360)
+		angle -= 360;
+	else if (angle < 0)
+		angle += 360;
+
+	return angle;
+}
 // YaLTeR End
 
 extern "C" 
@@ -767,15 +785,15 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		// Ground acceleration
 		double frictiondrop = v0 * friction * frametime; // TODO: edgefriction
 		double actualspeed = v0 - frictiondrop;
-		double alpha_gr = 0.0f;
+		double alphacos_gr = 1.0;
 		if (actualspeed != 0)
 		{
-			double alphacos_gr = (maxspeed - Agr) / actualspeed;
+			alphacos_gr = (maxspeed - Agr) / actualspeed;
 			if (alphacos_gr > 1) alphacos_gr = 1;
 			if (alphacos_gr < 0) alphacos_gr = 0;
-
-			alpha_gr = acos(alphacos_gr) * M_RAD2DEG;
 		}
+		
+		double alpha_gr = acos(alphacos_gr) * M_RAD2DEG;
 
 		if ( tas_autostrafe_manualangle->value != 0.0f )
 		{
@@ -866,6 +884,18 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			{
 				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 				autostrafe_turningRight = (v0delta < 0);
+
+				if (autostrafe_turningRight)
+				{
+					alpha = -alpha;
+				}
+			}
+			else
+			{
+				if (in_moveright.state & 1)
+				{
+					alpha = -alpha;
+				}
 			}
 
 			double wishang;
@@ -887,7 +917,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 			if (!g_bPaused)
 			{
-				yawRotation = (phi > 0) ? (phi - alpha) : (phi + alpha);
+				yawRotation = alpha + phi;
 			}
 			else
 			{
@@ -909,10 +939,22 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				velAng[YAW] = viewangles[YAW];
 			}
 			
-			double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 			if ( g_bAutostrafe )
 			{
+				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 				autostrafe_turningRight = (v0delta < 0);
+
+				if (autostrafe_turningRight)
+				{
+					alpha_gr = -alpha_gr;
+				}
+			}
+			else
+			{
+				if (in_moveright.state & 1)
+				{
+					alpha_gr = -alpha_gr;
+				}
 			}
 
 			/*if (!g_bPaused)
@@ -930,7 +972,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				wishang = (in_moveright.state & 1) ? normangleengine(viewangles[YAW] - 45) : normangleengine(viewangles[YAW] + 45);
 			}
 
-			if ( (actualspeed == 0) || (((maxspeed - Agr) / actualspeed) > 1) )
+			if ( (actualspeed == 0) || (alphacos_gr >= 1) )
 			{
 				if (!g_bPaused)
 				{
@@ -952,7 +994,8 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 				if (!g_bPaused)
 				{
-					yawRotation = (phi > 0) ? (phi - alpha_gr) : (phi + alpha_gr);
+					yawRotation = alpha_gr + phi;
+					//gEngfuncs.Con_Printf("phi: %f; yawRot: %f; wishang: %f; velang: %f; alpha: %f\n", phi, yawRotation, wishang, velAng[YAW], alpha_gr);
 				}
 				else
 				{
