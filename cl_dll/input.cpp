@@ -795,7 +795,14 @@ double CL_GetOptimalAngle(float maxspeed, double A, double v0)
 
 double CL_GetMaximumAngle(float maxspeed, double A, double v0)
 {
-	return 135;
+	if (v0 == 0)
+		return 90;
+
+	double alphacos = (-A) / v0;
+	if (alphacos >= 1) return 0;
+	if (alphacos <= -1) return 180;
+
+	return (acos(alphacos) * M_RAD2DEG);
 }
 // YaLTeR End
 
@@ -830,7 +837,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		// Air acceleration
 		double alpha;
-		if (tas_perfectstrafe_movetype->value == 1.0f)
+		if (tas_perfectstrafe_movetype->value != 1.0f)
 		{
 			alpha = CL_GetMaximumAngle(30, A, v0);
 		}
