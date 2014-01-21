@@ -837,7 +837,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		// Air acceleration
 		double alpha;
-		if (tas_perfectstrafe_movetype->value != 1.0f)
+		if (tas_perfectstrafe_movetype->value == 1.0f)
 		{
 			alpha = CL_GetMaximumAngle(30, A, v0);
 		}
