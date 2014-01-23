@@ -41,8 +41,11 @@ bool firstRotationInTheAir = true;
 bool shouldForceJump = false;
 bool autostrafe_turningClockwise = true;
 float autostrafe_desiredViewangle = 0.0;
+bool perfectstrafe_movingBackwards = false;
+bool perfectstrafe_needToUpdateDirection = false;
 extern bool g_bPaused;
 bool g_bPerfectstrafe = false;
+bool g_bOldPerfectstrafe = false;
 bool g_bAutostrafe = false;
 bool g_bOldAutostrafe = false;
 bool g_bOldUnpausedAutostrafe = false;
@@ -891,22 +894,28 @@ bool CL_IsMovementKeyPressed()
 
 float CL_GetPerfectstrafeDir()
 {
-	if ((in_forward.state & 1) && (in_moveright.state & 1))
-		return 1;
-	else if (in_moveright.state & 1)
-		return 2;
-	else if ((in_back.state & 1) && (in_moveright.state & 1))
-		return 3;
-	else if (in_back.state & 1)
-		return 4;
-	else if ((in_back.state & 1) && (in_moveleft.state & 1))
-		return 5;
-	else if (in_moveleft.state & 1)
-		return 6;
-	else if ((in_forward.state & 1) && (in_moveleft.state & 1))
-		return 7;
+	if (!perfectstrafe_movingBackwards)
+	{
+		if (((in_forward.state & 1) && (in_moveright.state & 1)) || ((in_forward.state & 1) && (in_moveleft.state & 1)))
+			return 1;
+		else if (((in_back.state & 1) && (in_moveright.state & 1)) || ((in_back.state & 1) && (in_moveleft.state & 1)))
+			return 3;
+		else if ((in_moveright.state & 1) || (in_moveleft.state & 1))
+			return 2;
+		else
+			return 0;
+	}
 	else
-		return 0;
+	{
+		if (((in_forward.state & 1) && (in_moveright.state & 1)) || ((in_forward.state & 1) && (in_moveleft.state & 1)))
+			return 7;
+		else if (((in_back.state & 1) && (in_moveright.state & 1)) || ((in_back.state & 1) && (in_moveleft.state & 1)))
+			return 5;
+		else if ((in_moveright.state & 1) || (in_moveleft.state & 1))
+			return 6;
+		else
+			return 4;
+	}
 }
 // YaLTeR End
 
@@ -975,6 +984,24 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		if ( tas_autostrafe_manualangle->value != 0.0f )
 		{
 			autostrafe_desiredViewangle = tas_autostrafe_desiredviewangle->value;
+		}
+
+		if ((g_bPerfectstrafe != g_bOldPerfectstrafe) && g_bPerfectstrafe)
+		{
+			perfectstrafe_needToUpdateDirection = true;
+		}
+
+		g_bOldPerfectstrafe = g_bPerfectstrafe;
+
+		if (g_bPerfectstrafe && !CL_IsMovementKeyPressed())
+		{
+			perfectstrafe_needToUpdateDirection = true;
+		}
+
+		if (perfectstrafe_needToUpdateDirection && CL_IsMovementKeyPressed())
+		{
+			perfectstrafe_needToUpdateDirection = false;
+			perfectstrafe_movingBackwards = (in_back.state & 1);
 		}
 
 		// Same condition as below, to check if we're groundstrafing
@@ -1066,7 +1093,18 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			}
 			else
 			{
-				wishang = CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] - CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir())) : normangleengine(viewangles[YAW] + CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir()));
+				if (CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir()) == 0)
+				{
+					wishang = CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW]) : normangleengine(viewangles[YAW] + 180);
+				}
+				else if (CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir()) == 180)
+				{
+					wishang = CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] + 180) : normangleengine(viewangles[YAW]);
+				}
+				else
+				{
+					wishang = CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] - CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir())) : normangleengine(viewangles[YAW] + CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir()));
+				}
 			}
 
 			double phi = normangle(velAng[YAW] - wishang);
@@ -1141,7 +1179,18 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			}
 			else
 			{
-				wishang = CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] - CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir())) : normangleengine(viewangles[YAW] + CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir()));
+				if (CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir()) == 0)
+				{
+					wishang = CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW]) : normangleengine(viewangles[YAW] + 180);
+				}
+				else if (CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir()) == 180)
+				{
+					wishang = CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] + 180) : normangleengine(viewangles[YAW]);
+				}
+				else
+				{
+					wishang = CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] - CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir())) : normangleengine(viewangles[YAW] + CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir()));
+				}
 			}
 
 			if ( (actualspeed == 0) || (alpha_gr == 0) )
@@ -1239,9 +1288,32 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				}
 			}
 		}
-		else if (g_bPerfectstrafe && (tas_perfectstrafe_movetype->value != 2.0f)) // 2.0f - backpedalling.
+		else if (g_bPerfectstrafe && (tas_perfectstrafe_movetype->value != 2.0f) && CL_IsMovementKeyPressed()) // 2.0f - backpedalling.
 		{
+			float dir = CL_GetPerfectstrafeDir();
 
+			if ((dir == 1.0f) || (dir == 2.0f) || (dir == 3.0f))
+			{
+				if ( CL_TurningClockwise(false, dir) )
+				{
+					cmd->sidemove += cl_sidespeed->value;
+				}
+				else
+				{
+					cmd->sidemove -= cl_sidespeed->value;
+				}
+			}
+			else if ((dir == 5.0f) || (dir == 6.0f) || (dir == 7.0f))
+			{
+				if ( CL_TurningClockwise(false, dir) )
+				{
+					cmd->sidemove -= cl_sidespeed->value;
+				}
+				else
+				{
+					cmd->sidemove += cl_sidespeed->value;
+				}
+			}
 		}
 		else
 		{
@@ -1260,7 +1332,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				cmd->forwardmove += cl_forwardspeed->value;
 			}*/
 
-			if (!g_bPerfectstrafe && !g_bAutostrafe)
+			if ((!g_bPerfectstrafe || !CL_IsMovementKeyPressed()) && !g_bAutostrafe)
 			{
 				cmd->forwardmove += cl_forwardspeed->value * CL_KeyState (&in_forward);
 				cmd->forwardmove -= cl_backspeed->value * CL_KeyState (&in_back);
@@ -1319,7 +1391,38 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				}
 				else
 				{
+					float dir = CL_GetPerfectstrafeDir();
 
+					if (dir == 0.0f)
+					{
+						if ( CL_TurningClockwise(false, dir) )
+						{
+							cmd->forwardmove += cl_forwardspeed->value;
+						}
+						else
+						{
+							cmd->forwardmove -= cl_backspeed->value;
+						}
+					}
+					else if (dir == 4.0f)
+					{
+						if ( CL_TurningClockwise(false, dir) )
+						{
+							cmd->forwardmove -= cl_backspeed->value;
+						}
+						else
+						{
+							cmd->forwardmove += cl_forwardspeed->value;
+						}
+					}
+					else if ((dir == 1.0f) || (dir == 7.0f))
+					{
+						cmd->forwardmove += cl_forwardspeed->value;
+					}
+					else if ((dir == 3.0f) || (dir == 5.0f))
+					{
+						cmd->forwardmove -= cl_backspeed->value;
+					}
 				}
 			}
 		}
