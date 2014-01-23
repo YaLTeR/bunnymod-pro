@@ -343,6 +343,19 @@ cvar_t *tas_perfectstrafe_movetype;
 cvar_t *tas_autostrafe_desiredviewangle;
 cvar_t *tas_autostrafe_manualangle;
 
+/*
+    0 - W/S (going left)
+    1 - WA/WD
+    2 - A/D
+    3 - SA/SD
+    4 - W/S (going right)
+    5 - SA/SD (backwards)
+    6 - A/D (backwards)
+    7 - WA/WD (backwards)
+*/
+cvar_t *tas_autostrafe_airdir;
+cvar_t *tas_autostrafe_grounddir;
+
 bool g_bResetDemorecCounter = false;
  
 void ResetDemorecCounter( void )
@@ -666,6 +679,8 @@ tas_perfectstrafe_friction = CVAR_CREATE( "tas_perfectstrafe_friction", "4", 0 )
 tas_perfectstrafe_maxspeed = CVAR_CREATE( "tas_perfectstrafe_maxspeed", "320", 0 );
 tas_perfectstrafe_autojump = CVAR_CREATE( "tas_perfectstrafe_autojump", "0", FCVAR_ARCHIVE );
 tas_perfectstrafe_movetype = CVAR_CREATE( "tas_perfectstrafe_movetype", "0", 0 );
+tas_autostrafe_airdir = CVAR_CREATE( "tas_autostrafe_airdir", "2", 0 );
+tas_autostrafe_grounddir = CVAR_CREATE( "tas_autostrafe_grounddir", "1", 0 );
 
 tas_autostrafe_desiredviewangle = CVAR_CREATE( "tas_autostrafe_desiredviewangle", "0.0", 0 );
 tas_autostrafe_manualangle = CVAR_CREATE( "tas_autostrafe_manualangle", "0", FCVAR_ARCHIVE );
