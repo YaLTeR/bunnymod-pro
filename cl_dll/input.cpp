@@ -87,6 +87,18 @@ extern cvar_t *tas_autostrafe_manualangle;
 extern cvar_t *tas_autostrafe_airdir;
 extern cvar_t *tas_autostrafe_grounddir;
 
+/*
+    0 - W/S (going left) - D
+    1 - WA/WD - SD
+    2 - A/D - S
+    3 - SA/SD - SA
+    4 - W/S (going right) - A
+    5 - SA/SD (backwards) - WA
+    6 - A/D (backwards) - W
+    7 - WA/WD (backwards) - WD
+*/
+extern cvar_t *tas_autostrafe_backpedaldir;
+
 double normangle(double angle)
 {
 	if (angle >= 180)
@@ -821,7 +833,38 @@ double CL_GetMaximumAngle(float maxspeed, double A, double v0, bool onground)
 	return (acos(alphacos) * M_RAD2DEG);
 }
 
+// How much the player view (not wishvel!) should differentiate from the velocity.
 double CL_GetBackpedallingAngle(float maxspeed, double A, double v0, bool onground, float dirOverride = -1.0f)
+{
+	float dir;
+	if (dirOverride != -1.0f)
+	{
+		dir = dirOverride;
+	}
+	else
+	{
+		dir = tas_autostrafe_backpedaldir->value;
+	}
+
+	if (dir == 1.0f)
+		return 45;
+	else if (dir == 2.0f)
+		return 0;
+	else if (dir == 3.0f)
+		return 315;
+	else if (dir == 4.0f)
+		return 270;
+	else if (dir == 5.0f)
+		return 225;
+	else if (dir == 6.0f)
+		return 180;
+	else if (dir == 7.0f)
+		return 135;
+	else
+		return 90;
+}
+
+double CL_GetWishAngleDiff(bool onground, bool turningClockwise, float dirOverride = -1.0f)
 {
 	float dir;
 	if (dirOverride != -1.0f)
@@ -836,22 +879,37 @@ double CL_GetBackpedallingAngle(float maxspeed, double A, double v0, bool ongrou
 			dir = tas_autostrafe_airdir->value;
 	}
 
+	double result;
 	if (dir == 1.0f)
-		return 45;
+		result = 45;
 	else if (dir == 2.0f)
-		return 90;
+		result = 90;
 	else if (dir == 3.0f)
-		return 135;
+		result = 135;
 	else if (dir == 4.0f)
-		return 180;
+		result = 180;
 	else if (dir == 5.0f)
-		return 225;
+		result = 225;
 	else if (dir == 6.0f)
-		return 270;
+		result = 270;
 	else if (dir == 7.0f)
-		return 315;
+		result = 315;
 	else
-		return 0;
+		result = 0;
+
+	if ( turningClockwise )
+	{
+		result = -result;
+	}
+	else
+	{
+		if (result == 0)
+			result = 180;
+		else if (result == 180)
+			result = 0;
+	}
+
+	return result;
 }
 
 bool CL_TurningClockwise(bool onground, float dirOverride = -1.0f)
@@ -974,7 +1032,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		}
 		else if (tas_perfectstrafe_movetype->value == 2.0f)
 		{
-			alpha_gr = CL_GetBackpedallingAngle(30, A, v0, true);
+			alpha_gr = CL_GetBackpedallingAngle(maxspeed, A, v0, true);
 		}
 		else
 		{
@@ -1062,49 +1120,34 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 				autostrafe_turningClockwise = (v0delta < 0);
 
-				if (!autostrafe_turningClockwise)
+				if (!autostrafe_turningClockwise && (tas_perfectstrafe_movetype->value != 2.0f))
 				{
 					alpha = -alpha;
 				}
 			}
 			else
 			{
-				if (!CL_TurningClockwise(false, CL_GetPerfectstrafeDir()))
+				if (!CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) && (tas_perfectstrafe_movetype->value != 2.0f))
 				{
 					alpha = -alpha;
 				}
 			}
 
 			double wishang;
-			if ( g_bAutostrafe )
+			if ( tas_perfectstrafe_movetype->value != 2.0f )
 			{
-				if (CL_GetBackpedallingAngle(0, 0, 0, false) == 0)
+				if ( g_bAutostrafe )
 				{
-					wishang = (autostrafe_turningClockwise) ? normangleengine(viewangles[YAW]) : normangleengine(viewangles[YAW] + 180);
-				}
-				else if (CL_GetBackpedallingAngle(0, 0, 0, false) == 180)
-				{
-					wishang = (autostrafe_turningClockwise) ? normangleengine(viewangles[YAW] + 180) : normangleengine(viewangles[YAW]);
+					wishang = normangleengine(viewangles[YAW] + CL_GetWishAngleDiff(false, autostrafe_turningClockwise));
 				}
 				else
 				{
-					wishang = (autostrafe_turningClockwise) ? normangleengine(viewangles[YAW] - CL_GetBackpedallingAngle(0, 0, 0, false)) : normangleengine(viewangles[YAW] + CL_GetBackpedallingAngle(0, 0, 0, false));
+					wishang = normangleengine(viewangles[YAW] + CL_GetWishAngleDiff(false, CL_TurningClockwise(false, CL_GetPerfectstrafeDir()), CL_GetPerfectstrafeDir()));
 				}
 			}
 			else
 			{
-				if (CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir()) == 0)
-				{
-					wishang = CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW]) : normangleengine(viewangles[YAW] + 180);
-				}
-				else if (CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir()) == 180)
-				{
-					wishang = CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] + 180) : normangleengine(viewangles[YAW]);
-				}
-				else
-				{
-					wishang = CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] - CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir())) : normangleengine(viewangles[YAW] + CL_GetBackpedallingAngle(0, 0, 0, false, CL_GetPerfectstrafeDir()));
-				}
+				wishang = normangleengine(viewangles[YAW]);
 			}
 
 			double phi = normangle(velAng[YAW] - wishang);
@@ -1143,14 +1186,14 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
 				autostrafe_turningClockwise = (v0delta < 0);
 
-				if (!autostrafe_turningClockwise)
+				if (!autostrafe_turningClockwise && (tas_perfectstrafe_movetype->value != 2.0f))
 				{
 					alpha_gr = -alpha_gr;
 				}
 			}
 			else
 			{
-				if (!CL_TurningClockwise(true, CL_GetPerfectstrafeDir()))
+				if (!CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) && (tas_perfectstrafe_movetype->value != 2.0f))
 				{
 					alpha_gr = -alpha_gr;
 				}
@@ -1162,35 +1205,20 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			}*/
 			
 			double wishang;
-			if ( g_bAutostrafe )
+			if (tas_perfectstrafe_movetype->value != 2.0f)
 			{
-				if (CL_GetBackpedallingAngle(0, 0, 0, true) == 0)
+				if ( g_bAutostrafe )
 				{
-					wishang = (autostrafe_turningClockwise) ? normangleengine(viewangles[YAW]) : normangleengine(viewangles[YAW] + 180);
-				}
-				else if (CL_GetBackpedallingAngle(0, 0, 0, true) == 180)
-				{
-					wishang = (autostrafe_turningClockwise) ? normangleengine(viewangles[YAW] + 180) : normangleengine(viewangles[YAW]);
+					wishang = normangleengine(viewangles[YAW] + CL_GetWishAngleDiff(true, autostrafe_turningClockwise));
 				}
 				else
 				{
-					wishang = (autostrafe_turningClockwise) ? normangleengine(viewangles[YAW] - CL_GetBackpedallingAngle(0, 0, 0, true)) : normangleengine(viewangles[YAW] + CL_GetBackpedallingAngle(0, 0, 0, true));
+					wishang = normangleengine(viewangles[YAW] + CL_GetWishAngleDiff(true, CL_TurningClockwise(true, CL_GetPerfectstrafeDir()), CL_GetPerfectstrafeDir()));
 				}
 			}
 			else
 			{
-				if (CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir()) == 0)
-				{
-					wishang = CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW]) : normangleengine(viewangles[YAW] + 180);
-				}
-				else if (CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir()) == 180)
-				{
-					wishang = CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] + 180) : normangleengine(viewangles[YAW]);
-				}
-				else
-				{
-					wishang = CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) ? normangleengine(viewangles[YAW] - CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir())) : normangleengine(viewangles[YAW] + CL_GetBackpedallingAngle(0, 0, 0, true, CL_GetPerfectstrafeDir()));
-				}
+				wishang = normangleengine(viewangles[YAW]);
 			}
 
 			if ( (actualspeed == 0) || (alpha_gr == 0) )
@@ -1315,6 +1343,19 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				}
 			}
 		}
+		else if (((g_bPerfectstrafe && CL_IsMovementKeyPressed()) || g_bAutostrafe) && (tas_perfectstrafe_movetype->value == 2.0f))
+		{
+			float dir = tas_autostrafe_backpedaldir->value;
+
+			if ((dir == 0.0f) || (dir == 1.0f) || (dir == 7.0f))
+			{
+				cmd->sidemove += cl_sidespeed->value;
+			}
+			else if ((dir == 3.0f) || (dir == 4.0f) || (dir == 5.0f))
+			{
+				cmd->sidemove -= cl_sidespeed->value;
+			}
+		}
 		else
 		{
 			cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_moveright);
@@ -1337,92 +1378,91 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				cmd->forwardmove += cl_forwardspeed->value * CL_KeyState (&in_forward);
 				cmd->forwardmove -= cl_backspeed->value * CL_KeyState (&in_back);
 			}
-			else if (g_bAutostrafe)
+			else if (((g_bPerfectstrafe && CL_IsMovementKeyPressed()) || g_bAutostrafe) && (tas_perfectstrafe_movetype->value == 2.0f))
 			{
-				if (tas_perfectstrafe_movetype->value == 2.0f) // 2.0f - backpedalling.
+				float dir = tas_autostrafe_backpedaldir->value;
+
+				if ((dir == 5.0f) || (dir == 6.0f) || (dir == 7.0f))
+				{
+					cmd->forwardmove += cl_forwardspeed->value;
+				}
+				else if ((dir == 1.0f) || (dir == 2.0f) || (dir == 3.0f))
 				{
 					cmd->forwardmove -= cl_backspeed->value;
 				}
+			}
+			else if (g_bAutostrafe)
+			{
+				float dir;
+				if (g_bOnGroundDemoInaccurate && !g_bInBhop)
+					dir = tas_autostrafe_grounddir->value;
 				else
-				{
-					float dir;
-					if (g_bOnGroundDemoInaccurate && !g_bInBhop)
-						dir = tas_autostrafe_grounddir->value;
-					else
-						dir = tas_autostrafe_airdir->value;
+					dir = tas_autostrafe_airdir->value;
 
-					if (dir == 0.0f)
-					{
-						if ( autostrafe_turningClockwise )
-						{
-							cmd->forwardmove += cl_forwardspeed->value;
-						}
-						else
-						{
-							cmd->forwardmove -= cl_backspeed->value;
-						}
-					}
-					else if (dir == 4.0f)
-					{
-						if ( autostrafe_turningClockwise )
-						{
-							cmd->forwardmove -= cl_backspeed->value;
-						}
-						else
-						{
-							cmd->forwardmove += cl_forwardspeed->value;
-						}
-					}
-					else if ((dir == 1.0f) || (dir == 7.0f))
+				if (dir == 0.0f)
+				{
+					if ( autostrafe_turningClockwise )
 					{
 						cmd->forwardmove += cl_forwardspeed->value;
 					}
-					else if ((dir == 3.0f) || (dir == 5.0f))
+					else
 					{
 						cmd->forwardmove -= cl_backspeed->value;
 					}
+				}
+				else if (dir == 4.0f)
+				{
+					if ( autostrafe_turningClockwise )
+					{
+						cmd->forwardmove -= cl_backspeed->value;
+					}
+					else
+					{
+						cmd->forwardmove += cl_forwardspeed->value;
+					}
+				}
+				else if ((dir == 1.0f) || (dir == 7.0f))
+				{
+					cmd->forwardmove += cl_forwardspeed->value;
+				}
+				else if ((dir == 3.0f) || (dir == 5.0f))
+				{
+					cmd->forwardmove -= cl_backspeed->value;
 				}
 			}
 			else if (g_bPerfectstrafe)
 			{
-				if (tas_perfectstrafe_movetype->value == 2.0f) // 2.0f - backpedalling.
-				{
-					cmd->forwardmove -= cl_backspeed->value;
-				}
-				else
-				{
-					float dir = CL_GetPerfectstrafeDir();
+				float dir = CL_GetPerfectstrafeDir();
 
-					if (dir == 0.0f)
-					{
-						if ( CL_TurningClockwise(false, dir) )
-						{
-							cmd->forwardmove += cl_forwardspeed->value;
-						}
-						else
-						{
-							cmd->forwardmove -= cl_backspeed->value;
-						}
-					}
-					else if (dir == 4.0f)
-					{
-						if ( CL_TurningClockwise(false, dir) )
-						{
-							cmd->forwardmove -= cl_backspeed->value;
-						}
-						else
-						{
-							cmd->forwardmove += cl_forwardspeed->value;
-						}
-					}
-					else if ((dir == 1.0f) || (dir == 7.0f))
+				if (dir == 0.0f)
+				{
+					if ( CL_TurningClockwise(false, dir) )
 					{
 						cmd->forwardmove += cl_forwardspeed->value;
 					}
-					else if ((dir == 3.0f) || (dir == 5.0f))
+					else
 					{
 						cmd->forwardmove -= cl_backspeed->value;
 					}
+				}
+				else if (dir == 4.0f)
+				{
+					if ( CL_TurningClockwise(false, dir) )
+					{
+						cmd->forwardmove -= cl_backspeed->value;
+					}
+					else
+					{
+						cmd->forwardmove += cl_forwardspeed->value;
+					}
+				}
+				else if ((dir == 1.0f) || (dir == 7.0f))
+				{
+					cmd->forwardmove += cl_forwardspeed->value;
+				}
+				else if ((dir == 3.0f) || (dir == 5.0f))
+				{
+					cmd->forwardmove -= cl_backspeed->value;
 				}
 			}
 		}
