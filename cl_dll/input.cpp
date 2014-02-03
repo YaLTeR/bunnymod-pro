@@ -88,14 +88,14 @@ extern cvar_t *tas_autostrafe_airdir;
 extern cvar_t *tas_autostrafe_grounddir;
 
 /*
-    0 - W/S (going left) - D
-    1 - WA/WD - SD
-    2 - A/D - S
-    3 - SA/SD - SA
-    4 - W/S (going right) - A
-    5 - SA/SD (backwards) - WA
-    6 - A/D (backwards) - W
-    7 - WA/WD (backwards) - WD
+    0 - D
+    1 - SD
+    2 - S
+    3 - SA
+    4 - A
+    5 - WA
+    6 - W
+    7 - WD
 */
 extern cvar_t *tas_autostrafe_backpedaldir;
 
