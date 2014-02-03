@@ -1221,7 +1221,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 				wishang = normangleengine(viewangles[YAW]);
 			}
 
-			if ( (actualspeed == 0) || (alpha_gr == 0) )
+			if ( (actualspeed == 0) || ((alpha_gr == 0) && (tas_perfectstrafe_movetype->value != 2.0f)) )
 			{
 				if (!g_bPaused)
 				{
