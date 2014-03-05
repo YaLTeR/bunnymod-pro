@@ -997,7 +997,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		vec3_t viewOfs;
 		VectorClear(viewOfs);
 		gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOfs );
-		if (viewOfs[2] != DEFAULT_VIEWHEIGHT)
+		if (viewOfs[2] == VEC_DUCK_VIEW)
 		{
 			maxspeed *= 0.333;
 		}
