@@ -577,7 +577,7 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	float			bob, waterOffset;
 	static viewinterp_t		ViewInterp;
 
-	g_bOnGroundDemoInaccurate = (pparams->onground != -1); // YaLTeR
+	g_bOnGroundDemoInaccurate = (pparams->onground != 0); // YaLTeR
 
 	static float oldz = 0;
 	static float lasttime;
