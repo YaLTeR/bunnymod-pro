@@ -463,6 +463,18 @@ void HealthDifference( void )
 	gHUD.m_CustomHud.HealthDifference();
 }
 
+float fSavedFPSMax = 0.0f;
+
+void SaveFPSMax( void )
+{
+	fSavedFPSMax = CVAR_GET_FLOAT( "fps_max" );
+}
+
+void RestoreFPSMax( void )
+{
+	gEngfuncs.Cvar_SetValue( "fps_max", fSavedFPSMax );
+}
+
 // void FindSpawns( void )
 // {
 // 	FindSpawnsInMap();
@@ -721,6 +733,11 @@ gEngfuncs.pfnAddCommand( "cl_autostopsave_printorigin", RulerAutostopsavePrintOr
 gEngfuncs.pfnAddCommand( "cl_boxes_reset", ResetBoxes );
 gEngfuncs.pfnAddCommand( "cl_boxes_dellast", DeleteLastBox );
 gEngfuncs.pfnAddCommand( "cl_boxes_add", AddBox );
+
+// Without the _max postfixes because you can't easily set fps_max then (autocomplete pls).
+SaveFPSMax();
+gEngfuncs.pfnAddCommand( "fps_save", SaveFPSMax );
+gEngfuncs.pfnAddCommand( "fps_restore", RestoreFPSMax );
 
 gEngfuncs.pfnAddCommand("hud_framecounter_reset", ResetFrameCounter);
 gEngfuncs.pfnAddCommand("hud_framecounter_dump", DumpFrameCounter);
