@@ -310,6 +310,8 @@ cvar_t *hud_entityinfo, *hud_entityinfo_pos;
 
 cvar_t *hud_firemon, *hud_firemon_pos;
 
+cvar_t *hud_velclip, *hud_velclip_pos;
+
 cvar_t *hud_accuracy;
 
 cvar_t *cl_rendermodels;
@@ -380,6 +382,13 @@ bool g_bGrenTimeReset = false;
 void ResetGrenadeTimer( void )
 {
 	g_bGrenTimeReset = true;
+}
+
+bool g_bResetVelClip = false;
+
+void ResetVelClip( void )
+{
+	g_bResetVelClip = true;
 }
 
 bool g_bDemorecChangelevel = false;
@@ -688,6 +697,9 @@ hud_ammo_difference_gauss = CVAR_CREATE( "hud_ammo_difference_gauss", "0", FCVAR
 hud_firemon = CVAR_CREATE( "hud_firemon", "0", FCVAR_ARCHIVE );
 hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 
+hud_velclip = CVAR_CREATE( "hud_velclip", "1", FCVAR_ARCHIVE );
+hud_velclip_pos = CVAR_CREATE( "hud_velclip_pos", "0", FCVAR_ARCHIVE );
+
 // cl_spawns_render = CVAR_CREATE( "cl_spawns_render", "0", FCVAR_ARCHIVE );
 // cl_spawns_wireframe = CVAR_CREATE( "cl_spawns_wireframe", "1", FCVAR_ARCHIVE );
 // cl_spawns_drawcross = CVAR_CREATE( "cl_spawns_drawcross", "1", FCVAR_ARCHIVE );
@@ -712,6 +724,7 @@ tas_autostrafe_manualangle = CVAR_CREATE( "tas_autostrafe_manualangle", "0", FCV
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
+gEngfuncs.pfnAddCommand("hud_velclip_reset", ResetVelClip);
 gEngfuncs.pfnAddCommand("hud_dontchange_changelevel_occured", ChangelevelOccured);
 gEngfuncs.pfnAddCommand("hud_gaussboost_disable", GaussboostDisable);
 gEngfuncs.pfnAddCommand("hud_gaussboost_reset", GaussboostReset);

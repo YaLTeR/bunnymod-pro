@@ -203,13 +203,16 @@ int gmsgTeamNames = 0;
 int gmsgStatusText = 0;
 int gmsgStatusValue = 0;
 
-// YaLTeR
+// YaLTeR Start
 int gmsgEntityHealth = 0;
 int gmsgEntityInfo = 0;
 int gmsgEntityFired = 0;
 int gmsgEntityFireReset = 0;
 
 int gmsgPlayerSpeed = 0;
+
+int gmsgVelocityClip = 0;
+// YaLTeR End
 
 char m_szLastFiremonTarget[128];
 
@@ -260,13 +263,14 @@ void LinkUserMessages( void )
 	gmsgStatusText = REG_USER_MSG("StatusText", -1);
 	gmsgStatusValue = REG_USER_MSG("StatusValue", 3);
 
-	// YaLTeR
+	// YaLTeR Start
 	gmsgEntityHealth = REG_USER_MSG("EntHealth", 4);
 	gmsgEntityInfo = REG_USER_MSG("EntInfo", -1);
 	gmsgEntityFired = REG_USER_MSG("EntFired", 0);
 	gmsgEntityFireReset = REG_USER_MSG("FireReset", 0);
 	gmsgPlayerSpeed = REG_USER_MSG("PlrSpeed", 12);
-	// ALERT(at_console, "Msg registered: %d, health: %d, statusvalue: %d\n", gmsgEntityHealth, gmsgHealth, gmsgStatusValue);
+	gmsgVelocityClip = REG_USER_MSG("VelClip", 8);
+	// YaLTeR End
 }
 
 LINK_ENTITY_TO_CLASS( player, CBasePlayer );
@@ -1799,6 +1803,8 @@ void CBasePlayer::UpdateStatusBar()
 // YaLTeR
 extern "C" int g_iCustomJumpvel;
 extern "C" int g_iAutoJump;
+extern "C" unsigned int g_uiClipCount;
+extern "C" float g_flLastVelClipPlaneAngle;
 extern cvar_t jumpvelocity;
 extern cvar_t autojump;
 extern cvar_t sethealth;
@@ -1809,6 +1815,8 @@ void CBasePlayer::PreThink(void)
 	// YaLTeR
 	g_iCustomJumpvel = jumpvelocity.value;
 	g_iAutoJump = autojump.value;
+
+	g_uiClipCount = 0;
 	
 	if (sethealth.value != -1)
 	{
@@ -2601,6 +2609,16 @@ void CBasePlayer::PostThink()
 
 	if (!IsAlive())
 		goto pt_end;
+
+	// YaLTeR Start
+	if (g_uiClipCount > 0)
+	{
+		MESSAGE_BEGIN( MSG_ONE, gmsgVelocityClip, NULL, pev );
+			WRITE_LONG( g_uiClipCount );
+			WRITE_LONG( *(int *)&g_flLastVelClipPlaneAngle );
+		MESSAGE_END();
+	}
+	// YaLTeR End
 
 	// Handle Tank controlling
 	if ( m_pTank != NULL )

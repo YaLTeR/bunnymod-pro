@@ -37,9 +37,13 @@
 
 static int pm_shared_initialized = 0;
 
-// YaLTeR
+// YaLTeR Start
 int g_iCustomJumpvel = -1;
 int g_iAutoJump = 0;
+
+unsigned int g_uiClipCount = 0;
+float g_flLastVelClipPlaneAngle = 0.0f;
+// YaLTeR End
 
 #pragma warning( disable : 4305 )
 
@@ -724,6 +728,14 @@ int PM_ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce)
 		blocked |= 0x01;		// 
 	if (!angle)         // If the plane has no Z, it is vertical (wall/step)
 		blocked |= 0x02;		// 
+
+#ifndef CLIENT_DLL
+	if ((angle != 1.0f) && (angle != -1.0f))
+	{
+		g_uiClipCount++;
+		g_flLastVelClipPlaneAngle = acos( angle ) * 180 / M_PI;
+	}
+#endif
 	
 	// Determine how far along plane to slide based on incoming direction.
 	// Scale by overbounce factor.

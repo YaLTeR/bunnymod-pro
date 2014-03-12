@@ -21,6 +21,7 @@ DECLARE_MESSAGE( m_CustomHud, EntInfo )
 DECLARE_MESSAGE( m_CustomHud, EntFired )
 DECLARE_MESSAGE( m_CustomHud, FireReset )
 DECLARE_MESSAGE( m_CustomHud, PlrSpeed )
+DECLARE_MESSAGE( m_CustomHud, VelClip )
 
 int CHudCustom::Init( void )
 {
@@ -29,6 +30,7 @@ int CHudCustom::Init( void )
 	HOOK_MESSAGE( EntFired )
 	HOOK_MESSAGE( FireReset )
 	HOOK_MESSAGE( PlrSpeed )
+	HOOK_MESSAGE( VelClip )
 
 	m_iFlags = HUD_ACTIVE;
 	m_fJumpspeedFadeGreen = 0;
@@ -36,8 +38,11 @@ int CHudCustom::Init( void )
 	m_fDamageAnimTime = 0;
 	m_fChargingTime = 0;
 	m_bChargingHealth = false;
-	m_fEntityHealth = 0.0;
+	m_fEntityHealth = 0.0f;
 	m_iNumFires = 0;
+	m_uiVelClipCount = 0;
+	m_flVelClipPlaneAngle = 0.0f;
+	m_flVelClipTime = 0.0f;
 
 	g_iHealthDifference = 0;
 
@@ -49,6 +54,7 @@ int CHudCustom::Init( void )
 int CHudCustom::VidInit( void )
 {
 	m_iNumFires = 0;
+	m_uiVelClipCount = 0;
 
 	static bool bPrintedVersion = false;
 	if ( !bPrintedVersion )
@@ -84,6 +90,7 @@ extern cvar_t *hud_damage, *hud_damage_size, *hud_damage_anim;
 extern cvar_t *hud_entityhealth, *hud_entityhealth_pos;
 extern cvar_t *hud_entityinfo, *hud_entityinfo_pos;
 extern cvar_t *hud_firemon, *hud_firemon_pos;
+extern cvar_t *hud_velclip, *hud_velclip_pos;
 extern cvar_t *hud_health_pos;
 extern vec3_t g_vel, g_org;
 extern Vector g_vecViewAngle;
@@ -96,6 +103,7 @@ extern bool g_bPaused;
 extern bool g_bDemorecChangelevel;
 extern bool g_bResetDemorecCounter;
 extern bool g_bGrenTimeReset;
+extern bool g_bResetVelClip;
 extern float g_fGrenTime;
 extern bool g_bTimer;
 extern bool g_bGausscharge;
@@ -827,6 +835,57 @@ int CHudCustom::Draw( float fTime )
 	// ===========
 	// END FIRE MONITOR
 	// ===========
+	// VELOCITY CLIP HUD
+	// ===========
+
+	if (g_bResetVelClip)
+	{
+		g_bResetVelClip = false;
+
+		m_uiVelClipCount = 0;
+		m_flVelClipTime = 0.0f;
+	}
+
+	if (hud_velclip->value)
+	{
+		int vcx = 0, vcy = 0;
+
+		if (hud_velclip_pos->string)
+		{
+			sscanf( hud_velclip_pos->string, "%d %d", &vcx, &vcy );
+		}
+
+		char temp[32];
+		sprintf( temp, "%u: %f", m_uiVelClipCount, m_flVelClipPlaneAngle );
+
+		if (m_flVelClipPlaneAngle < 45.572996f)
+		{
+			DrawString( temp, 0, 5.25f * gHUD.m_iFontHeight, vcx, vcy, 0.0f, 1.0f, 0.0f );
+		}
+		else if (m_flVelClipPlaneAngle > 90.0f)
+		{
+			DrawString( temp, 0, 5.25f * gHUD.m_iFontHeight, vcx, vcy );
+		}
+		else
+		{
+			DrawString( temp, 0, 5.25f * gHUD.m_iFontHeight, vcx, vcy, 1.0f, 0.0f, 0.0f );
+		}
+	}
+
+	if (m_flVelClipTime > 0.0f)
+	{
+		m_flVelClipTime -= gHUD.m_flTimeDelta;
+
+		if (m_flVelClipTime < 0.0f)
+		{
+			m_flVelClipTime = 0.0f;
+			m_uiVelClipCount = 0;
+		}
+	}
+
+	// ===========
+	// END VELOCITY CLIP HUD
+	// ===========
 
 	return 1;
 }
@@ -964,6 +1023,17 @@ int CHudCustom::MsgFunc_PlrSpeed( const char *pszName, int iSize, void *pbuf )
 	return 1;
 }
 
+int CHudCustom::MsgFunc_VelClip( const char *pszName, int iSize, void *pbuf )
+{
+	BEGIN_READ( pbuf, iSize );
+
+	m_uiVelClipCount += READ_LONG();
+	m_flVelClipPlaneAngle = READ_FLOAT();
+	m_flVelClipTime = 1.0f;
+
+	return 1;
+}
+
 extern cvar_t *hud_alpha;
 extern cvar_t *hud_pos_percent;
 
@@ -1014,10 +1084,12 @@ int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNeg
 	}
 }
 
-int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy )
+int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy, float r, float g, float b )
 {
 	char temp[255];
 	int ret;
+
+	gEngfuncs.pfnDrawSetTextColor( r, g, b );
 	
 	if ( !strcmp( hud_accuracy->string, "quadrazid" ) )
 	{
@@ -1037,19 +1109,27 @@ int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy )
 		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, temp );
 	}
 
-	// free( temp );
+	gEngfuncs.pfnDrawSetTextColor( 1.0f, 0.7f, 0.0f );
 
 	return ret;
 }
 
-int CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy )
-{	
+int CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy, float r, float g, float b )
+{
+	int ret;
+
+	gEngfuncs.pfnDrawSetTextColor( r, g, b );
+
 	if ( hud_pos_percent->value )
 	{
-		return gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : ( dx * ScreenWidth ) / 100, dy > 100 ? ScreenHeight : ( dx * ScreenHeight ) / 100, stringToDraw );
+		ret = gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : ( dx * ScreenWidth ) / 100, dy > 100 ? ScreenHeight : ( dx * ScreenHeight ) / 100, stringToDraw );
 	}
 	else
 	{
-		return gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, stringToDraw );
+		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, stringToDraw );
 	}
+
+	gEngfuncs.pfnDrawSetTextColor( 1.0f, 0.7f, 0.0f );
+
+	return ret;
 }
