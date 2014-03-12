@@ -554,6 +554,45 @@ void DeactivateClAutojump( void )
 {
 	g_bClAutojump = false;
 }
+
+extern float setYaw, setPitch;
+#define INVALID_ANGLE -361.0f
+
+void SetYaw( void )
+{
+	if (gEngfuncs.Cmd_Argc() != 2)
+	{
+		gEngfuncs.Con_Printf( "Usage: tas_setyaw <yaw>\n" );
+		return;
+	}
+
+	sscanf( gEngfuncs.Cmd_Argv( 1 ), "%f", &setYaw );
+
+	if ((setYaw < -360.0f) || (setYaw > 360.0f))
+	{
+		setYaw = INVALID_ANGLE;
+		gEngfuncs.Con_Printf( "Invalid angle.\n" );
+	}
+}
+
+void SetPitch( void )
+{
+	if (gEngfuncs.Cmd_Argc() != 2)
+	{
+		gEngfuncs.Con_Printf( "Usage: tas_setpitch <pitch>\n" );
+		return;
+	}
+
+	sscanf( gEngfuncs.Cmd_Argv( 1 ), "%f", &setPitch );
+
+	if ((setPitch < -360.0f) || (setPitch > 360.0f))
+	{
+		setPitch = INVALID_ANGLE;
+		gEngfuncs.Con_Printf( "Invalid angle.\n" );
+	}
+}
+
+#undef INVALID_ANGLE
  
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
@@ -754,6 +793,9 @@ gEngfuncs.pfnAddCommand( "fps_restore", RestoreFPSMax );
 
 gEngfuncs.pfnAddCommand("hud_framecounter_reset", ResetFrameCounter);
 gEngfuncs.pfnAddCommand("hud_framecounter_dump", DumpFrameCounter);
+
+gEngfuncs.pfnAddCommand( "tas_setyaw",   SetYaw );
+gEngfuncs.pfnAddCommand( "tas_setpitch", SetPitch );
 
 gEngfuncs.pfnAddCommand( "+tas_perfectstrafe", ActivatePerfectstrafe );
 gEngfuncs.pfnAddCommand( "-tas_perfectstrafe", DeactivatePerfectstrafe );

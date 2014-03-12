@@ -55,6 +55,10 @@ bool g_bOldGroundduck = false;
 bool g_bClAutojump = false;
 bool g_bOldClAutojump = false;
 
+#define INVALID_ANGLE -361.0f
+float setYaw = INVALID_ANGLE;
+float setPitch = INVALID_ANGLE;
+
 #define M_PI         3.1415926535897
 #define M_RAD2DEG   57.2957795130823
 #define M_DEG2RAD    0.0174532925199
@@ -719,7 +723,16 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 		/*if (!g_bPaused)
 			gEngfuncs.Con_Printf("Yaw: %f; yawRot: %f\n", viewangles[YAW], yawRotation);*/
 
-		if (yawRotation != 0.0f)
+		if (setYaw != INVALID_ANGLE)
+		{
+			viewangles[YAW] = setYaw;
+			setYaw = INVALID_ANGLE;
+
+			float temp = viewangles[YAW] * M_INVU;
+			temp = floor( temp + 0.5 );
+			viewangles[YAW] = temp * M_U;
+		}
+		else if (yawRotation != 0.0f)
 		{
 			viewangles[YAW] += yawRotation;
 			//viewangles[YAW] = normangleengine( viewangles[YAW] );
@@ -749,6 +762,18 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 	
 	viewangles[PITCH] -= speed*cl_pitchspeed->value * up;
 	viewangles[PITCH] += speed*cl_pitchspeed->value * down;
+
+	// YaLTeR Start
+	if (setPitch != INVALID_ANGLE)
+	{
+		viewangles[PITCH] = setPitch;
+		setPitch = INVALID_ANGLE;
+
+		float temp = viewangles[PITCH] * M_INVU;
+		temp = floor( temp + 0.5 );
+		viewangles[PITCH] = temp * M_U;
+	}
+	// YaLTeR End
 
 	if (up || down)
 		V_StopPitchDrift ();
