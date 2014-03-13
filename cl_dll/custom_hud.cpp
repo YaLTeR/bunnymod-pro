@@ -1084,10 +1084,12 @@ int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNeg
 	}
 }
 
-int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy )
+int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy, float r, float g, float b )
 {
 	char temp[255];
 	int ret;
+
+	gEngfuncs.pfnDrawSetTextColor( r, g, b );
 
 	if (!strcmp( hud_accuracy->string, "quadrazid" ))
 	{
@@ -1107,19 +1109,27 @@ int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy )
 		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, temp );
 	}
 
-	// free( temp );
+	gEngfuncs.pfnDrawSetTextColor( 1.0f, 0.7f, 0.0f );
 
 	return ret;
 }
 
-int CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy )
+int CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy, float r, float g, float b )
 {
+	int ret;
+
+	gEngfuncs.pfnDrawSetTextColor( r, g, b );
+
 	if (hud_pos_percent->value)
 	{
-		return gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : (dx * ScreenWidth) / 100, dy > 100 ? ScreenHeight : (dx * ScreenHeight) / 100, stringToDraw );
+		ret = gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : (dx * ScreenWidth) / 100, dy > 100 ? ScreenHeight : (dx * ScreenHeight) / 100, stringToDraw );
 	}
 	else
 	{
-		return gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, stringToDraw );
+		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, stringToDraw );
 	}
+
+	gEngfuncs.pfnDrawSetTextColor( 1.0f, 0.7f, 0.0f );
+
+	return ret;
 }
