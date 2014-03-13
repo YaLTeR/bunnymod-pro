@@ -1084,14 +1084,12 @@ int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNeg
 	}
 }
 
-int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy, float r, float g, float b )
+int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy )
 {
 	char temp[255];
 	int ret;
 
-	gEngfuncs.pfnDrawSetTextColor( r, g, b );
-	
-	if ( !strcmp( hud_accuracy->string, "quadrazid" ) )
+	if (!strcmp( hud_accuracy->string, "quadrazid" ))
 	{
 		sprintf( temp, "%.15f", number );
 	}
@@ -1099,37 +1097,29 @@ int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy, float r
 	{
 		sprintf( temp, "%f", number );
 	}
-	
-	if ( hud_pos_percent->value )
+
+	if (hud_pos_percent->value)
 	{
-		ret = gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : ( dx * ScreenWidth ) / 100, dy > 100 ? ScreenHeight : ( dx * ScreenHeight ) / 100, temp );
+		ret = gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : (dx * ScreenWidth) / 100, dy > 100 ? ScreenHeight : (dx * ScreenHeight) / 100, temp );
 	}
 	else
 	{
 		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, temp );
 	}
 
-	gEngfuncs.pfnDrawSetTextColor( 1.0f, 0.7f, 0.0f );
+	// free( temp );
 
 	return ret;
 }
 
-int CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy, float r, float g, float b )
+int CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy )
 {
-	int ret;
-
-	gEngfuncs.pfnDrawSetTextColor( r, g, b );
-
-	if ( hud_pos_percent->value )
+	if (hud_pos_percent->value)
 	{
-		ret = gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : ( dx * ScreenWidth ) / 100, dy > 100 ? ScreenHeight : ( dx * ScreenHeight ) / 100, stringToDraw );
+		return gEngfuncs.pfnDrawConsoleString( dx > 100 ? ScreenWidth : (dx * ScreenWidth) / 100, dy > 100 ? ScreenHeight : (dx * ScreenHeight) / 100, stringToDraw );
 	}
 	else
 	{
-		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, stringToDraw );
+		return gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, stringToDraw );
 	}
-
-	gEngfuncs.pfnDrawSetTextColor( 1.0f, 0.7f, 0.0f );
-
-	return ret;
 }
