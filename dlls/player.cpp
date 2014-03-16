@@ -3196,7 +3196,7 @@ int CBasePlayer::Restore( CRestore &restore )
 		CLIENT_COMMAND( edict(), cmd );
 		CLIENT_COMMAND( edict(), "hud_gaussboost_reset\n" );
 
-		free( cmd );
+		// free( cmd );
 	}
 
 	return status;

@@ -154,10 +154,19 @@ extern vec3_t vec3_origin;
 extern cvar_t *hud_color;
 inline void GetHudColor(int &r, int &g, int &b)
 {
-	if (hud_color->string)
-	{		
-		sscanf(hud_color->string, "%i %i %i", &r,&g,&b);
-		if (r == -1)
+	if (hud_color->string && hud_color->string[0])
+	{
+		if ( strcmp(hud_color->string, "auto") )
+		{
+			sscanf(hud_color->string, "%i %i %i", &r, &g, &b);
+			if (r == -1)
+			{
+				r = 255;
+				g = 160;
+				b = 0;
+			}
+		}
+		else
 		{
 			r = 255;
 			g = 160;

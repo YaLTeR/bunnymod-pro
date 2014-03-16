@@ -19,9 +19,9 @@ public:
 	int MsgFunc_PlrSpeed( const char *pszName, int iSize, void *pbuf );
 	int MsgFunc_VelClip( const char *pszName, int iSize, void *pbuf );
 
-	static int DrawNumber( int number, int x, int y, int dx, int dy, bool isNegative = false, int r = 0, int g = 0, int b = 0, bool colors = false );
-	static int DrawNumber( double number, int x, int y, int dx, int dy, float r = 1.0f, float g = 0.7f, float b = 0.0f );
-	static int DrawString( char *stringToDraw, int x, int y, int dx, int dy, float r = 1.0f, float g = 0.7f, float b = 0.0f );
+	static int DrawNumber( int number, int x, int y, int dx, int dy, bool isNegative = false, int r = 0, int g = 0, int b = 0, bool transparent = false );
+	static int DrawNumber( double number, int x, int y, int dx, int dy, float r = -1.0f, float g = 0.0f, float b = 0.0f );
+	static int DrawString( char *stringToDraw, int x, int y, int dx, int dy, float r = -1.0f, float g = 0.0f, float b = 0.0f );
 
 	int g_iHealthDifference;
 
