@@ -125,12 +125,19 @@ int CHudBattery::Draw(float flTime)
 	else
 		a = MIN_ALPHA;
 		
-	if (hud_alpha->value)
+	if ( hud_alpha->string && hud_alpha->string[0] )
 	{
-		a = hud_alpha->value;
+		if ( strcmp(hud_alpha->string, "auto") )
+		{
+			a = hud_alpha->value;
 
-		if ( a > 255 )	a = 255;
-		if ( a < 1 )	a = 1;
+			if ( a > 255 )	a = 255;
+			if ( a < 1 )	a = 1;
+		}
+		else
+		{
+			a = 255;
+		}
 	}
 	else
 	{

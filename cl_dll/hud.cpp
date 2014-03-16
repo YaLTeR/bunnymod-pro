@@ -333,6 +333,8 @@ cvar_t *cl_gauss_tracer;
 
 cvar_t *cl_boxes_render;
 
+cvar_t *con_color;
+
 bool g_bResetDemorecCounter = false;
  
 void ResetDemorecCounter( void )
@@ -495,6 +497,10 @@ void CHud :: Init( void )
 	m_pCvarStealMouse = CVAR_CREATE( "hud_capturemouse", "1", FCVAR_ARCHIVE );
 	m_pCvarDraw = CVAR_CREATE( "hud_draw", "1", FCVAR_ARCHIVE );
 	cl_lw = gEngfuncs.pfnGetCvarPointer( "cl_lw" );
+
+// YaLTeR Start
+con_color = gEngfuncs.pfnGetCvarPointer( "con_color" );
+
 hud_color = gEngfuncs.pfnRegisterVariable( "hud_color", "-1", FCVAR_ARCHIVE);
 
 hud_viewangle_x = gEngfuncs.pfnRegisterVariable( "hud_viewangle_x","0",FCVAR_ARCHIVE);
@@ -626,6 +632,7 @@ gEngfuncs.pfnAddCommand( "fps_save", SaveFPSMax );
 gEngfuncs.pfnAddCommand( "fps_restore", RestoreFPSMax );
 
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
+// YaLTeR End
 
 	m_pSpriteList = NULL;
 

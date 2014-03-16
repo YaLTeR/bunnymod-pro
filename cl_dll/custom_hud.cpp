@@ -81,6 +81,7 @@ extern cvar_t *hud_entityhealth, *hud_entityhealth_pos;
 extern cvar_t *hud_entityinfo, *hud_entityinfo_pos;
 extern cvar_t *hud_firemon, *hud_firemon_pos;
 extern cvar_t *hud_health_pos;
+extern cvar_t *con_color;
 extern vec3_t g_vel, g_org;
 extern Vector g_vecViewAngle;
 extern Vector g_vecPlayerAngle;
@@ -115,6 +116,8 @@ float gaussboost_resultingSpeedBB;
 float gaussboost_resultingSpeedWithOptimalViewangles;
 float gaussboost_resultingSpeedWithOptimalViewanglesBB;
 
+float g_DefaultTextColor[3] = { 1.0f, (160.0f / 255.0f), 0.0f };
+
 int recording = 0, oldrecording = 0;
 int playingback = 0;
 
@@ -142,6 +145,16 @@ int CHudCustom::Draw( float fTime )
 	int HealthWidth = gHUD.GetSpriteRect(gHUD.m_HUD_number_0).right - gHUD.GetSpriteRect(gHUD.m_HUD_number_0).left;
 
 	double speed = sqrt( (g_vel[0] * g_vel[0]) + (g_vel[1] * g_vel[1]) );
+
+	if (con_color->string && con_color->string[0])
+	{
+		int cr = 0, cg = 0, cb = 0;
+
+		sscanf(con_color->string, "%d %d %d", &cr, &cg, &cb);
+		g_DefaultTextColor[0] = cr / 255.0f;
+		g_DefaultTextColor[1] = cg / 255.0f;
+		g_DefaultTextColor[2] = cb / 255.0f;
+	}
 	
 	if (hud_speedometer->value)
 	{
@@ -967,12 +980,19 @@ int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNeg
 		number = -1 * number;
 	}
 	
-	if ( hud_alpha->value )
+	if ( hud_alpha->string && hud_alpha->string[0] )
 	{
-		a = hud_alpha->value;
+		if ( strcmp(hud_alpha->string, "auto") )
+		{
+			a = hud_alpha->value;
 
-		if ( a > 255 )	a = 255;
-		if ( a < 1 )	a = 1;
+			if ( a > 255 )	a = 255;
+			if ( a < 1 )	a = 1;
+		}
+		else
+		{
+			a = 255;
+		}
 	}
 	else
 	{
@@ -996,7 +1016,14 @@ int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy, float r
 	char temp[255];
 	int ret;
 
-	gEngfuncs.pfnDrawSetTextColor( r, g, b );
+	if (r == -1.0f)
+	{
+		gEngfuncs.pfnDrawSetTextColor( g_DefaultTextColor[0], g_DefaultTextColor[1], g_DefaultTextColor[2] );
+	}
+	else
+	{
+		gEngfuncs.pfnDrawSetTextColor( r, g, b );
+	}
 
 	if (!strcmp( hud_accuracy->string, "quadrazid" ))
 	{
@@ -1016,7 +1043,7 @@ int CHudCustom::DrawNumber( double number, int x, int y, int dx, int dy, float r
 		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, temp );
 	}
 
-	gEngfuncs.pfnDrawSetTextColor( 1.0f, 0.7f, 0.0f );
+	gEngfuncs.pfnDrawSetTextColor( g_DefaultTextColor[0], g_DefaultTextColor[1], g_DefaultTextColor[2] );
 
 	return ret;
 }
@@ -1025,7 +1052,14 @@ int CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy, fl
 {
 	int ret;
 
-	gEngfuncs.pfnDrawSetTextColor( r, g, b );
+	if (r == -1.0f)
+	{
+		gEngfuncs.pfnDrawSetTextColor( g_DefaultTextColor[0], g_DefaultTextColor[1], g_DefaultTextColor[2] );
+	}
+	else
+	{
+		gEngfuncs.pfnDrawSetTextColor( r, g, b );
+	}
 
 	if (hud_pos_percent->value)
 	{
@@ -1036,7 +1070,7 @@ int CHudCustom::DrawString( char *stringToDraw, int x, int y, int dx, int dy, fl
 		ret = gEngfuncs.pfnDrawConsoleString( x + dx, y - dy, stringToDraw );
 	}
 
-	gEngfuncs.pfnDrawSetTextColor( 1.0f, 0.7f, 0.0f );
+	gEngfuncs.pfnDrawSetTextColor( g_DefaultTextColor[0], g_DefaultTextColor[1], g_DefaultTextColor[2] );
 
 	return ret;
 }
