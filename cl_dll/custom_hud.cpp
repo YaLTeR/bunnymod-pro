@@ -101,6 +101,9 @@ extern float gaussboost_ammoConsumed;
 extern bool g_bHoldingGaussCannon;
 extern bool g_bGaussboostReset;
 
+extern cvar_t *cl_bhopcap;
+extern "C" unsigned char g_Bhopcap; // Monitor cl_bhopcap and change this accordingly.
+
 double demorec_counter_delta = 0.0;
 double demorec_delta;
 
@@ -155,6 +158,8 @@ int CHudCustom::Draw( float fTime )
 		g_DefaultTextColor[1] = cg / 255.0f;
 		g_DefaultTextColor[2] = cb / 255.0f;
 	}
+
+    g_Bhopcap = (cl_bhopcap->value != 0.0f) ? 1 : 0;
 	
 	if (hud_speedometer->value)
 	{

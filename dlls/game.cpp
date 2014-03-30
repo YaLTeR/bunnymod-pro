@@ -76,6 +76,9 @@ cvar_t sv_explosion_display = { "sv_explosion_display", "1", FCVAR_SERVER };
 
 cvar_t sv_dumptriggers = { "sv_dumptriggers", "0", FCVAR_SERVER };
 
+cvar_t sv_bhopcap = { "sv_bhopcap", "0", FCVAR_SERVER };
+cvar_t sv_crowbar_won_damage = { "sv_crowbar_won_damage", "1", FCVAR_SERVER };
+
 // Engine Cvars
 cvar_t 	*g_psv_gravity = NULL;
 cvar_t	*g_psv_aim = NULL;
@@ -550,6 +553,9 @@ void GameDLLInit( void )
 	CVAR_REGISTER (&sv_explosion_display);
 
 	CVAR_REGISTER (&sv_dumptriggers);
+
+    CVAR_REGISTER (&sv_bhopcap);
+    CVAR_REGISTER (&sv_crowbar_won_damage);
 	
 // REGISTER CVARS FOR SKILL LEVEL STUFF
 	// Agrunt

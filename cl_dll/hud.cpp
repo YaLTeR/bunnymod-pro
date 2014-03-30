@@ -335,6 +335,8 @@ cvar_t *cl_boxes_render;
 
 cvar_t *con_color;
 
+cvar_t *cl_bhopcap; // Used for correct movement prediction.
+
 bool g_bResetDemorecCounter = false;
  
 void ResetDemorecCounter( void )
@@ -601,6 +603,8 @@ hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
 cl_boxes_render = CVAR_CREATE( "cl_boxes_render", "1", FCVAR_ARCHIVE );
+
+cl_bhopcap = CVAR_CREATE( "cl_bhopcap", "0", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
