@@ -114,6 +114,8 @@ extern bool g_bHoldingGaussCannon;
 extern bool g_bGaussboostReset;
 
 bool g_bDontUpdateVelThisTime = false;
+extern cvar_t *cl_bhopcap;
+extern "C" unsigned char g_Bhopcap; // Monitor cl_bhopcap and change this accordingly.
 
 double demorec_counter_delta = 0.0;
 double demorec_delta;
@@ -124,7 +126,7 @@ Vector gaussboost_vecBoostWithCurrentViewangles;
 Vector gaussboost_vecResultingSpeed;
 Vector gaussboost_vecResultingSpeedBB;
 float gaussboost_boostWithCurrentViewangles;
-float gaussboost_boostWithOptimalViewangles;	
+float gaussboost_boostWithOptimalViewangles;
 float gaussboost_resultingSpeed;
 float gaussboost_resultingSpeedBB;
 float gaussboost_resultingSpeedWithOptimalViewangles;
@@ -142,20 +144,20 @@ int CHudCustom::Draw( float fTime )
 	int x = 0, y = 0;
 
 	int sx = 0, sy = 0; // Speed counter
-	
+
 	int jr, jg, jb; // Jump speed
 	int jx = 0, jy = 0;
-	
+
 	int zsx = 0, zsy = 0; // Z speed
 	int ax = 0, ay = 0; // Acceleration
 	int xx = 0, xy = 0; // X
 	int yx = 0, yy = 0; // Y
-	int zx = 0, zy = 0; // Z	
-	int vxx = 0, vxy = 0; // Viewangle X	
-	int vyx = 0, vyy = 0; // Viewangle Y	
-	int gtx = 0, gty = 0; // Grenade Timer	
+	int zx = 0, zy = 0; // Z
+	int vxx = 0, vxy = 0; // Viewangle X
+	int vyx = 0, vyy = 0; // Viewangle Y
+	int gtx = 0, gty = 0; // Grenade Timer
 	int dx = 0, dy = 0; // Demorec counter
-	
+
 	bool accuracy = ( hud_accuracy->value || ( !strcmp(hud_accuracy->string, "quadrazid") ) );
 
 	int HealthWidth = gHUD.GetSpriteRect(gHUD.m_HUD_number_0).right - gHUD.GetSpriteRect(gHUD.m_HUD_number_0).left;
@@ -171,7 +173,9 @@ int CHudCustom::Draw( float fTime )
 		g_DefaultTextColor[1] = cg / 255.0f;
 		g_DefaultTextColor[2] = cb / 255.0f;
 	}
-	
+
+    g_Bhopcap = (cl_bhopcap->value != 0.0f) ? 1 : 0;
+
 	if (hud_speedometer->value)
 	{
 		x = ScreenWidth / 2 - HealthWidth / 2;
@@ -193,7 +197,7 @@ int CHudCustom::Draw( float fTime )
 	}
 
 	if (hud_jumpspeed->value)
-	{	
+	{
 		GetHudColor(jr, jg, jb);
 
 		x = ScreenWidth / 2 - HealthWidth / 2;
@@ -238,7 +242,7 @@ int CHudCustom::Draw( float fTime )
 			{
 				m_fJumpspeedFadeRed = 0;
 			}
-			
+
 			jr = jr + (255 - jr) * (m_fJumpspeedFadeRed / JUMPSPEED_FADE_TIME);
 			jg = jg - jg * (m_fJumpspeedFadeRed / JUMPSPEED_FADE_TIME);
 			jb = jb - jb * (m_fJumpspeedFadeRed / JUMPSPEED_FADE_TIME);
@@ -302,11 +306,11 @@ int CHudCustom::Draw( float fTime )
 			DrawNumber((int)g_acceleration, x, y, ax, ay, g_acceleration_negative);
 		}
 	}
-	
+
 	if (hud_origin_x->value)
 	{
 		double origin_x = g_org[0];
-		
+
 		x = 0;
 		y = 0;
 
@@ -324,11 +328,11 @@ int CHudCustom::Draw( float fTime )
 			DrawNumber((int)origin_x, x, y, xx, xy);
 		}
 	}
-	
+
 	if (hud_origin_y->value)
 	{
 		double origin_y = g_org[1];
-	
+
 		x = 0;
 		y = gHUD.m_iFontHeight;
 
@@ -346,11 +350,11 @@ int CHudCustom::Draw( float fTime )
 			DrawNumber((int)origin_y, x, y, yx, yy);
 		}
 	}
-	
+
 	if (hud_origin_z->value)
 	{
 		double origin_z = g_org[2];
-	
+
 		x = 0;
 		y = 2 * gHUD.m_iFontHeight;
 
@@ -368,14 +372,14 @@ int CHudCustom::Draw( float fTime )
 			DrawNumber((int)origin_z, x, y, zx, zy);
 		}
 	}
-	
+
 	if (hud_viewangle_x->value)
 	{
 		x = 0;
 		y = 3.5 * gHUD.m_iFontHeight;
-		
+
 		char temp_viewangle_x[32];
-		
+
 		if ( !strcmp(hud_accuracy->string, "quadrazid") )
 		{
 			sprintf(temp_viewangle_x, "Viewangle X: %.15f", g_vecViewAngle[0]);
@@ -392,14 +396,14 @@ int CHudCustom::Draw( float fTime )
 
 		DrawString(temp_viewangle_x, x, y, vxx, vxy);
 	}
-	
+
 	if (hud_viewangle_y->value)
 	{
 		x = 0;
 		y = 4.5 * gHUD.m_iFontHeight;
-		
+
 		char temp_viewangle_y[32];
-		
+
 		if ( !strcmp(hud_accuracy->string, "quadrazid") )
 		{
 			sprintf(temp_viewangle_y, "Viewangle Y: %.15f", g_vecViewAngle[1]);
@@ -422,29 +426,29 @@ int CHudCustom::Draw( float fTime )
 	// ===========
 
 	demorec_delta = gHUD.m_flTimeDelta;
-	
+
 	if (g_bDemorecChangelevel)
 	{
 		g_bDemorecChangelevel = false;
 		demorec_delta = 0;
 	}
-	
+
 	oldrecording = recording;
 	recording = gEngfuncs.pDemoAPI->IsRecording();
 	playingback = gEngfuncs.pDemoAPI->IsPlayingback();
-	
+
 	if (oldrecording != recording && !oldrecording)
 	{
 		demorec_counter_delta = 0.0;
 	}
-	
+
 	if (g_bResetDemorecCounter)
 	{
 		demorec_delta = 0.0;
 		demorec_counter_delta = 0.0;
 		g_bResetDemorecCounter = false;
 	}
-	
+
 	if ((recording || playingback) && !g_bPaused)
 	{
 		demorec_counter_delta += demorec_delta;
@@ -453,30 +457,30 @@ int CHudCustom::Draw( float fTime )
 	}
 
 	if (hud_demorec_counter->value)
-	{		
+	{
 		x = 0;
 		y = ScreenHeight / 2;
-		
+
 		if (hud_demorec_counter_pos->string)
 		{
 			sscanf(hud_demorec_counter_pos->string, "%i %i", &dx, &dy);
 		}
-		
+
 		DrawNumber(demorec_counter_delta, x, y, dx, dy);
 	}
-	
+
 	// ===========
 	// END DEMO RECORD TIMER
 	// ===========
 	// GRENADE TIMER
 	// ===========
-	
+
 	if (g_bGrenTimeReset)
 	{
 		g_bGrenTimeReset = false;
-		
+
 		if (hud_grenadetimer_dontchange_resetto->value != -1)
-		{		
+		{
 			g_fGrenTime = gEngfuncs.GetClientTime() - hud_grenadetimer_dontchange_resetto->value + 0.1;
 			gEngfuncs.Cvar_SetValue("hud_grenadetimer_dontchange_resetto", -1);
 			gEngfuncs.Con_Printf("curtime %f\n", fTime);
@@ -487,9 +491,9 @@ int CHudCustom::Draw( float fTime )
 			g_fGrenTime = gEngfuncs.GetClientTime();
 		}
 	}
-	
+
 	float m_flGrenTimerDelta = fTime - g_fGrenTime;
-	
+
 	if (m_flGrenTimerDelta <= 3.1 && m_flGrenTimerDelta > 0)
 	{
 		g_bTimer = true;
@@ -498,33 +502,33 @@ int CHudCustom::Draw( float fTime )
 	{
 		g_bTimer = false;
 	}
-	
+
 	if (g_bTimer && hud_grenadetimer->value)
-	{		
+	{
 		x = ScreenWidth / 2;
 		y = 0;
-		
+
 		int m_iGrenTimerOut = (int) ceil(100 * (3.1 - m_flGrenTimerDelta));
-		
+
 		if (hud_grenadetimer_pos->string)
 		{
 			sscanf(hud_grenadetimer_pos->string, "%i %i", &gtx, &gty);
 		}
-		
+
 		x = DrawNumber(m_iGrenTimerOut, x, y, gtx, gty);
-		
+
 		x += gtx;
 		y -= gty;
-		
+
 		x += HealthWidth / 2;
-		
-		FillRGBA(x, y, hud_grenadetimer_width->value, hud_grenadetimer_height->value, 0, 255, 0, 128);		
-		
+
+		FillRGBA(x, y, hud_grenadetimer_width->value, hud_grenadetimer_height->value, 0, 255, 0, 128);
+
 		int y2 = (hud_grenadetimer_height->value * m_iGrenTimerOut) / 310;
 		y += hud_grenadetimer_height->value - (hud_grenadetimer_height->value * m_iGrenTimerOut) / 310;
 		FillRGBA(x, y, hud_grenadetimer_width->value, y2, 255, 255, 0, 128);
 	}
-	
+
 	// ===========
 	// END GRENADE TIMER
 	// ===========
@@ -534,9 +538,9 @@ int CHudCustom::Draw( float fTime )
 	if (g_bGaussboostReset)
 	{
 		g_bGaussboostReset = false;
-		
+
 		if (hud_gaussboost_dontchange_resetto->value != -1)
-		{		
+		{
 			g_fGaussStart = gEngfuncs.GetClientTime() - hud_gaussboost_dontchange_resetto->value + 0.1;
 			gEngfuncs.Cvar_SetValue("hud_gaussboost_dontchange_resetto", -1);
 			gEngfuncs.Con_Printf("curtime %f\n", fTime);
@@ -560,7 +564,7 @@ int CHudCustom::Draw( float fTime )
 		gaussboost_vecBoostWithCurrentViewangles = -forward * gaussboost_damage * 5;
 		gaussboost_boostWithOptimalViewangles = gaussboost_damage * 5;
 		gaussboost_boostWithCurrentViewangles = sqrt(gaussboost_vecBoostWithCurrentViewangles[0] * gaussboost_vecBoostWithCurrentViewangles[0] + gaussboost_vecBoostWithCurrentViewangles[1] * gaussboost_vecBoostWithCurrentViewangles[1]);
-		
+
 		gaussboost_vecResultingSpeed = g_vecPlayerVelocity + gaussboost_vecBoostWithCurrentViewangles;
 		gaussboost_vecResultingSpeedBB = g_vecPlayerVelocity - gaussboost_vecBoostWithCurrentViewangles;
 		gaussboost_resultingSpeed = sqrt(gaussboost_vecResultingSpeed[0] * gaussboost_vecResultingSpeed[0] + gaussboost_vecResultingSpeed[1] * gaussboost_vecResultingSpeed[1]);
@@ -728,7 +732,7 @@ int CHudCustom::Draw( float fTime )
 			healthY -= gHUD.m_iFontHeight;
 
 			float currentY = healthY;
-			
+
 			if ( m_ivDamage[i] < 0 )
 			{
 				isNegative = true;
@@ -770,7 +774,7 @@ int CHudCustom::Draw( float fTime )
 		if ( m_fDamageAnimTime > 0 )
 		{
 			m_fDamageAnimTime -= gHUD.m_flTimeDelta;
-		
+
 			if ( m_fDamageAnimTime < 0 )
 			{
 				m_fDamageAnimTime = 0;
@@ -780,7 +784,7 @@ int CHudCustom::Draw( float fTime )
 		if ( m_fChargingTime > 0 )
 		{
 			m_fChargingTime -= gHUD.m_flTimeDelta;
-		
+
 			if ( m_fChargingTime < 0 )
 			{
 				m_fChargingTime = 0;
@@ -983,7 +987,7 @@ void CHudCustom::HealthDifference( void )
 	{
 		int iDelta = iNewHealthDifference - g_iHealthDifference;
 
-		g_iHealthDifference = iNewHealthDifference;		
+		g_iHealthDifference = iNewHealthDifference;
 		gHUD.m_Health.m_iHealth += iDelta;
 
 		HealthChanged( iDelta );
@@ -1053,7 +1057,7 @@ extern cvar_t *hud_pos_percent;
 int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNegative, int r, int g, int b, bool transparent )
 {
 	int a;
-	
+
 	if ( r == 0 && g == 0 && b == 0 && !transparent )
 	{
 		if ( isNegative || number < 0 )
@@ -1067,12 +1071,12 @@ int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNeg
 			GetHudColor( r, g, b );
 		}
 	}
-	
+
 	if ( number < 0 )
 	{
 		number = -1 * number;
 	}
-	
+
 	if ( hud_alpha->string && hud_alpha->string[0] )
 	{
 		if ( strcmp(hud_alpha->string, "auto") )
@@ -1091,9 +1095,9 @@ int CHudCustom::DrawNumber( int number, int x, int y, int dx, int dy, bool isNeg
 	{
 		a = 255;
 	}
-	
+
 	ScaleColors( r, g, b, a );
-	
+
 	if ( hud_pos_percent->value )
 	{
 		return gHUD.DrawHudNumber( dx > 100 ? ScreenWidth : ( dx * ScreenWidth ) / 100, dy > 100 ? ScreenHeight : ( dx * ScreenHeight ) / 100, DHN_3DIGITS | DHN_DRAWZERO, number, r, g, b );

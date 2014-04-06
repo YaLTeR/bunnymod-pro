@@ -35,6 +35,8 @@
 	float	vJumpAngles[3];
 #endif
 
+unsigned char g_Bhopcap = 0; // YaLTeR
+
 static int pm_shared_initialized = 0;
 
 // YaLTeR Start
@@ -2606,7 +2608,10 @@ void PM_Jump (void)
 	// In the air now.
     pmove->onground = -1;
 
-	//PM_PreventMegaBunnyJumping();
+    if (g_Bhopcap != 0)
+    {
+        PM_PreventMegaBunnyJumping();
+    }
 
 	// YaLTeR
 	// PM_ABH();

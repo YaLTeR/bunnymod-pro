@@ -1,9 +1,9 @@
 /***
 *
 *	Copyright (c) 1996-2002, Valve LLC. All rights reserved.
-*	
-*	This product contains software technology licensed from Id 
-*	Software, Inc. ("Id Technology").  Id Technology (c) 1996 Id Software, Inc. 
+*
+*	This product contains software technology licensed from Id
+*	Software, Inc. ("Id Technology").  Id Technology (c) 1996 Id Software, Inc.
 *	All Rights Reserved.
 *
 *   Use, distribution, and modification of this source code and/or resulting
@@ -224,7 +224,7 @@ int __MsgFunc_RandomPC(const char *pszName, int iSize, void *pbuf)
 		return gViewPort->MsgFunc_RandomPC( pszName, iSize, pbuf );
 	return 0;
 }
- 
+
 int __MsgFunc_ServerName(const char *pszName, int iSize, void *pbuf)
 {
 	if (gViewPort)
@@ -272,7 +272,7 @@ int __MsgFunc_AllowSpec(const char *pszName, int iSize, void *pbuf)
 cvar_t *cl_modelalpha,*hud_origin_x,*hud_origin_x_pos,*hud_origin_y,*hud_origin_y_pos,*hud_origin_z,*hud_origin_z_pos,*cl_wallhack,*hud_speedometer,*hud_health_pos,*hud_ammo_pos,*hud_acceleration,*hud_acceleration_pos,*hud_armor_pos,*hud_speedometer_pos,*hud_zspeed,*hud_jumpspeed,*hud_jumpspeed_pos,*hud_zspeed_pos;
 cvar_t *hud_alpha,*hud_gaussboost;
 // </UNMODIFIED JULIEN'S CODE>
- 
+
 cvar_t *r_drawviewmodel = NULL;
 
 cvar_t *hud_pos_percent = NULL;
@@ -372,8 +372,10 @@ cvar_t *tas_autostrafe_backpedaldir;
 
 cvar_t *con_color;
 
+cvar_t *cl_bhopcap; // Used for correct movement prediction.
+
 bool g_bResetDemorecCounter = false;
- 
+
 void ResetDemorecCounter( void )
 {
 	g_bResetDemorecCounter = true;
@@ -595,7 +597,7 @@ void SetPitch( void )
 }
 
 #undef INVALID_ANGLE
- 
+
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
 {
@@ -767,6 +769,8 @@ tas_autostrafe_backpedaldir = CVAR_CREATE( "tas_autostrafe_backpedaldir", "2", 0
 tas_autostrafe_desiredviewangle = CVAR_CREATE( "tas_autostrafe_desiredviewangle", "0.0", 0 );
 tas_autostrafe_manualangle = CVAR_CREATE( "tas_autostrafe_manualangle", "0", FCVAR_ARCHIVE );
 
+cl_bhopcap = CVAR_CREATE( "cl_bhopcap", "0", FCVAR_ARCHIVE );
+
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
 gEngfuncs.pfnAddCommand("hud_grenadetimer_reset", ResetGrenadeTimer);
 gEngfuncs.pfnAddCommand("hud_velclip_reset", ResetVelClip);
@@ -856,7 +860,7 @@ gEngfuncs.pfnAddCommand( "-tas_autojump", DeactivateClAutojump );
 	GetClientVoiceMgr()->Init(&g_VoiceStatusHelper, (vgui::Panel**)&gViewPort);
 
 	m_Menu.Init();
-	
+
 	ServersInit();
 
 	MsgFunc_ResetHUD(0, 0, NULL );
@@ -914,8 +918,8 @@ void CHud :: VidInit( void )
 	// Load Sprites
 	// ---------
 //	m_hsprFont = LoadSprite("sprites/%d_font.spr");
-	
-	m_hsprLogo = 0;	
+
+	m_hsprLogo = 0;
 	m_hsprCursor = 0;
 
 	if (ScreenWidth < 640)
@@ -1008,7 +1012,7 @@ void CHud :: VidInit( void )
 
 	// YaLTeR
 	m_CustomHud.VidInit();
-	
+
 	GetClientVoiceMgr()->VidInit();
 }
 
@@ -1035,15 +1039,15 @@ void COM_FileBase ( const char *in, char *out)
 	int len, start, end;
 
 	len = strlen( in );
-	
+
 	// scan backward for '.'
 	end = len - 1;
 	while ( end && in[end] != '.' && in[end] != '/' && in[end] != '\\' )
 		end--;
-	
+
 	if ( in[end] != '.' )		// no '.', copy to end
 		end = len-1;
-	else 
+	else
 		end--;					// Found ',', copy to left of '.'
 
 
@@ -1054,7 +1058,7 @@ void COM_FileBase ( const char *in, char *out)
 
 	if ( in[start] != '/' && in[start] != '\\' )
 		start = 0;
-	else 
+	else
 		start++;
 
 	// Length of new sting
@@ -1142,12 +1146,12 @@ int CHud::MsgFunc_SetFOV(const char *pszName,  int iSize, void *pbuf)
 
 	// Set a new sensitivity
 	if ( m_iFOV == def_fov )
-	{  
+	{
 		// reset to saved sensitivity
 		m_flMouseSensitivity = 0;
 	}
 	else
-	{  
+	{
 		// set a new sensitivity that is proportional to the change from the FOV default
 		m_flMouseSensitivity = sensitivity->value * ((float)newfov / (float)def_fov) * CVAR_GET_FLOAT("zoom_sensitivity_ratio");
 	}

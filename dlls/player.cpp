@@ -1810,6 +1810,9 @@ extern cvar_t autojump;
 extern cvar_t sethealth;
 extern cvar_t setbattery;
 
+extern cvar_t sv_bhopcap;
+extern "C" unsigned char g_Bhopcap;
+
 void CBasePlayer::PreThink(void)
 {
 	// YaLTeR
@@ -1839,6 +1842,8 @@ void CBasePlayer::PreThink(void)
 			pev->armorvalue = battery;
 		}
 	}
+
+    g_Bhopcap = (sv_bhopcap.value != 0.0f) ? 1 : 0;
 	
 	int buttonsChanged = (m_afButtonLast ^ pev->button);	// These buttons have changed this frame
 
