@@ -890,13 +890,24 @@ int CHudAmmo::Draw(float flTime)
 
 	AmmoWidth = gHUD.GetSpriteRect(gHUD.m_HUD_number_0).right - gHUD.GetSpriteRect(gHUD.m_HUD_number_0).left;
 
-	if (hud_alpha->value)
+	if ( hud_alpha->string && hud_alpha->string[0] )
 	{
-		a = hud_alpha->value;
+		if ( strcmp(hud_alpha->string, "auto") )
+		{
+			a = hud_alpha->value;
 
-		if ( a > 255 )	a = 255;
-		if ( a < 1 )	a = 1;
-	} else a = (int) max( MIN_ALPHA, m_fFade );
+			if ( a > 255 )	a = 255;
+			if ( a < 1 )	a = 1;
+		}
+		else
+		{
+			a = (int) max( MIN_ALPHA, m_fFade );
+		}
+	}
+	else
+	{
+		a = (int) max( MIN_ALPHA, m_fFade );
+	}
 
 	if (m_fFade > 0)
 		m_fFade -= (gHUD.m_flTimeDelta * 20);
@@ -1118,21 +1129,43 @@ int CHudAmmo::DrawWList(float flTime)
 		// UnpackRGB(r,g,b, RGB_YELLOWISH);
 	
 		if ( iActiveSlot == i )
-			if (hud_alpha->value)
-			{
-				a = hud_alpha->value;
+			if ( hud_alpha->string && hud_alpha->string[0] )
+	        {
+		        if ( strcmp(hud_alpha->string, "auto") )
+		        {
+			        a = hud_alpha->value;
 
-				if ( a > 255 )	a = 255;
-				if ( a < 1 )	a = 1;
-			} else a = 255;
+			        if ( a > 255 )	a = 255;
+			        if ( a < 1 )	a = 1;
+		        }
+		        else
+		        {
+			        a = 255;
+		        }
+	        }
+	        else
+	        {
+		        a = 255;
+	        }
 		else
-			if (hud_alpha->value)
-			{
-				a = hud_alpha->value;
+			if ( hud_alpha->string && hud_alpha->string[0] )
+	        {
+		        if ( strcmp(hud_alpha->string, "auto") )
+		        {
+			        a = hud_alpha->value;
 
-				if ( a > 255 )	a = 255;
-				if ( a < 1 )	a = 1;
-			} else a = 192;
+			        if ( a > 255 )	a = 255;
+			        if ( a < 1 )	a = 1;
+		        }
+		        else
+		        {
+			        a = 192;
+		        }
+	        }
+	        else
+	        {
+		        a = 192;
+	        }
 
 		ScaleColors(r, g, b, 255);
 		SPR_Set(gHUD.GetSprite(m_HUD_bucket0 + i), r, g, b );
@@ -1155,13 +1188,25 @@ int CHudAmmo::DrawWList(float flTime)
 	}
 
 
-	if (hud_alpha->value)
+	if ( hud_alpha->string && hud_alpha->string[0] )
 	{
-		a = hud_alpha->value;
+		if ( strcmp(hud_alpha->string, "auto") )
+		{
+			a = hud_alpha->value;
 
-		if ( a > 255 )	a = 255;
-		if ( a < 1 )	a = 1;
-	} else a = 128; //!!!
+			if ( a > 255 )	a = 255;
+			if ( a < 1 )	a = 1;
+		}
+		else
+		{
+			a = 128;
+		}
+	}
+	else
+	{
+		a = 128;
+	} //!!!
+
 	x = 10;
 
 	// Draw all of the buckets
@@ -1242,24 +1287,46 @@ int CHudAmmo::DrawWList(float flTime)
 				{
 					GetHudColor(r, g, b);
 					// UnpackRGB(r,g,b, RGB_YELLOWISH);
-					if (hud_alpha->value)
-					{
-						a = hud_alpha->value;
+					if ( hud_alpha->string && hud_alpha->string[0] )
+	                {
+		                if ( strcmp(hud_alpha->string, "auto") )
+		                {
+			                a = hud_alpha->value;
 
-						if ( a > 255 )	a = 255;
-						if ( a < 1 )	a = 1;
-					} else a = 128;
+			                if ( a > 255 )	a = 255;
+			                if ( a < 1 )	a = 1;
+		                }
+		                else
+		                {
+			                a = 128;
+		                }
+	                }
+	                else
+	                {
+		                a = 128;
+	                }
 				}
 				else
 				{
 					UnpackRGB(r,g,b, RGB_REDISH);
-					if (hud_alpha->value)
-					{
-						a = hud_alpha->value;
+					if ( hud_alpha->string && hud_alpha->string[0] )
+	                {
+		                if ( strcmp(hud_alpha->string, "auto") )
+		                {
+			                a = hud_alpha->value;
 
-						if ( a > 255 )	a = 255;
-						if ( a < 1 )	a = 1;
-					} else a = 96;
+			                if ( a > 255 )	a = 255;
+			                if ( a < 1 )	a = 1;
+		                }
+		                else
+		                {
+			                a = 96;
+		                }
+	                }
+	                else
+	                {
+		                a = 96;
+	                }
 				}
 
 				FillRGBA( x, y, giBucketWidth, giBucketHeight, r, g, b, a );
