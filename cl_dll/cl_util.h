@@ -159,12 +159,12 @@ inline void GetHudColor(int &r, int &g, int &b)
 		if ( strcmp(hud_color->string, "auto") )
 		{
 			sscanf(hud_color->string, "%i %i %i", &r, &g, &b);
-			if (r == -1)
-			{
-				r = 255;
-				g = 160;
-				b = 0;
-			}
+			if (r < 0) r = 0;
+            if (r > 255) r = 255;
+            if (g < 0) g = 0;
+            if (g > 255) g = 255;
+            if (b < 0) b = 0;
+            if (b > 255) b = 255;
 		}
 		else
 		{

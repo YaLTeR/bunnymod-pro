@@ -651,8 +651,7 @@ void CHud :: Init( void )
 
 // YaLTeR Start
 con_color = gEngfuncs.pfnGetCvarPointer( "con_color" );
-
-hud_color = gEngfuncs.pfnRegisterVariable( "hud_color", "-1", FCVAR_ARCHIVE);
+hud_color = gEngfuncs.pfnRegisterVariable( "hud_color", "auto", FCVAR_ARCHIVE);
 
 hud_viewangle_x = gEngfuncs.pfnRegisterVariable( "hud_viewangle_x","0",FCVAR_ARCHIVE);
 hud_viewangle_x_pos = gEngfuncs.pfnRegisterVariable( "hud_viewangle_x_pos","0",FCVAR_ARCHIVE);
@@ -681,7 +680,7 @@ hud_origin_z_pos = gEngfuncs.pfnRegisterVariable("hud_origin_z_pos","0",FCVAR_AR
 r_drawviewmodel = gEngfuncs.pfnGetCvarPointer("r_drawviewmodel");
 hud_pos_percent = gEngfuncs.pfnRegisterVariable ("hud_pos_percent", "0", FCVAR_ARCHIVE);
 
-hud_alpha = gEngfuncs.pfnRegisterVariable("hud_alpha","0",FCVAR_ARCHIVE);
+hud_alpha = gEngfuncs.pfnRegisterVariable("hud_alpha", "auto", FCVAR_ARCHIVE);
 
 hud_gaussboost = gEngfuncs.pfnRegisterVariable("hud_gaussboost","0",FCVAR_ARCHIVE);
 hud_gaussboost_pos = gEngfuncs.pfnRegisterVariable("hud_gaussboost_pos","0",FCVAR_ARCHIVE);
