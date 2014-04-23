@@ -1304,14 +1304,14 @@ Viewangles (p, y, r): %f, %f, %f\n\
 Velocity(x, y, z): %f, %f, %f\n\
 v0: %f; frictiondrop: %f; actualspeed: %f\n\
 alpha: %f; alpha_gr: %f\n\
-g_bOldAutostrafe: %s; g_bOldUnpausedAutostrafe: %s; g_bAutostrafe: %s\n\
+g_bAutostrafe: %s\n\
 yawRotation: %f\n",
                 g_org[0], g_org[1], g_org[2],
                 viewangles[PITCH], viewangles[YAW], viewangles[ROLL],
                 g_vel[0], g_vel[1], g_vel[2],
                 v0, frictiondrop, actualspeed,
                 alpha, alpha_gr,
-                BOOLSTRING(g_bOldAutostrafe), BOOLSTRING(g_bOldAutostrafe), BOOLSTRING(g_bAutostrafe),
+                BOOLSTRING(g_bAutostrafe),
                 yawRotation);
             gEngfuncs.Con_Printf("-- LOGEND --\n");
 
