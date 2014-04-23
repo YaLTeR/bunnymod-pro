@@ -65,9 +65,13 @@ float setPitch = INVALID_ANGLE;
 #define M_U          0.0054931640625
 #define M_INVU     182.0444444444444
 
+extern double demorec_counter_delta;
 extern vec3_t g_org, g_vel, g_vecViewAngle;
 extern bool g_bOnGroundDemoInaccurate;
 extern bool g_bOldOnGroundDemoInaccurate;
+extern cvar_t *cl_printpos;
+extern cvar_t *tas_log;
+
 extern cvar_t *tas_perfectstrafe_accel;
 extern cvar_t *tas_perfectstrafe_airaccel;
 extern cvar_t *tas_perfectstrafe_friction;
@@ -102,6 +106,8 @@ extern cvar_t *tas_autostrafe_grounddir;
     7 - WD
 */
 extern cvar_t *tas_autostrafe_backpedaldir;
+
+#define BOOLSTRING(b) (b)?"true":"false"
 
 double normangle(double angle)
 {
@@ -1016,6 +1022,11 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		gEngfuncs.GetViewAngles( (float *)viewangles );
 
 		// YaLTeR Start
+        if (!g_bPaused && cl_printpos->value)
+        {
+            gEngfuncs.Con_Printf("Origin (x, y, z): %f, %f, %f\n", g_org[0], g_org[1], g_org[2]);
+        }
+
 		float maxspeed = tas_perfectstrafe_maxspeed->value;
 		float friction = tas_perfectstrafe_friction->value;
 
@@ -1283,6 +1294,28 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			firstRotationInTheAir = true;
 			g_bInBhop = false;
 		}
+
+        if (tas_log->value)
+        {
+            // Log everything!
+            gEngfuncs.Con_Printf("-- LOGSTART -- Time: %f -- Frametime: %f --\n", demorec_counter_delta, frametime);
+            gEngfuncs.Con_Printf("Origin (x, y, z): %f, %f, %f\n\
+Viewangles (p, y, r): %f, %f, %f\n\
+Velocity(x, y, z): %f, %f, %f\n\
+v0: %f; frictiondrop: %f; actualspeed: %f\n\
+alpha: %f; alpha_gr: %f\n\
+g_bOldAutostrafe: %s; g_bOldUnpausedAutostrafe: %s; g_bAutostrafe: %s\n\
+yawRotation: %f\n",
+                g_org[0], g_org[1], g_org[2],
+                viewangles[PITCH], viewangles[YAW], viewangles[ROLL],
+                g_vel[0], g_vel[1], g_vel[2],
+                v0, frictiondrop, actualspeed,
+                alpha, alpha_gr,
+                BOOLSTRING(g_bOldAutostrafe), BOOLSTRING(g_bOldAutostrafe), BOOLSTRING(g_bAutostrafe),
+                yawRotation);
+            gEngfuncs.Con_Printf("-- LOGEND --\n");
+
+        }
 		// YaLTeR End
 
 		CL_AdjustAngles ( frametime, viewangles );

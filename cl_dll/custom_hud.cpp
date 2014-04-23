@@ -139,6 +139,8 @@ int playingback = 0;
 
 unsigned long int g_ullFramecounter = 0;
 
+extern cvar_t *tas_log;
+
 int CHudCustom::Draw( float fTime )
 {
 	int x = 0, y = 0;
@@ -1036,6 +1038,11 @@ int CHudCustom::MsgFunc_PlrSpeed( const char *pszName, int iSize, void *pbuf )
 	g_vel[2] = READ_FLOAT();
 
 	g_bDontUpdateVelThisTime = true;
+
+    if (tas_log->value)
+    {
+        gEngfuncs.Con_Printf("Received velocity (x, y, z): %f, %f, %f\n", g_vel[0], g_vel[1], g_vel[2]);
+    }
 
 	return 1;
 }

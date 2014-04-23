@@ -620,17 +620,7 @@ void PlayerPostThink( edict_t *pEntity )
 	CBasePlayer *pPlayer = (CBasePlayer *)GET_PRIVATE(pEntity);
 
 	if (pPlayer)
-	// YaLTeR Start
-	{
-		MESSAGE_BEGIN(MSG_ONE, gmsgPlayerSpeed, NULL, pev);
-			WRITE_LONG(*(int*)&pev->velocity.x);
-			WRITE_LONG(*(int*)&pev->velocity.y);
-			WRITE_LONG(*(int*)&pev->velocity.z);
-		MESSAGE_END();
-	// YaLTeR End
-
 		pPlayer->PostThink( );
-	} // YaLTeR
 }
 
 
@@ -1525,6 +1515,15 @@ engine sets cd to 0 before calling.
 */
 void UpdateClientData ( const struct edict_s *ent, int sendweapons, struct clientdata_s *cd )
 {
+    // YaLTeR: send the speed to the client.
+    entvars_t *pev = &((entvars_t)ent->v);
+    MESSAGE_BEGIN(MSG_ONE, gmsgPlayerSpeed, NULL, pev);
+		WRITE_LONG(*(int*)&pev->velocity.x);
+		WRITE_LONG(*(int*)&pev->velocity.y);
+		WRITE_LONG(*(int*)&pev->velocity.z);
+	MESSAGE_END();
+    // YaLTeR End
+
 	cd->flags			= ent->v.flags;
 	cd->health			= ent->v.health;
 

@@ -335,6 +335,8 @@ cvar_t *cl_gauss_tracer;
 
 cvar_t *cl_boxes_render;
 
+cvar_t *cl_printpos;
+
 cvar_t *tas_perfectstrafe_accel;
 cvar_t *tas_perfectstrafe_airaccel;
 cvar_t *tas_perfectstrafe_friction;
@@ -369,6 +371,8 @@ cvar_t *tas_autostrafe_grounddir;
     7 - WD
 */
 cvar_t *tas_autostrafe_backpedaldir;
+
+cvar_t *tas_log;
 
 cvar_t *con_color;
 
@@ -755,6 +759,8 @@ cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
 cl_boxes_render = CVAR_CREATE( "cl_boxes_render", "1", FCVAR_ARCHIVE );
 
+cl_printpos = CVAR_CREATE( "cl_printpos", "0", 0 );
+
 tas_perfectstrafe_accel = CVAR_CREATE( "tas_perfectstrafe_accel", "10", 0 );
 tas_perfectstrafe_airaccel = CVAR_CREATE( "tas_perfectstrafe_airaccel", "10", 0 );
 tas_perfectstrafe_friction = CVAR_CREATE( "tas_perfectstrafe_friction", "4", 0 );
@@ -767,6 +773,8 @@ tas_autostrafe_backpedaldir = CVAR_CREATE( "tas_autostrafe_backpedaldir", "2", 0
 
 tas_autostrafe_desiredviewangle = CVAR_CREATE( "tas_autostrafe_desiredviewangle", "0.0", 0 );
 tas_autostrafe_manualangle = CVAR_CREATE( "tas_autostrafe_manualangle", "0", FCVAR_ARCHIVE );
+
+tas_log = CVAR_CREATE( "tas_log", "0", 0 );
 
 cl_bhopcap = CVAR_CREATE( "cl_bhopcap", "0", FCVAR_ARCHIVE );
 

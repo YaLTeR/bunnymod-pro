@@ -3386,14 +3386,14 @@ void PM_Move ( struct playermove_s *ppmove, int server )
 
 	pmove = ppmove;
 
-	/*if ( hypot(pmove->velocity[0], pmove->velocity[1]) != 0.0f )
-	{
-#ifdef CLIENT_DLL
-		pmove->Con_DPrintf("PM_Move: velocity %f; %f\n", pmove->velocity[0], pmove->velocity[1]);
-#else
-		pmove->Con_DPrintf("SV PM_Move: velocity %f; %f\n", pmove->velocity[0], pmove->velocity[1]);
-#endif
-	}*/
+//	if ((pmove->velocity[0] != 0.0f) || (pmove->velocity[1] != 0.0f))
+//	{
+//#ifdef CLIENT_DLL
+//		pmove->Con_Printf("PM_Move: velocity %f; %f\n", pmove->velocity[0], pmove->velocity[1]);
+//#else
+//		pmove->Con_Printf("SV PM_Move: velocity %f; %f\n", pmove->velocity[0], pmove->velocity[1]);
+//#endif
+//	}
 
 /*#ifndef CLIENT_DLL
 	VectorCopy(pmove->velocity, prevel);
