@@ -855,7 +855,7 @@ double CL_GetOptimalAngle(float maxspeed, double A, double v0, bool onground)
 double CL_GetMaximumAngle(float maxspeed, double A, double v0, bool onground)
 {
 	if (v0 == 0)
-		return 90;
+		return 180;
 
 	double alphacos = (-A) / v0;
 	if (alphacos >= 1) return 0;
