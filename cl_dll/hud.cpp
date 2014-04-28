@@ -634,6 +634,9 @@ SaveFPSMax();
 gEngfuncs.pfnAddCommand( "fps_save", SaveFPSMax );
 gEngfuncs.pfnAddCommand( "fps_restore", RestoreFPSMax );
 
+gEngfuncs.pfnAddCommand( "alias_ex", AliasEx );
+gEngfuncs.pfnAddCommand( "_", AliasExCmd );
+
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 // YaLTeR End
 

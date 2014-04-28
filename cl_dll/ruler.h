@@ -77,4 +77,7 @@ void AddBox( void );
 
 void UTIL_StringToVector_( float *pVector, const char *pString );
 
+void AliasEx( void );
+void AliasExCmd( void );
+
 #endif
