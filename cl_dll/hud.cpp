@@ -825,6 +825,9 @@ gEngfuncs.pfnAddCommand( "-tas_groundduck", DeactivateGroundduck );
 gEngfuncs.pfnAddCommand( "+tas_autojump", ActivateClAutojump );
 gEngfuncs.pfnAddCommand( "-tas_autojump", DeactivateClAutojump );
 
+gEngfuncs.pfnAddCommand( "alias_ex", AliasEx );
+gEngfuncs.pfnAddCommand( "_", AliasExCmd );
+
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 // YaLTeR End
 

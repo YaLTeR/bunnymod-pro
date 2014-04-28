@@ -1,4 +1,6 @@
 #include <vector>
+#include <map>
+#include <string>
 #include <memory.h>
 #include "hud.h"
 #include "com_model.h"
@@ -38,6 +40,8 @@ bool autocmdCmdExecuted = false;
 double flRulerOldTime = 0.0, flRulerTime, flRulerTimeDelta;
 
 cl_box firstBox;
+
+std::map<std::string, std::string> aliasex_aliases;
 
 // std::vector<vec3_t> spawns;
 // std::vector<vec3_t*> spawnCrossPoints;
@@ -927,4 +931,73 @@ void UTIL_StringToVector_( float * pVector, const char *pString )
 		for (j = j+1;j < 3; j++)
 			pVector[j] = 0;
 	}
+}
+
+void AliasEx( void )
+{
+    if (gEngfuncs.Cmd_Argc() == 1)
+    {
+        for (std::map<std::string, std::string>::iterator it = aliasex_aliases.begin(); it != aliasex_aliases.end(); it++)
+        {
+            gEngfuncs.Con_Printf( "%s: %s\n", it->first.c_str(), it->second.c_str() );
+        }
+
+        return;
+    }
+
+    if (gEngfuncs.Cmd_Argc() == 2)
+    {
+        std::map<std::string, std::string>::iterator it = aliasex_aliases.find( gEngfuncs.Cmd_Argv(1) );
+        if (it != aliasex_aliases.end())
+        {
+            aliasex_aliases.erase(it);
+        }
+
+        return;
+    }
+
+    if (gEngfuncs.Cmd_Argc() != 3)
+    {
+        gEngfuncs.Con_Printf("Usage: alias_ex <name> <command>\n");
+        return;
+    }
+
+    std::string aliasName   ( gEngfuncs.Cmd_Argv(1) );
+    std::string aliasCommand( gEngfuncs.Cmd_Argv(2) );
+
+    std::map<std::string, std::string>::iterator it = aliasex_aliases.find(aliasName);
+    if (it == aliasex_aliases.end())
+    {
+        aliasex_aliases.insert( std::pair<std::string, std::string>(aliasName, aliasCommand) );
+    }
+    else
+    {
+        it->second = aliasCommand;
+    }
+}
+
+void AliasExCmd( void )
+{
+    unsigned int argc = gEngfuncs.Cmd_Argc();
+    if (argc < 2)
+    {
+        gEngfuncs.Con_Printf("Usage: _ <command>\n");
+        return;
+    }
+
+    std::map<std::string, std::string>::iterator it = aliasex_aliases.find( std::string(gEngfuncs.Cmd_Argv(1)) );
+    if (it == aliasex_aliases.end())
+    {
+        gEngfuncs.Con_Printf("Unknown alias_ex!\n");
+        return;
+    }
+    
+    std::string args(it->second);
+    for (int i = 2; i < argc; i++)
+    {
+        args += " ";
+        args += gEngfuncs.Cmd_Argv(i);
+    }
+
+    gEngfuncs.pfnClientCmd( (char *) args.c_str() );
 }
