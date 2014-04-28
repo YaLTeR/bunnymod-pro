@@ -1,7 +1,8 @@
 #include <vector>
 #include <map>
 #include <string>
-#include <memory.h>
+#include <memory>
+#include <stdlib.h>
 #include "hud.h"
 #include "com_model.h"
 #include "cl_util.h"
@@ -988,12 +989,37 @@ void AliasExCmd( void )
         return;
     }
     
-    std::string args(it->second);
-    for (int i = 2; i < argc; i++)
+    std::string args;
+    if (argc >= 3)
     {
-        args += " ";
-        args += gEngfuncs.Cmd_Argv(i);
+        args += gEngfuncs.Cmd_Argv(2);
+
+        for (int i = 3; i < argc; i++)
+        {
+            args += " ";
+            args += gEngfuncs.Cmd_Argv(i);
+        }
     }
 
-    gEngfuncs.pfnClientCmd( (char *) args.c_str() );
+    cvar_t *cvar = gEngfuncs.pfnGetCvarPointer( it->second.c_str() );
+    if (cvar)
+    {
+        if (argc == 2)
+        {
+            gEngfuncs.Con_Printf("\"%s\" is \"%s\"\n", cvar->name, cvar->string);
+        }
+        else
+        {
+            strcpy(cvar->string, args.c_str());
+            cvar->value = atof( gEngfuncs.Cmd_Argv(2) );
+        }
+    }
+    else
+    {
+        std::string cmd( it->second );
+        cmd += " ";
+        cmd += args;
+
+        gEngfuncs.pfnClientCmd( (char *)cmd.c_str() );
+    }
 }
