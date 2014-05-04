@@ -10,7 +10,7 @@
 
 #define DAMAGE_MOVE_TIME	1
 
-const char BUNNYMOD_VERSION[] = "v1.1 beta";
+const char BUNNYMOD_VERSION[] = "v1.1";
 
 char m_sEntityName[32];
 char m_sEntityModel[32];
