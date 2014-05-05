@@ -32,6 +32,8 @@ extern "C"
 // YaLTeR Start
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
 const double M_RAD2DEG = 180.0 / M_PI;
+
+const double M_U = 360.0 / 65536;
 // YaLTeR End
 
 extern "C"
@@ -658,8 +660,13 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 }
 
 // YaLTeR Start - TAS functions
-double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double A)
+
+// Level 3 functions - TAS_Get*Angle
+// Return the plain desired angle between velocity and acceleration without anglemod.
+double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction)
 {
+	double A = accel * wishspeed * frametime * pmove_friction;
+
 	if (A >= 0)
 	{
 		if (speed == 0)
@@ -682,8 +689,10 @@ double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double A)
 	}
 }
 
-double TAS_GetMaxRotationAngle(double speed, double maxspeed, double A)
+double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_frictiond)
 {
+	double A = accel * wishspeed * frametime * pmove_friction;
+
 	/* If A is less than 0 here then we'll add speed in an opposite to wishdir
 	   direction, so the angle will be (180 - normal max rotation angle),
 	   which we see here: arccos(-x) = pi - arccos(x).*/
@@ -703,8 +712,10 @@ double TAS_GetMaxRotationAngle(double speed, double maxspeed, double A)
 	return (acos(alphacos) * M_RAD2DEG);
 }
 
-double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double A)
+double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction)
 {
+	double A = accel * wishspeed * frametime * pmove_friction;
+
 	if (A >= 0)
 	{
 		return 180;
@@ -723,6 +734,20 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double A)
 		return (acos(alphacos) * M_RAD2DEG);
 	}
 }
+
+// Level 2 - Strafe*
+// Return two angles - one is the desired one CCW to the velocity (leftangle),
+// another - CW to the velocity (rightangle). Anglemods are here.
+// Return value is a bool which is false if CCW is more desired and true if CW is more desired.
+bool TAS_StrafeMaxSpeed(const vec3_t &velocity, double *leftangle, double *rightangle)
+{
+	// Design in progress.
+}
+
+// Level 1
+// Returns the final desired angle between velocity and acceleration, anglemod'd. Negative if counter-clockwise, positive otherwise.
+// TBD
+
 // YaLTeR End
 
 /*
