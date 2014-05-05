@@ -718,7 +718,14 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 
 	if (A >= 0)
 	{
-		return 180;
+		// Assume angle = 180 first.
+		double alphacos = -1;
+		double finalspeed_squared = speed*speed + A*A + (2 * speed * A * alphacos);
+		if (finalspeed_squared >= 0)
+			return 180;
+
+		alphacos = -((speed*speed + A*A) / (2 * speed * A));
+		return (acos(alphacos) * M_RAD2DEG);
 	}
 	else
 	{
@@ -729,17 +736,23 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 		   a function ontop of this one. */
 
 		double alphacos = (maxspeed / speed);
-		if (alphacos >= 1) return 0;
+		if (alphacos >= 1) alphacos = 1;
+
+		double finalspeed_squared = speed*speed + A*A + (2 * speed * A * alphacos);
+		if (finalspeed_squared < 0)
+		{
+			alphacos = -((speed*speed + A*A) / (2 * speed * A));
+		}
 
 		return (acos(alphacos) * M_RAD2DEG);
 	}
 }
 
-// Level 2 - Strafe*
-// Return two angles - one is the desired one CCW to the velocity (leftangle),
+// Level 2 - TAS_Strafe*
+// Return two angles - one is the desired difference between velocity and acceleration CCW to the velocity (leftangle),
 // another - CW to the velocity (rightangle). Anglemods are here.
 // Return value is a bool which is false if CCW is more desired and true if CW is more desired.
-bool TAS_StrafeMaxSpeed(const vec3_t &velocity, double *leftangle, double *rightangle)
+bool TAS_StrafeMaxSpeed(const vec3_t &velocity, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction, double *leftangle, double *rightangle)
 {
 	// Design in progress.
 }
