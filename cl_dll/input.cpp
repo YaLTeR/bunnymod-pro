@@ -661,6 +661,14 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 
 // YaLTeR Start - TAS functions
 
+inline double copysign(double value, double sign)
+{
+	if (sign >= 0)
+		return abs(value);
+	else
+		return -abs(value);
+}
+
 // Level 3 functions - TAS_Get*Angle
 // Return the plain desired angle between velocity and acceleration without anglemod.
 double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction)
@@ -689,7 +697,7 @@ double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double 
 	}
 }
 
-double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_frictiond)
+double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction)
 {
 	double A = accel * wishspeed * frametime * pmove_friction;
 
@@ -752,13 +760,61 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 // Return two angles - one is the desired difference between velocity and acceleration CCW to the velocity (leftangle),
 // another - CW to the velocity (rightangle). Anglemods are here.
 // Return value is a bool which is false if CCW is more desired and true if CW is more desired.
-bool TAS_StrafeMaxSpeed(const vec3_t &velocity, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction, double *leftangle, double *rightangle)
+bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
+	double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction,
+	double *leftangle, double *rightangle)
 {
-	// Design in progress.
+	double speed = hypot(velocity[0], velocity[1]);
+	double angle = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, frametime, pmove_friction);
+	double anglemod_diff = angle - anglemod(angle);
+
+	double alpha_right[2], alpha_left[2];
+	alpha_right[0] = anglemod(angle);
+	alpha_right[1] = alpha_right[0] + copysign(M_U, anglemod_diff);
+	alpha_left[0] = -alpha_right[0];
+	alpha_left[1] = -alpha_right[1];
+
+	double speed_max_right = 0;
+	int i; // VC++6.0 compiler, pls...
+	for (i = 0; i < 2; i++)
+	{
+		vec3_t newvel;
+		TAS_SimpleVelocityPredict(alpha_right[i], velocity, maxspeed, accel, wishspeed, frametime, pmove_friction, &newvel); // TBD
+
+		double newspeed = hypot(newvel[0], newvel[1]);
+		if (newspeed > speed_max_right)
+		{
+			speed_max_right = newspeed;
+			if (rightangle)
+			{
+				*rightangle = alpha_right[i];
+			}
+		}
+	}
+
+	double speed_max_left = 0;
+	for (i = 0; i < 2; i++)
+	{
+		vec3_t newvel;
+		TAS_SimpleVelocityPredict(alpha_left[i], velocity, maxspeed, accel, wishspeed, frametime, pmove_friction, &newvel); // TBD
+
+		double newspeed = hypot(newvel[0], newvel[1]);
+		if (newspeed > speed_max_left)
+		{
+			speed_max_left = newspeed;
+			if (leftangle)
+			{
+				*leftangle = alpha_left[i];
+			}
+		}
+	}
+
+	return (speed_max_right >= speed_max_left);
 }
 
 // Level 1
-// Returns the final desired angle between velocity and acceleration, anglemod'd. Negative if counter-clockwise, positive otherwise.
+// Returns the final desired angle between velocity and acceleration, anglemod'd.
+// Negative if counter-clockwise, positive otherwise.
 // TBD
 
 // YaLTeR End
