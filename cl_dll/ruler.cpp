@@ -1,5 +1,7 @@
-#include <vector>
+#pragma warning( disable : 4786 ) // Thanks for the spam
 #include <map>
+
+#include <vector>
 #include <string>
 #include <memory>
 #include <stdlib.h>
@@ -460,7 +462,7 @@ void AutostopsaveAutoFunc( vec3_t vecOrigin )
 
 	if ( cl_autocmd_enable->value
 			&& ( strlen( cl_autocmd_plane->string ) != 0 )
-			&& ( strlen( cl_autocmd_coord->string ) != 0 ) 
+			&& ( strlen( cl_autocmd_coord->string ) != 0 )
 			&& ( strlen( cl_autocmd_distance->string) != 0 ) )
 	{
 		float coord = cl_autocmd_coord->value;
@@ -633,7 +635,7 @@ int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins )
 	while (data)
 	{
 		data = gEngfuncs.COM_ParseFile(data, token);
-		
+
 		if ( (token[0] == '}') ||  (token[0]==0) )
 			break;
 
@@ -650,20 +652,20 @@ int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins )
 		}
 
 		// we parse the first { now parse entities properties
-		
+
 		while ( 1 )
-		{	
+		{
 			// parse key
 			data = gEngfuncs.COM_ParseFile(data, token);
 			if (token[0] == '}')
 				break; // finish parsing this entity
 
 			if (!data)
-			{	
+			{
 				gEngfuncs.Con_DPrintf("FindEntitiesInMap: EOF without closing brace\n");
 				return 0;
 			};
-			
+
 			strcpy (keyname, token);
 
 			// another hack to fix keynames with trailing spaces
@@ -673,15 +675,15 @@ int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins )
 				keyname[n-1] = 0;
 				n--;
 			}
-			
-			// parse value	
+
+			// parse value
 			data = gEngfuncs.COM_ParseFile(data, token);
 			if (!data)
-			{	
+			{
 				gEngfuncs.Con_DPrintf("FindEntitiesInMap: EOF without closing brace\n");
 				return 0;
 			};
-	
+
 			if (token[0] == '}')
 			{
 				gEngfuncs.Con_DPrintf("FindEntitiesInMap: Closing brace without data");
@@ -695,13 +697,13 @@ int FindEntitiesInMap( char *name, std::vector<vec3_t> &origins )
 					found = 1;	// thats our entity
 				}
 			}
-			
+
 			if (!strcmp(keyname,"origin"))
 			{
 				UTIL_StringToVector_(origin, token);
 				gotorigin = true;
 			}
-				
+
 		} // while (1)
 
 		if ( gotorigin )
@@ -914,11 +916,11 @@ void UTIL_StringToVector_( float * pVector, const char *pString )
 
 	strcpy( tempString, pString );
 	pstr = pfront = tempString;
-	
-	for ( j = 0; j < 3; j++ )		
+
+	for ( j = 0; j < 3; j++ )
 	{
 		pVector[j] = atof( pfront );
-		
+
 		while ( *pstr && *pstr != ' ' )
 			pstr++;
 		if (!*pstr)
@@ -992,7 +994,7 @@ void AliasExCmd( void )
         gEngfuncs.Con_Printf("Unknown alias_ex!\n");
         return;
     }
-    
+
     std::string args;
     if (argc >= 3)
     {

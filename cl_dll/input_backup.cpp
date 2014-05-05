@@ -29,9 +29,105 @@ extern "C"
 
 #include "vgui_TeamFortressViewport.h"
 
+#include "event_api.h" // YaLTeR
+#include "eventscripts.h" // YaLTeR
+
+//rofi
+extern int _mx;
+
 // YaLTeR Start
-const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
-const double M_RAD2DEG = 180.0 / M_PI;
+float yawRotation = 0.0f;
+bool firstRotationInTheAir = true;
+bool shouldForceJump = false;
+bool autostrafe_turningClockwise = true;
+float autostrafe_desiredViewangle = 0.0;
+bool perfectstrafe_movingBackwards = false;
+bool perfectstrafe_needToUpdateDirection = false;
+extern bool g_bPaused;
+bool g_bPerfectstrafe = false;
+bool g_bOldPerfectstrafe = false;
+bool g_bAutostrafe = false;
+bool g_bOldAutostrafe = false;
+bool g_bOldUnpausedAutostrafe = false;
+bool g_bInBhop = false;
+bool g_bGroundduck = false;
+bool g_bOldGroundduck = false;
+bool g_bClAutojump = false;
+bool g_bOldClAutojump = false;
+
+#define INVALID_ANGLE -361.0f
+float setYaw = INVALID_ANGLE;
+float setPitch = INVALID_ANGLE;
+
+#define M_PI         3.1415926535897
+#define M_RAD2DEG   57.2957795130823
+#define M_DEG2RAD    0.0174532925199
+#define M_U          0.0054931640625
+#define M_INVU     182.0444444444444
+
+extern double demorec_counter_delta;
+extern vec3_t g_org, g_vel, g_vecViewAngle;
+extern bool g_bOnGroundDemoInaccurate;
+extern bool g_bOldOnGroundDemoInaccurate;
+extern cvar_t *cl_printpos;
+extern cvar_t *tas_log;
+
+extern cvar_t *tas_perfectstrafe_accel;
+extern cvar_t *tas_perfectstrafe_airaccel;
+extern cvar_t *tas_perfectstrafe_friction;
+extern cvar_t *tas_perfectstrafe_maxspeed;
+extern cvar_t *tas_perfectstrafe_autojump;
+extern cvar_t *tas_perfectstrafe_movetype;
+
+extern cvar_t *tas_autostrafe_desiredviewangle;
+extern cvar_t *tas_autostrafe_manualangle;
+
+/*
+    0 - W/S (going left)
+    1 - WA/WD
+    2 - A/D
+    3 - SA/SD
+    4 - W/S (going right)
+    5 - SA/SD (backwards)
+    6 - A/D (backwards)
+    7 - WA/WD (backwards)
+*/
+extern cvar_t *tas_autostrafe_airdir;
+extern cvar_t *tas_autostrafe_grounddir;
+
+/*
+    0 - D
+    1 - SD
+    2 - S
+    3 - SA
+    4 - A
+    5 - WA
+    6 - W
+    7 - WD
+*/
+extern cvar_t *tas_autostrafe_backpedaldir;
+
+#define BOOLSTRING(b) (b)?"true":"false"
+
+double normangle(double angle)
+{
+	if (angle >= 180)
+		angle -= 360;
+	else if (angle < -180)
+		angle += 360;
+
+	return angle;
+}
+
+double normangleengine(double angle)
+{
+	if (angle >= 360)
+		angle -= 360;
+	else if (angle < 0)
+		angle += 360;
+
+	return angle;
+}
 // YaLTeR End
 
 extern "C"
@@ -628,7 +724,37 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 	{
 		viewangles[YAW] -= speed*cl_yawspeed->value*CL_KeyState (&in_right);
 		viewangles[YAW] += speed*cl_yawspeed->value*CL_KeyState (&in_left);
-		viewangles[YAW] = anglemod(viewangles[YAW]);
+
+		// YaLTeR Start
+		/*if (!g_bPaused)
+			gEngfuncs.Con_Printf("Yaw: %f; yawRot: %f\n", viewangles[YAW], yawRotation);*/
+
+		if (setYaw != INVALID_ANGLE)
+		{
+			viewangles[YAW] = setYaw;
+			setYaw = INVALID_ANGLE;
+
+			float temp = viewangles[YAW] * M_INVU;
+			temp = floor( temp + 0.5 );
+			viewangles[YAW] = temp * M_U;
+		}
+		else if (yawRotation != 0.0f)
+		{
+			viewangles[YAW] += yawRotation;
+			//viewangles[YAW] = normangleengine( viewangles[YAW] );
+
+			//gEngfuncs.Con_Printf("Pre-deanglemod: %f; ", viewangles[YAW]);
+
+			float temp = viewangles[YAW] * M_INVU;
+			temp = floor(temp + 0.5);
+			viewangles[YAW] = temp * M_U;
+
+			//gEngfuncs.Con_Printf("post-deanglemod: %f\n", viewangles[YAW]);
+		}
+		// YaLTeR End
+
+		if( _mx != -1 )
+			viewangles[YAW] = anglemod(viewangles[YAW]);
 	}
 	if (in_klook.state & 1)
 	{
@@ -642,6 +768,18 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 
 	viewangles[PITCH] -= speed*cl_pitchspeed->value * up;
 	viewangles[PITCH] += speed*cl_pitchspeed->value * down;
+
+	// YaLTeR Start
+	if (setPitch != INVALID_ANGLE)
+	{
+		viewangles[PITCH] = setPitch;
+		setPitch = INVALID_ANGLE;
+
+		float temp = viewangles[PITCH] * M_INVU;
+		temp = floor( temp + 0.5 );
+		viewangles[PITCH] = temp * M_U;
+	}
+	// YaLTeR End
 
 	if (up || down)
 		V_StopPitchDrift ();
@@ -657,74 +795,6 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 		viewangles[ROLL] = -50;
 }
 
-// YaLTeR Start - TAS functions
-double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double A)
-{
-	if (A >= 0)
-	{
-		if (speed == 0)
-			return 0;
-
-		double alphacos = (maxspeed - A) / speed;
-		if (alphacos >= 1) return 0;
-		if (alphacos <= 0) return 90;
-
-		return (acos(alphacos) * M_RAD2DEG);
-	}
-	else // Negative acceleration.
-	{
-		/* Stuff is simpler here - since A is less than 0, it is always less than
-		   addspeed, that means that speed after PM_AirAccelerate will equal to
-		   sqrt(speed^2 + A^2 + 2*speed*A*cos(alpha)), so for the highest final
-		   speed we want cos(alpha) = -1, or alpha = 180. */
-
-		return 180;
-	}
-}
-
-double TAS_GetMaxRotationAngle(double speed, double maxspeed, double A)
-{
-	/* If A is less than 0 here then we'll add speed in an opposite to wishdir
-	   direction, so the angle will be (180 - normal max rotation angle),
-	   which we see here: arccos(-x) = pi - arccos(x).*/
-
-	if (speed == 0)
-	{
-		if (A >= 0)
-			return 180;
-		else
-			return 0;
-	}
-
-	double alphacos = (-A) / speed;
-	if (alphacos >= 1) return 0;
-	if (alphacos <= -1) return 180;
-
-	return (acos(alphacos) * M_RAD2DEG);
-}
-
-double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double A)
-{
-	if (A >= 0)
-	{
-		return 180;
-	}
-	else
-	{
-		/* Alpha = 0 would not work here if speed is > maxspeed because
-		   of the addspeed <= 0 check that leads to return.
-		   Alpha = acos(maxspeed / speed) would POTENTIALLY not work
-		   because of the said check. This case needs to be handled in
-		   a function ontop of this one. */
-
-		double alphacos = (maxspeed / speed);
-		if (alphacos >= 1) return 0;
-
-		return (acos(alphacos) * M_RAD2DEG);
-	}
-}
-// YaLTeR End
-
 /*
 ================
 CL_CreateMove
@@ -734,6 +804,210 @@ if active == 1 then we are 1) not playing back demos ( where our commands are ig
 2 ) we have finished signing on to server
 ================
 */
+
+// YaLTeR Start
+double CL_GetBorderVelocity(double v0, double A, double Agr, float maxspeed, float friction, float frametime)
+{
+	double ff = friction * frametime;
+	double bordervel = -1.0;
+
+	if ((A < 30) && (Agr < maxspeed))
+	{
+		double temp = fabs(60*A - A*A + Agr*Agr - 2*Agr*maxspeed);
+		bordervel = sqrt(temp) / sqrt(2*ff - ff*ff);
+	}
+	else if ((A >= 30) && (Agr < maxspeed))
+	{
+		if (v0 < (maxspeed - Agr))
+		{
+			double temp = fabs(Agr*Agr - 1800*ff + 900*ff*ff);
+			bordervel = fabs( (-Agr + Agr*ff - sqrt(temp)) / (-2*ff + ff*ff) );
+		}
+		else
+		{
+			bordervel = sqrt( fabs( 900 + Agr*Agr - 2*Agr*maxspeed ) ) / ( sqrt( fabs(ff - 2) ) * sqrt( fabs(ff) ) );
+		}
+	}
+	else if ((A < 30) && (Agr >= maxspeed))
+	{
+		bordervel = sqrt( fabs( 60*A - A*A - maxspeed*maxspeed ) ) / sqrt( fabs(-2*ff + ff*ff) );
+	}
+	else if ((A >= 30) && (Agr >= maxspeed))
+	{
+		bordervel = sqrt( fabs(900 - maxspeed*maxspeed) ) / sqrt( fabs(-2*ff + ff*ff) );
+	}
+
+	return bordervel;
+}
+
+double CL_GetOptimalAngle(float maxspeed, double A, double v0, bool onground)
+{
+	if (v0 == 0)
+		return 0;
+
+	double alphacos = (maxspeed - A) / v0;
+	if (alphacos >= 1) return 0;
+	if (alphacos <= 0) return 90;
+
+	return (acos(alphacos) * M_RAD2DEG);
+}
+
+double CL_GetMaximumAngle(float maxspeed, double A, double v0, bool onground)
+{
+	if (v0 == 0)
+		return 180;
+
+	double alphacos = (-A) / v0;
+	if (alphacos >= 1) return 0;
+	if (alphacos <= -1) return 180;
+
+	return (acos(alphacos) * M_RAD2DEG);
+}
+
+// How much the player view (not wishvel!) should differentiate from the velocity.
+double CL_GetBackpedallingAngle(float maxspeed, double A, double v0, bool onground, float dirOverride = -1.0f)
+{
+	float dir;
+	if (dirOverride != -1.0f)
+	{
+		dir = dirOverride;
+	}
+	else
+	{
+		dir = tas_autostrafe_backpedaldir->value;
+	}
+
+	if (dir == 1.0f)
+		return 45;
+	else if (dir == 2.0f)
+		return 0;
+	else if (dir == 3.0f)
+		return 315;
+	else if (dir == 4.0f)
+		return 270;
+	else if (dir == 5.0f)
+		return 225;
+	else if (dir == 6.0f)
+		return 180;
+	else if (dir == 7.0f)
+		return 135;
+	else
+		return 90;
+}
+
+double CL_GetWishAngleDiff(bool onground, bool turningClockwise, float dirOverride = -1.0f)
+{
+	float dir;
+	if (dirOverride != -1.0f)
+	{
+		dir = dirOverride;
+	}
+	else
+	{
+		if (onground)
+			dir = tas_autostrafe_grounddir->value;
+		else
+			dir = tas_autostrafe_airdir->value;
+	}
+
+	double result;
+	if (dir == 1.0f)
+		result = 45;
+	else if (dir == 2.0f)
+		result = 90;
+	else if (dir == 3.0f)
+		result = 135;
+	else if (dir == 4.0f)
+		result = 180;
+	else if (dir == 5.0f)
+		result = 225;
+	else if (dir == 6.0f)
+		result = 270;
+	else if (dir == 7.0f)
+		result = 315;
+	else
+		result = 0;
+
+	if ( turningClockwise )
+	{
+		result = -result;
+	}
+	else
+	{
+		if (result == 0)
+			result = 180;
+		else if (result == 180)
+			result = 0;
+	}
+
+	return result;
+}
+
+bool CL_TurningClockwise(bool onground, float dirOverride = -1.0f)
+{
+	float dir;
+	if (dirOverride != -1.0f)
+	{
+		dir = dirOverride;
+	}
+	else
+	{
+		if (onground)
+			dir = tas_autostrafe_grounddir->value;
+		else
+			dir = tas_autostrafe_airdir->value;
+	}
+
+	if (dir == 1.0f)
+		return ((in_forward.state & 1) && (in_moveright.state & 1));
+	else if (dir == 2.0f)
+		return (in_moveright.state & 1);
+	else if (dir == 3.0f)
+		return ((in_back.state & 1) && (in_moveright.state & 1));
+	else if (dir == 4.0f)
+		return (in_back.state & 1);
+	else if (dir == 5.0f)
+		return ((in_back.state & 1) && (in_moveleft.state & 1));
+	else if (dir == 6.0f)
+		return (in_moveleft.state & 1);
+	else if (dir == 7.0f)
+		return ((in_forward.state & 1) && (in_moveleft.state & 1));
+	else
+		return (in_forward.state & 1);
+}
+
+bool CL_IsMovementKeyPressed()
+{
+	return ((in_forward.state & 1) || (in_back.state & 1) || (in_moveright.state & 1) || (in_moveleft.state & 1));
+}
+
+float CL_GetPerfectstrafeDir()
+{
+	if (!perfectstrafe_movingBackwards)
+	{
+		if (((in_forward.state & 1) && (in_moveright.state & 1)) || ((in_forward.state & 1) && (in_moveleft.state & 1)))
+			return 1;
+		else if (((in_back.state & 1) && (in_moveright.state & 1)) || ((in_back.state & 1) && (in_moveleft.state & 1)))
+			return 3;
+		else if ((in_moveright.state & 1) || (in_moveleft.state & 1))
+			return 2;
+		else
+			return 0;
+	}
+	else
+	{
+		if (((in_forward.state & 1) && (in_moveright.state & 1)) || ((in_forward.state & 1) && (in_moveleft.state & 1)))
+			return 7;
+		else if (((in_back.state & 1) && (in_moveright.state & 1)) || ((in_back.state & 1) && (in_moveleft.state & 1)))
+			return 5;
+		else if ((in_moveright.state & 1) || (in_moveleft.state & 1))
+			return 6;
+		else
+			return 4;
+	}
+}
+// YaLTeR End
+
 void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int active )
 {
 	float spd;
@@ -742,15 +1016,322 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 	if ( active )
 	{
+
 		//memset( viewangles, 0, sizeof( vec3_t ) );
 		//viewangles[ 0 ] = viewangles[ 1 ] = viewangles[ 2 ] = 0.0;
 		gEngfuncs.GetViewAngles( (float *)viewangles );
+
+		// YaLTeR Start
+        if (!g_bPaused && cl_printpos->value)
+        {
+            gEngfuncs.Con_Printf("Origin (x, y, z): %f, %f, %f\n", g_org[0], g_org[1], g_org[2]);
+        }
+
+		float maxspeed = tas_perfectstrafe_maxspeed->value;
+		float friction = tas_perfectstrafe_friction->value;
+
+		vec3_t viewOfs;
+		VectorClear(viewOfs);
+		gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOfs );
+		if (viewOfs[2] == VEC_DUCK_VIEW)
+		{
+			maxspeed *= 0.333;
+		}
+
+		double A = tas_perfectstrafe_airaccel->value * maxspeed * frametime;
+		double Agr = tas_perfectstrafe_accel->value * maxspeed * frametime;
+		double v0 = hypot(g_vel[0], g_vel[1]);
+
+		// Air acceleration
+		double alpha;
+		if (tas_perfectstrafe_movetype->value == 1.0f)
+		{
+			alpha = CL_GetMaximumAngle(30, A, v0, false);
+		}
+		else if (tas_perfectstrafe_movetype->value == 2.0f)
+		{
+			alpha = CL_GetBackpedallingAngle(30, A, v0, false);
+		}
+		else
+		{
+			alpha = CL_GetOptimalAngle(30, A, v0, false);
+		}
+
+		// Ground acceleration
+		double frictiondrop = v0 * friction * frametime; // TODO: edgefriction
+		double actualspeed = v0 - frictiondrop;
+		double alpha_gr;
+
+		if (tas_perfectstrafe_movetype->value == 1.0f)
+		{
+			alpha_gr = CL_GetMaximumAngle(maxspeed, Agr, actualspeed, true);
+		}
+		else if (tas_perfectstrafe_movetype->value == 2.0f)
+		{
+			alpha_gr = CL_GetBackpedallingAngle(maxspeed, A, v0, true);
+		}
+		else
+		{
+			alpha_gr = CL_GetOptimalAngle(maxspeed, Agr, actualspeed, true);
+		}
+
+		if ( tas_autostrafe_manualangle->value != 0.0f )
+		{
+			autostrafe_desiredViewangle = tas_autostrafe_desiredviewangle->value;
+		}
+
+		if ((g_bPerfectstrafe != g_bOldPerfectstrafe) && g_bPerfectstrafe)
+		{
+			perfectstrafe_needToUpdateDirection = true;
+		}
+
+		g_bOldPerfectstrafe = g_bPerfectstrafe;
+
+		if (g_bPerfectstrafe && !CL_IsMovementKeyPressed())
+		{
+			perfectstrafe_needToUpdateDirection = true;
+		}
+
+		if (perfectstrafe_needToUpdateDirection && CL_IsMovementKeyPressed())
+		{
+			perfectstrafe_needToUpdateDirection = false;
+			perfectstrafe_movingBackwards = (in_back.state & 1);
+		}
+
+		// Same condition as below, to check if we're groundstrafing
+		if ( !g_bPaused && ( g_bAutostrafe || g_bPerfectstrafe ) && ( g_bOnGroundDemoInaccurate && !g_bInBhop ) && ( g_bAutostrafe || CL_IsMovementKeyPressed() ) )
+		{
+			if ( tas_perfectstrafe_autojump->value )
+			{
+				double bordervel = CL_GetBorderVelocity(v0, A, Agr, maxspeed, friction, frametime);
+
+				/*if (!g_bPaused)
+				{
+					gEngfuncs.Con_Printf("Bordervel: %f\n", bordervel);
+				}*/
+
+				if ((bordervel != -1.0f) && (v0 >= bordervel))
+				{
+					shouldForceJump = true;
+					g_bInBhop = true;
+				}
+			}
+		}
+
+		if ( g_bAutostrafe && !g_bOldAutostrafe )
+		{
+			if ( tas_autostrafe_manualangle->value )
+			{
+				autostrafe_desiredViewangle = tas_autostrafe_desiredviewangle->value;
+			}
+			else
+			{
+				autostrafe_desiredViewangle = viewangles[YAW];
+			}
+		}
+
+		g_bOldAutostrafe = g_bAutostrafe;
+
+		if ( !g_bPaused )
+		{
+			g_bOldUnpausedAutostrafe = g_bAutostrafe;
+		}
+
+		if ( ( g_bAutostrafe || g_bPerfectstrafe ) && ( !g_bOnGroundDemoInaccurate || g_bInBhop ) && ( g_bAutostrafe || CL_IsMovementKeyPressed() ) )
+		{
+			if ( firstRotationInTheAir )
+			{
+				firstRotationInTheAir = false;
+				g_bInBhop = true;
+			}
+
+			vec3_t velDir, angDir;
+			vec3_t velAng;
+			VectorCopy(g_vel, velDir);
+			velDir[2] = 0;
+			VectorAngles( velDir, velAng );
+
+			if ( g_bAutostrafe )
+			{
+				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
+				autostrafe_turningClockwise = (v0delta < 0);
+
+				if (!autostrafe_turningClockwise && (tas_perfectstrafe_movetype->value != 2.0f))
+				{
+					alpha = -alpha;
+				}
+			}
+			else
+			{
+				if (!CL_TurningClockwise(false, CL_GetPerfectstrafeDir()) && (tas_perfectstrafe_movetype->value != 2.0f))
+				{
+					alpha = -alpha;
+				}
+			}
+
+			double wishang;
+			if ( tas_perfectstrafe_movetype->value != 2.0f )
+			{
+				if ( g_bAutostrafe )
+				{
+					wishang = normangleengine(viewangles[YAW] + CL_GetWishAngleDiff(false, autostrafe_turningClockwise));
+				}
+				else
+				{
+					wishang = normangleengine(viewangles[YAW] + CL_GetWishAngleDiff(false, CL_TurningClockwise(false, CL_GetPerfectstrafeDir()), CL_GetPerfectstrafeDir()));
+				}
+			}
+			else
+			{
+				wishang = normangleengine(viewangles[YAW]);
+			}
+
+			double phi = normangle(velAng[YAW] - wishang);
+
+			/*if (!g_bPaused)
+			{
+				gEngfuncs.Con_Printf("alpha: %f\n", alpha);
+			}*/
+
+			if (!g_bPaused)
+			{
+				yawRotation = phi - alpha;
+			}
+			else
+			{
+				yawRotation = 0;
+			}
+		}
+		else if ( ( g_bAutostrafe || g_bPerfectstrafe ) && ( g_bOnGroundDemoInaccurate && !g_bInBhop ) && ( g_bAutostrafe || CL_IsMovementKeyPressed() ) )
+		{
+			vec3_t velAng;
+			if (v0 != 0)
+			{
+				vec3_t velDir, angDir;
+				VectorCopy(g_vel, velDir);
+				velDir[2] = 0;
+				VectorAngles( velDir, velAng );
+			}
+			else
+			{
+				velAng[YAW] = viewangles[YAW];
+			}
+
+			if ( g_bAutostrafe )
+			{
+				double v0delta = normangle(autostrafe_desiredViewangle - velAng[YAW]);
+				autostrafe_turningClockwise = (v0delta < 0);
+
+				if (!autostrafe_turningClockwise && (tas_perfectstrafe_movetype->value != 2.0f))
+				{
+					alpha_gr = -alpha_gr;
+				}
+			}
+			else
+			{
+				if (!CL_TurningClockwise(true, CL_GetPerfectstrafeDir()) && (tas_perfectstrafe_movetype->value != 2.0f))
+				{
+					alpha_gr = -alpha_gr;
+				}
+			}
+
+			/*if (!g_bPaused)
+			{
+				gEngfuncs.Con_Printf("alpha: %f\n", alpha);
+			}*/
+
+			double wishang;
+			if (tas_perfectstrafe_movetype->value != 2.0f)
+			{
+				if ( g_bAutostrafe )
+				{
+					wishang = normangleengine(viewangles[YAW] + CL_GetWishAngleDiff(true, autostrafe_turningClockwise));
+				}
+				else
+				{
+					wishang = normangleengine(viewangles[YAW] + CL_GetWishAngleDiff(true, CL_TurningClockwise(true, CL_GetPerfectstrafeDir()), CL_GetPerfectstrafeDir()));
+				}
+			}
+			else
+			{
+				wishang = normangleengine(viewangles[YAW]);
+			}
+
+			if ( (actualspeed == 0) || ((alpha_gr == 0) && (tas_perfectstrafe_movetype->value != 2.0f)) )
+			{
+				if (!g_bPaused)
+				{
+					yawRotation = normangle(autostrafe_desiredViewangle - wishang);
+				}
+				else
+				{
+					yawRotation = 0;
+				}
+			}
+			else
+			{
+				double phi = normangle(velAng[YAW] - wishang);
+
+				if (!g_bPaused)
+				{
+					//gEngfuncs.Con_Printf("Current client speed: %f; predicted client speed: %f\n", v0, sqrt(v0*v0 + A*A + 2*v0*A*cos(deg2rad(alpha))));
+				}
+
+				if (!g_bPaused)
+				{
+					yawRotation = phi - alpha_gr;
+					//gEngfuncs.Con_Printf("phi: %f; yawRot: %f; wishang: %f; velang: %f; alpha: %f\n", phi, yawRotation, wishang, velAng[YAW], alpha_gr);
+				}
+				else
+				{
+					yawRotation = 0;
+				}
+			}
+		}
+		else
+		{
+			yawRotation = 0;
+			firstRotationInTheAir = true;
+			g_bInBhop = false;
+		}
+
+        if (tas_log->value)
+        {
+            // Log everything!
+            gEngfuncs.Con_Printf("-- LOGSTART -- Time: %f -- Frametime: %f --\n", demorec_counter_delta, frametime);
+            gEngfuncs.Con_Printf("Origin (x, y, z): %f, %f, %f\n\
+Viewangles (p, y, r): %f, %f, %f\n\
+Velocity(x, y, z): %f, %f, %f\n\
+v0: %f; frictiondrop: %f; actualspeed: %f\n\
+alpha: %f; alpha_gr: %f\n\
+g_bAutostrafe: %s\n\
+yawRotation: %f\n",
+                g_org[0], g_org[1], g_org[2],
+                viewangles[PITCH], viewangles[YAW], viewangles[ROLL],
+                g_vel[0], g_vel[1], g_vel[2],
+                v0, frictiondrop, actualspeed,
+                alpha, alpha_gr,
+                BOOLSTRING(g_bAutostrafe),
+                yawRotation);
+            gEngfuncs.Con_Printf("-- LOGEND --\n");
+
+        }
+		// YaLTeR End
 
 		CL_AdjustAngles ( frametime, viewangles );
 
 		memset (cmd, 0, sizeof(*cmd));
 
+		//vec3_t angpost;
+		//vec3_t angpre;
+		//gEngfuncs.GetViewAngles( (float *)angpre );
 		gEngfuncs.SetViewAngles( (float *)viewangles );
+		//if (!g_bPaused)
+		//{
+			//gEngfuncs.GetViewAngles( (float *)angpost );
+			//gEngfuncs.Con_DPrintf("Angles pre: %f; %f; viewangles: %f; %f; angles post: %f; %f;\n", angpre[0], angpre[1], viewangles[0], viewangles[1], angpost[0], angpost[1]);
+			//gEngfuncs.Con_DPrintf("Velocity: %f; %f\n", g_vel[0], g_vel[1]);
+		//}
 
 		if ( in_strafe.state & 1 )
 		{
@@ -758,16 +1339,190 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 			cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_left);
 		}
 
-		cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_moveright);
-		cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_moveleft);
+		// YaLTeR Start
+		if ( g_bAutostrafe && (tas_perfectstrafe_movetype->value != 2.0f) ) // 2.0f - backpedalling.
+		{
+			if ( g_bOldUnpausedAutostrafe )
+			{
+				float dir;
+				if (g_bOnGroundDemoInaccurate && !g_bInBhop)
+					dir = tas_autostrafe_grounddir->value;
+				else
+					dir = tas_autostrafe_airdir->value;
+
+				if ((dir == 1.0f) || (dir == 2.0f) || (dir == 3.0f))
+				{
+					if ( autostrafe_turningClockwise )
+					{
+						cmd->sidemove += cl_sidespeed->value;
+					}
+					else
+					{
+						cmd->sidemove -= cl_sidespeed->value;
+					}
+				}
+				else if ((dir == 5.0f) || (dir == 6.0f) || (dir == 7.0f))
+				{
+					if ( autostrafe_turningClockwise )
+					{
+						cmd->sidemove -= cl_sidespeed->value;
+					}
+					else
+					{
+						cmd->sidemove += cl_sidespeed->value;
+					}
+				}
+			}
+		}
+		else if (g_bPerfectstrafe && (tas_perfectstrafe_movetype->value != 2.0f) && CL_IsMovementKeyPressed()) // 2.0f - backpedalling.
+		{
+			float dir = CL_GetPerfectstrafeDir();
+
+			if ((dir == 1.0f) || (dir == 2.0f) || (dir == 3.0f))
+			{
+				if ( CL_TurningClockwise(false, dir) )
+				{
+					cmd->sidemove += cl_sidespeed->value;
+				}
+				else
+				{
+					cmd->sidemove -= cl_sidespeed->value;
+				}
+			}
+			else if ((dir == 5.0f) || (dir == 6.0f) || (dir == 7.0f))
+			{
+				if ( CL_TurningClockwise(false, dir) )
+				{
+					cmd->sidemove -= cl_sidespeed->value;
+				}
+				else
+				{
+					cmd->sidemove += cl_sidespeed->value;
+				}
+			}
+		}
+		else if (((g_bPerfectstrafe && CL_IsMovementKeyPressed()) || g_bAutostrafe) && (tas_perfectstrafe_movetype->value == 2.0f))
+		{
+			float dir = tas_autostrafe_backpedaldir->value;
+
+			if ((dir == 0.0f) || (dir == 1.0f) || (dir == 7.0f))
+			{
+				cmd->sidemove += cl_sidespeed->value;
+			}
+			else if ((dir == 3.0f) || (dir == 4.0f) || (dir == 5.0f))
+			{
+				cmd->sidemove -= cl_sidespeed->value;
+			}
+		}
+		else
+		{
+			cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_moveright);
+			cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_moveleft);
+		}
+		// YaLTeR End
 
 		cmd->upmove += cl_upspeed->value * CL_KeyState (&in_up);
 		cmd->upmove -= cl_upspeed->value * CL_KeyState (&in_down);
 
 		if ( !(in_klook.state & 1 ) )
 		{
-			cmd->forwardmove += cl_forwardspeed->value * CL_KeyState (&in_forward);
-			cmd->forwardmove -= cl_backspeed->value * CL_KeyState (&in_back);
+			/*if ( g_bAutostrafe && g_bOldUnpausedAutostrafe && g_bOnGroundDemoInaccurate && !g_bInBhop && !(in_forward.state & 1) )
+			{
+				cmd->forwardmove += cl_forwardspeed->value;
+			}*/
+
+			if ((!g_bPerfectstrafe || !CL_IsMovementKeyPressed()) && !g_bAutostrafe)
+			{
+				cmd->forwardmove += cl_forwardspeed->value * CL_KeyState (&in_forward);
+				cmd->forwardmove -= cl_backspeed->value * CL_KeyState (&in_back);
+			}
+			else if (((g_bPerfectstrafe && CL_IsMovementKeyPressed()) || g_bAutostrafe) && (tas_perfectstrafe_movetype->value == 2.0f))
+			{
+				float dir = tas_autostrafe_backpedaldir->value;
+
+				if ((dir == 5.0f) || (dir == 6.0f) || (dir == 7.0f))
+				{
+					cmd->forwardmove += cl_forwardspeed->value;
+				}
+				else if ((dir == 1.0f) || (dir == 2.0f) || (dir == 3.0f))
+				{
+					cmd->forwardmove -= cl_backspeed->value;
+				}
+			}
+			else if (g_bAutostrafe)
+			{
+				float dir;
+				if (g_bOnGroundDemoInaccurate && !g_bInBhop)
+					dir = tas_autostrafe_grounddir->value;
+				else
+					dir = tas_autostrafe_airdir->value;
+
+				if (dir == 0.0f)
+				{
+					if ( autostrafe_turningClockwise )
+					{
+						cmd->forwardmove += cl_forwardspeed->value;
+					}
+					else
+					{
+						cmd->forwardmove -= cl_backspeed->value;
+					}
+				}
+				else if (dir == 4.0f)
+				{
+					if ( autostrafe_turningClockwise )
+					{
+						cmd->forwardmove -= cl_backspeed->value;
+					}
+					else
+					{
+						cmd->forwardmove += cl_forwardspeed->value;
+					}
+				}
+				else if ((dir == 1.0f) || (dir == 7.0f))
+				{
+					cmd->forwardmove += cl_forwardspeed->value;
+				}
+				else if ((dir == 3.0f) || (dir == 5.0f))
+				{
+					cmd->forwardmove -= cl_backspeed->value;
+				}
+			}
+			else if (g_bPerfectstrafe)
+			{
+				float dir = CL_GetPerfectstrafeDir();
+
+				if (dir == 0.0f)
+				{
+					if ( CL_TurningClockwise(false, dir) )
+					{
+						cmd->forwardmove += cl_forwardspeed->value;
+					}
+					else
+					{
+						cmd->forwardmove -= cl_backspeed->value;
+					}
+				}
+				else if (dir == 4.0f)
+				{
+					if ( CL_TurningClockwise(false, dir) )
+					{
+						cmd->forwardmove -= cl_backspeed->value;
+					}
+					else
+					{
+						cmd->forwardmove += cl_forwardspeed->value;
+					}
+				}
+				else if ((dir == 1.0f) || (dir == 7.0f))
+				{
+					cmd->forwardmove += cl_forwardspeed->value;
+				}
+				else if ((dir == 3.0f) || (dir == 5.0f))
+				{
+					cmd->forwardmove -= cl_backspeed->value;
+				}
+			}
 		}
 
 		// adjust for speed key
@@ -807,6 +1562,46 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 	// set button and flag bits
 	//
 	cmd->buttons = CL_ButtonBits( 1 );
+
+	// YaLTeR Start
+	if ( g_bOnGroundDemoInaccurate != g_bOldOnGroundDemoInaccurate )
+	{
+		if ( g_bOnGroundDemoInaccurate )
+		{
+			if ( g_bGroundduck )
+			{
+				cmd->buttons |= IN_DUCK;
+			}
+			else if ( g_bClAutojump)
+			{
+				cmd->buttons |= IN_JUMP;
+			}
+		}
+	}
+
+	if ( (g_bGroundduck != g_bOldGroundduck) && g_bGroundduck )
+	{
+		cmd->buttons |= IN_DUCK;
+	}
+
+	if ( (g_bClAutojump != g_bOldClAutojump) && g_bClAutojump )
+	{
+		cmd->buttons |= IN_JUMP;
+	}
+
+	g_bOldGroundduck = g_bGroundduck;
+	g_bOldClAutojump = g_bClAutojump;
+
+	if ( shouldForceJump )
+	{
+		if ( !g_bOnGroundDemoInaccurate )
+		{
+			shouldForceJump = false;
+		}
+
+		cmd->buttons |= IN_JUMP;
+	}
+	// YaLTeR End
 
 	// If they're in a modal dialog, ignore the attack button.
 	if(GetClientVoiceMgr()->IsInSquelchMode())
