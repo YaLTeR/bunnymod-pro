@@ -20,8 +20,8 @@ DECLARE_MESSAGE( m_CustomHud, EntHealth )
 DECLARE_MESSAGE( m_CustomHud, EntInfo )
 DECLARE_MESSAGE( m_CustomHud, EntFired )
 DECLARE_MESSAGE( m_CustomHud, FireReset )
-DECLARE_MESSAGE( m_CustomHud, PlrSpeed )
 DECLARE_MESSAGE( m_CustomHud, VelClip )
+DECLARE_MESSAGE( m_CustomHud, PlayerInfo )
 
 int CHudCustom::Init( void )
 {
@@ -29,8 +29,8 @@ int CHudCustom::Init( void )
 	HOOK_MESSAGE( EntInfo )
 	HOOK_MESSAGE( EntFired )
 	HOOK_MESSAGE( FireReset )
-	HOOK_MESSAGE( PlrSpeed )
 	HOOK_MESSAGE( VelClip )
+	HOOK_MESSAGE( PlayerInfo )
 
 	m_iFlags = HUD_ACTIVE;
 	m_fJumpspeedFadeGreen = 0;
@@ -113,7 +113,7 @@ extern float gaussboost_ammoConsumed;
 extern bool g_bHoldingGaussCannon;
 extern bool g_bGaussboostReset;
 
-bool g_bDontUpdateVelThisTime = false;
+bool g_bDontUpdateInfoThisTime = false;
 extern cvar_t *cl_bhopcap;
 extern "C" unsigned char g_Bhopcap; // Monitor cl_bhopcap and change this accordingly.
 
@@ -1029,19 +1029,22 @@ int CHudCustom::MsgFunc_FireReset( const char *pszName, int iSize, void *pbuf )
 	return 1;
 }
 
-int CHudCustom::MsgFunc_PlrSpeed( const char *pszName, int iSize, void *pbuf )
+int CHudCustom::MsgFunc_PlayerInfo( const char *pszName, int iSize, void *pbuf )
 {
 	BEGIN_READ( pbuf, iSize );
 
 	g_vel[0] = READ_FLOAT();
 	g_vel[1] = READ_FLOAT();
 	g_vel[2] = READ_FLOAT();
+	g_org[0] = READ_FLOAT();
+	g_org[1] = READ_FLOAT();
+	g_org[2] = READ_FLOAT();
 
-	g_bDontUpdateVelThisTime = true;
+	g_bDontUpdateInfoThisTime = true;
 
     if (tas_log->value)
     {
-        gEngfuncs.Con_Printf("Received velocity (x, y, z): %f, %f, %f\n", g_vel[0], g_vel[1], g_vel[2]);
+        gEngfuncs.Con_DPrintf("Received player info! Velocity: %f, %f, %f; origin: %f, %f, %f\n", g_vel[0], g_vel[1], g_vel[2], g_org[0], g_org[1], g_org[2]);
     }
 
 	return 1;

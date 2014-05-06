@@ -127,7 +127,7 @@ TYPEDESCRIPTION	CBasePlayer::m_playerSaveData[] =
 	DEFINE_FIELD( CBasePlayer, m_flStartCharge, FIELD_TIME ),
 	DEFINE_FIELD( CBasePlayer, m_flAmmoStartCharge, FIELD_FLOAT ),
 	DEFINE_FIELD( CBasePlayer, m_flNextAmmoBurn, FIELD_FLOAT ),
-	
+
 	// YaLTeR
 	DEFINE_FIELD( CBasePlayer, m_flSaveStartThrow, FIELD_FLOAT ),
 	DEFINE_FIELD( CBasePlayer, m_flSaveStartCharge, FIELD_FLOAT ),
@@ -209,9 +209,8 @@ int gmsgEntityInfo = 0;
 int gmsgEntityFired = 0;
 int gmsgEntityFireReset = 0;
 
-int gmsgPlayerSpeed = 0;
-
 int gmsgVelocityClip = 0;
+int gmsgPlayerInfo = 0;
 // YaLTeR End
 
 char m_szLastFiremonTarget[128];
@@ -268,8 +267,8 @@ void LinkUserMessages( void )
 	gmsgEntityInfo = REG_USER_MSG("EntInfo", -1);
 	gmsgEntityFired = REG_USER_MSG("EntFired", 0);
 	gmsgEntityFireReset = REG_USER_MSG("FireReset", 0);
-	gmsgPlayerSpeed = REG_USER_MSG("PlrSpeed", 12);
 	gmsgVelocityClip = REG_USER_MSG("VelClip", 8);
+	gmsgPlayerInfo = REG_USER_MSG("PlayerInfo", 24);
 	// YaLTeR End
 }
 
@@ -1820,23 +1819,23 @@ void CBasePlayer::PreThink(void)
 	g_iAutoJump = autojump.value;
 
 	g_uiClipCount = 0;
-	
+
 	if (sethealth.value != -1)
 	{
 		int hp = sethealth.value;
 		CVAR_SET_FLOAT("sv_sethealth", -1);
-		
+
 		if (hp >= 0)
 		{
 			pev->health = hp;
 		}
 	}
-	
+
 	if (setbattery.value != -1)
 	{
 		int battery = setbattery.value;
 		CVAR_SET_FLOAT("sv_setbattery", -1);
-		
+
 		if (battery >= 0)
 		{
 			pev->armorvalue = battery;
@@ -1844,7 +1843,7 @@ void CBasePlayer::PreThink(void)
 	}
 
     g_Bhopcap = (sv_bhopcap.value != 0.0f) ? 1 : 0;
-	
+
 	int buttonsChanged = (m_afButtonLast ^ pev->button);	// These buttons have changed this frame
 
 	// Debounced button codes for pressed/released
@@ -1969,7 +1968,7 @@ void CBasePlayer::PreThink(void)
 	{
 		pev->velocity = g_vecZero;
 	}
-	
+
 	// MrBozo
 	if ( gLoadingGame && gDoneLoading )
 	{
@@ -1995,7 +1994,7 @@ void CBasePlayer::PreThink(void)
 				sprintf( demoname, "record %s\n", autorecord.string );
 				CLIENT_COMMAND( edict(), demoname );
 			}
-			
+
 			// YaLTeR
 			CLIENT_COMMAND( edict(), "hud_demorec_reset\n" );
 		}
@@ -3047,14 +3046,14 @@ int CBasePlayer::Save( CSave &save )
 {
 	if ( !CBaseMonster::Save(save) )
 		return 0;
-	
+
 	// MrBozo: this disables the gauss from automatically firing on level transitions
 	if ( m_pActiveItem && ( m_pActiveItem->m_iId == WEAPON_GAUSS || m_pActiveItem->m_iId == WEAPON_HANDGRENADE ) )
-	{	
+	{
 		CBasePlayerWeapon *wep;
 		wep = (CBasePlayerWeapon *)m_pActiveItem->GetWeaponPtr();
 		wep->m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.1;
-	
+
 		m_flSaveStartThrow = wep->m_flStartThrow;
 		m_flSaveStartCharge = m_flStartCharge;
 	}
@@ -3063,7 +3062,7 @@ int CBasePlayer::Save( CSave &save )
 		m_flSaveStartThrow = -1337.0;
 		m_flSaveStartCharge = -1337.0;
 	}
-	
+
 	m_flTimeBeforeLoad = gpGlobals->time;
 
 	return save.WriteFields( "PLAYER", this, m_playerSaveData, ARRAYSIZE(m_playerSaveData) );
@@ -3158,10 +3157,10 @@ int CBasePlayer::Restore( CRestore &restore )
 */
 
 	if (!gLoadingGame)
-	{		
+	{
 		/*CBasePlayerWeapon *wep;
 		wep = (CBasePlayerWeapon *)m_pActiveItem->GetWeaponPtr();*/
-		
+
 		if (m_flSaveStartThrow == NULL)
 		{
 			m_flSaveStartThrow = -1337.0;
@@ -3171,33 +3170,33 @@ int CBasePlayer::Restore( CRestore &restore )
 		{
 			m_flSaveStartCharge = -1337.0;
 		}
-		
+
 		if (m_flTimeBeforeLoad == NULL)
 		{
-			m_flTimeBeforeLoad = -62.0;		
+			m_flTimeBeforeLoad = -62.0;
 		}
-		
+
 		char cmd[256];
 		sprintf(cmd, "echo time before load %f\n",  m_flTimeBeforeLoad);
 		CLIENT_COMMAND( edict(), "hud_dontchange_changelevel_occured\n" );
 		CLIENT_COMMAND( edict(), cmd );
 
 		float time;
-		
+
 		if (pev->button & IN_ATTACK)
 		{
 			time = m_flTimeBeforeLoad - m_flSaveStartThrow;
-		
+
 			sprintf(cmd, "hud_grenadetimer_dontchange_resetto %f\n", time);
-	
+
 			CLIENT_COMMAND( edict(), cmd );
 			CLIENT_COMMAND( edict(), "hud_grenadetimer_reset\n" );
 		}
 
 		time = m_flTimeBeforeLoad - m_flSaveStartCharge;
-		
+
 		sprintf(cmd, "hud_gaussboost_dontchange_resetto %f\n", time);
-	
+
 		CLIENT_COMMAND( edict(), cmd );
 		CLIENT_COMMAND( edict(), "hud_gaussboost_reset\n" );
 
