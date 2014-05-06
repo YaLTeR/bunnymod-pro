@@ -31,7 +31,8 @@ extern "C"
 
 // YaLTeR Start
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
-const double M_RAD2DEG = 180.0 / M_PI;
+const double M_RAD2DEG = 180 / M_PI;
+const double M_DEG2RAD = M_PI / 180;
 
 const double M_U = 360.0 / 65536;
 // YaLTeR End
@@ -694,9 +695,67 @@ double normangleengine(double angle)
 // Again, we pass double-pointers, which is unnecessary, for the sake of code cleanness.
 void TAS_SimplePredict(double alpha, const vec3_t &velocity, const vec3_t &origin,
 	double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction,
+	double gravity, double pmove_gravity,
 	vec3_t *new_velocity, vec3_t *new_origin)
 {
-	// TBD design
+	int i;
+
+	vec3_t newvel, newpos;
+	VectorCopy(velocity, newvel);
+	VectorCopy(origin, newpos);
+
+	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
+	double wishdir_angle = normangleengine(vel_angle + alpha);
+
+	// AddCorrectGravity
+	double ent_gravity;
+	if (pmove_gravity != 0)
+		ent_gravity = pmove_gravity;
+	else
+		ent_gravity = 1;
+
+	newvel[2] -= ent_gravity * gravity * 0.5 * frametime;
+
+	// Move
+	if (wishspeed > maxspeed)
+		wishspeed = maxspeed;
+
+	vec3_t wishdir;
+	wishdir[0] = wishspeed * cos(wishdir_angle * M_DEG2RAD);
+	wishdir[1] = wishspeed * sin(wishdir_angle * M_DEG2RAD);
+	wishdir[2] = 0;
+	VectorNormalize(wishdir);
+
+	// Accelerate
+	double currentspeed = DotProduct(velocity, wishdir);
+	double addspeed = wishspeed - currentspeed;
+	if (addspeed > 0)
+	{
+		double A = accel * wishspeed * frametime * pmove_friction;
+		if (A > addspeed)
+			A = addspeed;
+
+		for (i = 0 ; i < 3 ; i++)
+		{
+			newvel[i] += A * wishdir[i];
+		}
+	}
+
+	// FlyMove
+	for (i = 0; i < 3; i++)
+	{
+		newpos[i] += frametime * newvel[i];
+	}
+
+	// FixupGravityVelocity
+	newvel[2] -= ent_gravity * gravity * 0.5 * frametime;
+
+	// Return values if needed.
+	if (new_velocity)
+		VectorCopy(newvel, *new_velocity);
+
+	if (new_origin)
+		VectorCopy(newpos, *new_origin);
 }
 
 // Level 3 functions - TAS_Get*Angle
@@ -819,7 +878,13 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 	for (i = 0; i < 2; i++)
 	{
 		vec3_t newvel;
-		TAS_SimplePredict(alpha_right[i], velocity, maxspeed, accel, wishspeed, frametime, pmove_friction, &newvel); // TBD
+
+		vec3_t pos;
+		VectorClear(pos);
+		TAS_SimplePredict(alpha_right[i], velocity, pos,
+			maxspeed, accel, wishspeed, frametime, pmove_friction,
+			0, 0,
+			&newvel, NULL);
 
 		double newspeed = hypot(newvel[0], newvel[1]);
 		if (newspeed > speed_max_right)
@@ -836,7 +901,13 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 	for (i = 0; i < 2; i++)
 	{
 		vec3_t newvel;
-		TAS_SimplePredict(alpha_left[i], velocity, maxspeed, accel, wishspeed, frametime, pmove_friction, &newvel); // TBD
+
+		vec3_t pos;
+		VectorClear(pos);
+		TAS_SimplePredict(alpha_left[i], velocity, pos,
+			maxspeed, accel, wishspeed, frametime, pmove_friction,
+			0, 0,
+			&newvel, NULL);
 
 		double newspeed = hypot(newvel[0], newvel[1]);
 		if (newspeed > speed_max_left)
