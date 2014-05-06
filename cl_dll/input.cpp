@@ -669,6 +669,26 @@ inline double copysign(double value, double sign)
 		return -abs(value);
 }
 
+double normangle(double angle)
+{
+	while (angle >= 180)
+		angle -= 360;
+	while (angle < -180)
+		angle += 360;
+
+	return angle;
+}
+
+double normangleengine(double angle)
+{
+	while (angle >= 360)
+		angle -= 360;
+	while (angle < 0)
+		angle += 360;
+
+	return angle;
+}
+
 // Predicts the next origin and velocity as if we were in an empty world.
 // Alpha is the angle between current velocity and acceleration (wishspeed).
 // Again, we pass double-pointers, which is unnecessary, for the sake of code cleanness.
@@ -780,19 +800,19 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, frametime, pmove_friction);
 	double vel_angle = atan2(velocity[1], velocity[0]);
 
-	double anglemod_diff_right = (vel_angle + alpha) - anglemod(vel_angle + alpha);
-	double anglemod_diff_left = (vel_angle - alpha) - anglemod(vel_angle - alpha);
-	double beta_right[2], beta_left[2];
-	beta_right[0] = anglemod(vel_angle + alpha);
-	beta_right[1] = beta_right[0] + copysign(M_U, anglemod_diff_right);
-	beta_left[0] = anglemod(vel_angle - alpha);
+	double anglemod_diff_left = normangleengine(vel_angle + alpha) - anglemod(vel_angle + alpha);
+	double anglemod_diff_right = normangleengine(vel_angle - alpha) - anglemod(vel_angle - alpha);
+	double beta_left[2], beta_right[2];
+	beta_left[0] = anglemod(vel_angle + alpha);
 	beta_left[1] = beta_left[0] + copysign(M_U, anglemod_diff_left);
+	beta_right[0] = anglemod(vel_angle - alpha);
+	beta_right[1] = beta_right[0] + copysign(M_U, anglemod_diff_right);
 
-	double alpha_right[2], alpha_left[2];
-	alpha_right[0] = beta_right[0] - vel_angle;
-	alpha_right[1] = beta_right[1] - vel_angle;
-	alpha_left[0] = beta_left[0] - vel_angle;
-	alpha_left[1] = beta_left[1] - vel_angle;
+	double alpha_left[2], alpha_right[2];
+	alpha_left[0] = normangle(beta_left[0] - vel_angle);
+	alpha_left[1] = normangle(beta_left[1] - vel_angle);
+	alpha_right[0] = normangle(beta_right[0] - vel_angle);
+	alpha_right[1] = normangle(beta_right[1] - vel_angle);
 
 	double speed_max_right = 0;
 	int i; // VC++6.0 compiler, pls...
