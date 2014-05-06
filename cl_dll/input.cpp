@@ -35,6 +35,16 @@ const double M_RAD2DEG = 180 / M_PI;
 const double M_DEG2RAD = M_PI / 180;
 
 const double M_U = 360.0 / 65536;
+
+// To be changed - just so it compiles.
+bool g_bPerfectstrafe = false;
+bool g_bAutostrafe = false;
+bool g_bInBhop = false;
+bool g_bGroundduck = false;
+bool g_bClAutojump = false;
+float setYaw = 0;
+float setPitch = 0;
+extern vec3_t g_vel, g_org;
 // YaLTeR End
 
 extern "C"
@@ -698,6 +708,14 @@ void TAS_SimplePredict(double alpha, const vec3_t &velocity, const vec3_t &origi
 	double gravity, double pmove_gravity,
 	vec3_t *new_velocity, vec3_t *new_origin)
 {
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_SimplePredict Start --\n");
+		gEngfuncs.Con_Printf("Velocity: %.8g; %.8g; %.8g; origin: %.8g; %.8g; %.8g\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
+		gEngfuncs.Con_Printf("Alpha: %.8g; frametime: %f; maxspeed: %f; accel: %f; wishspeed: %.8g; pmove_friction: %f\n", alpha, frametime, maxspeed, accel, wishspeed, pmove_friction);
+		gEngfuncs.Con_Printf("Gravity: %f; pmove_gravity: %f\n", gravity, pmove_gravity);
+	}
+
 	int i;
 
 	vec3_t newvel, newpos;
@@ -756,6 +774,12 @@ void TAS_SimplePredict(double alpha, const vec3_t &velocity, const vec3_t &origi
 
 	if (new_origin)
 		VectorCopy(newpos, *new_origin);
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("New velocity: %.8g; %.8g; %.8g; new origin: %.8g; %.8g; %.8g\n", newvel[0], newvel[1], newvel[2], newpos[0], newpos[1], newpos[2]);
+		gEngfuncs.Con_Printf("-- TAS_SimplePredict End --\n");
+	}
 }
 
 // Level 3 functions - TAS_Get*Angle
@@ -952,6 +976,8 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		gEngfuncs.GetViewAngles( (float *)viewangles );
 
 		CL_AdjustAngles ( frametime, viewangles );
+
+		TAS_SimplePredict(0, g_vel, g_org, 320, 10, 320, frametime, 1, 800, 1, NULL, NULL);
 
 		memset (cmd, 0, sizeof(*cmd));
 

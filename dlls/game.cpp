@@ -81,6 +81,8 @@ cvar_t sv_dumptriggers = { "sv_dumptriggers", "0", FCVAR_SERVER };
 cvar_t sv_bhopcap = { "sv_bhopcap", "0", FCVAR_SERVER };
 cvar_t sv_crowbar_won_damage = { "sv_crowbar_won_damage", "1", FCVAR_SERVER };
 
+extern "C" cvar_t g_sv_taslog = { "sv_taslog", "0", FCVAR_SERVER };
+
 // Engine Cvars
 cvar_t 	*g_psv_gravity = NULL;
 cvar_t	*g_psv_aim = NULL;
@@ -526,7 +528,7 @@ void GameDLLInit( void )
 
 	//rofi
 	CVAR_REGISTER (&autosave);
-	
+
 	// YaLTeR
 	CVAR_REGISTER (&jumpvelocity);
 	CVAR_REGISTER (&autojump);
@@ -534,7 +536,7 @@ void GameDLLInit( void )
 	CVAR_REGISTER (&setbattery);
 	CVAR_REGISTER (&firemon_target);
 	// CVAR_REGISTER (&singleplayer_vertical_gaussboost);
-	
+
 	CVAR_REGISTER (&sv_trigger_alpha);
 	CVAR_REGISTER (&sv_trigger_changelevel_display);
 	CVAR_REGISTER (&sv_trigger_changelevel_color);
@@ -550,7 +552,7 @@ void GameDLLInit( void )
 	CVAR_REGISTER (&sv_trigger_multiple_color);
 	CVAR_REGISTER (&sv_trigger_teleport_display);
 	CVAR_REGISTER (&sv_trigger_teleport_color);
-	
+
 	CVAR_REGISTER (&sv_info_landmark_display);
 	CVAR_REGISTER (&sv_info_landmark_model);
 
@@ -560,7 +562,9 @@ void GameDLLInit( void )
 
     CVAR_REGISTER (&sv_bhopcap);
     CVAR_REGISTER (&sv_crowbar_won_damage);
-	
+
+    CVAR_REGISTER (&g_sv_taslog);
+
 // REGISTER CVARS FOR SKILL LEVEL STUFF
 	// Agrunt
 	CVAR_REGISTER ( &sk_agrunt_health1 );// {"sk_agrunt_health1","0"};
