@@ -778,7 +778,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 {
 	double speed = hypot(velocity[0], velocity[1]);
 	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, frametime, pmove_friction);
-	double vel_angle = atan2(velocity[0], velocity[1]);
+	double vel_angle = atan2(velocity[1], velocity[0]);
 
 	double anglemod_diff_right = (vel_angle + alpha) - anglemod(vel_angle + alpha);
 	double anglemod_diff_left = (vel_angle - alpha) - anglemod(vel_angle - alpha);
