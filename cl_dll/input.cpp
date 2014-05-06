@@ -931,8 +931,8 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 		vec3_t pos;
 		VectorClear(pos);
 		vec3_t wishvel;
-		wishvel[0] = wishspeed * cos(alpha_right[i] * M_DEG2RAD);
-		wishvel[1] = wishspeed * sin(alpha_right[i] * M_DEG2RAD);
+		wishvel[0] = wishspeed * cos(beta_right[i] * M_DEG2RAD);
+		wishvel[1] = wishspeed * sin(beta_right[i] * M_DEG2RAD);
 		wishvel[2] = 0;
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, wishspeed_cap, frametime, pmove_friction,
@@ -958,8 +958,8 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 		vec3_t pos;
 		VectorClear(pos);
 		vec3_t wishvel;
-		wishvel[0] = wishspeed * cos(alpha_left[i] * M_DEG2RAD);
-		wishvel[1] = wishspeed * sin(alpha_left[i] * M_DEG2RAD);
+		wishvel[0] = wishspeed * cos(beta_left[i] * M_DEG2RAD);
+		wishvel[1] = wishspeed * sin(beta_left[i] * M_DEG2RAD);
 		wishvel[2] = 0;
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, wishspeed_cap, frametime, pmove_friction,
