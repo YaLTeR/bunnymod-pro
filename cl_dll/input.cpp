@@ -669,6 +669,16 @@ inline double copysign(double value, double sign)
 		return -abs(value);
 }
 
+// Predicts the next origin and velocity as if we were in an empty world.
+// Alpha is the angle between current velocity and acceleration (wishspeed).
+// Again, we pass double-pointers, which is unnecessary, for the sake of code cleanness.
+void TAS_SimplePredict(double alpha, const vec3_t &velocity, const vec3_t &origin,
+	double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction,
+	vec3_t *new_velocity, vec3_t *new_origin)
+{
+	// TBD design
+}
+
 // Level 3 functions - TAS_Get*Angle
 // Return the plain desired angle between velocity and acceleration without anglemod.
 double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction)
@@ -760,26 +770,36 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 // Return two angles - one is the desired difference between velocity and acceleration CCW to the velocity (leftangle),
 // another - CW to the velocity (rightangle). Anglemods are here.
 // Return value is a bool which is false if CCW is more desired and true if CW is more desired.
+
+// const vec3_t &velocity is passing a double-pointer here, which is pretty much useless, but for the sake of cleanness.
 bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 	double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction,
 	double *leftangle, double *rightangle)
 {
 	double speed = hypot(velocity[0], velocity[1]);
-	double angle = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, frametime, pmove_friction);
-	double anglemod_diff = angle - anglemod(angle);
+	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, frametime, pmove_friction);
+	double vel_angle = atan2(velocity[0], velocity[1]);
+
+	double anglemod_diff_right = (vel_angle + alpha) - anglemod(vel_angle + alpha);
+	double anglemod_diff_left = (vel_angle - alpha) - anglemod(vel_angle - alpha);
+	double beta_right[2], beta_left[2];
+	beta_right[0] = anglemod(vel_angle + alpha);
+	beta_right[1] = beta_right[0] + copysign(M_U, anglemod_diff_right);
+	beta_left[0] = anglemod(vel_angle - alpha);
+	beta_left[1] = beta_left[0] + copysign(M_U, anglemod_diff_left);
 
 	double alpha_right[2], alpha_left[2];
-	alpha_right[0] = anglemod(angle);
-	alpha_right[1] = alpha_right[0] + copysign(M_U, anglemod_diff);
-	alpha_left[0] = -alpha_right[0];
-	alpha_left[1] = -alpha_right[1];
+	alpha_right[0] = beta_right[0] - vel_angle;
+	alpha_right[1] = beta_right[1] - vel_angle;
+	alpha_left[0] = beta_left[0] - vel_angle;
+	alpha_left[1] = beta_left[0] - vel_angle;
 
 	double speed_max_right = 0;
 	int i; // VC++6.0 compiler, pls...
 	for (i = 0; i < 2; i++)
 	{
 		vec3_t newvel;
-		TAS_SimpleVelocityPredict(alpha_right[i], velocity, maxspeed, accel, wishspeed, frametime, pmove_friction, &newvel); // TBD
+		TAS_SimplePredict(alpha_right[i], velocity, maxspeed, accel, wishspeed, frametime, pmove_friction, &newvel); // TBD
 
 		double newspeed = hypot(newvel[0], newvel[1]);
 		if (newspeed > speed_max_right)
@@ -796,7 +816,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 	for (i = 0; i < 2; i++)
 	{
 		vec3_t newvel;
-		TAS_SimpleVelocityPredict(alpha_left[i], velocity, maxspeed, accel, wishspeed, frametime, pmove_friction, &newvel); // TBD
+		TAS_SimplePredict(alpha_left[i], velocity, maxspeed, accel, wishspeed, frametime, pmove_friction, &newvel); // TBD
 
 		double newspeed = hypot(newvel[0], newvel[1]);
 		if (newspeed > speed_max_left)
