@@ -792,7 +792,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 	alpha_right[0] = beta_right[0] - vel_angle;
 	alpha_right[1] = beta_right[1] - vel_angle;
 	alpha_left[0] = beta_left[0] - vel_angle;
-	alpha_left[1] = beta_left[0] - vel_angle;
+	alpha_left[1] = beta_left[1] - vel_angle;
 
 	double speed_max_right = 0;
 	int i; // VC++6.0 compiler, pls...
