@@ -704,7 +704,7 @@ double normangleengine(double angle)
 // Alpha is the angle between current velocity and acceleration (wishspeed).
 // Again, we pass double-pointers, which is unnecessary, for the sake of code cleanness.
 void TAS_SimplePredict(double alpha, const vec3_t &velocity, const vec3_t &origin,
-	double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction,
+	double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction,
 	double gravity, double pmove_gravity,
 	vec3_t *new_velocity, vec3_t *new_origin)
 {
@@ -712,7 +712,7 @@ void TAS_SimplePredict(double alpha, const vec3_t &velocity, const vec3_t &origi
 	{
 		gEngfuncs.Con_Printf("-- TAS_SimplePredict Start --\n");
 		gEngfuncs.Con_Printf("Velocity: %.8g; %.8g; %.8g; origin: %.8g; %.8g; %.8g\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
-		gEngfuncs.Con_Printf("Alpha: %.8g; frametime: %f; maxspeed: %f; accel: %f; wishspeed: %.8g; pmove_friction: %f\n", alpha, frametime, maxspeed, accel, wishspeed, pmove_friction);
+		gEngfuncs.Con_Printf("Alpha: %.8g; frametime: %f; maxspeed: %f; accel: %f; wishspeed: %.8g; wishspeed_cap: %f; pmove_friction: %f\n", alpha, frametime, maxspeed, accel, wishspeed, wishspeed_cap, pmove_friction);
 		gEngfuncs.Con_Printf("Gravity: %f; pmove_gravity: %f\n", gravity, pmove_gravity);
 	}
 
@@ -745,8 +745,12 @@ void TAS_SimplePredict(double alpha, const vec3_t &velocity, const vec3_t &origi
 	VectorNormalize(wishdir);
 
 	// Accelerate
+	double wishspd = wishspeed;
+	if (wishspd > wishspeed_cap)
+		wishspd = wishspeed_cap;
+
 	double currentspeed = DotProduct(velocity, wishdir);
-	double addspeed = wishspeed - currentspeed;
+	double addspeed = wishspd - currentspeed;
 	if (addspeed > 0)
 	{
 		double A = accel * wishspeed * frametime * pmove_friction;
@@ -784,16 +788,22 @@ void TAS_SimplePredict(double alpha, const vec3_t &velocity, const vec3_t &origi
 
 // Level 3 functions - TAS_Get*Angle
 // Return the plain desired angle between velocity and acceleration without anglemod.
-double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction)
+double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction)
 {
+	if (wishspeed > maxspeed)
+		wishspeed = maxspeed;
+
 	double A = accel * wishspeed * frametime * pmove_friction;
+
+	if (wishspeed > wishspeed_cap)
+		wishspeed = wishspeed_cap;
 
 	if (A >= 0)
 	{
 		if (speed == 0)
 			return 0;
 
-		double alphacos = (maxspeed - A) / speed;
+		double alphacos = (wishspeed - A) / speed;
 		if (alphacos >= 1) return 0;
 		if (alphacos <= 0) return 90;
 
@@ -810,9 +820,15 @@ double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double 
 	}
 }
 
-double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction)
+double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction)
 {
+	if (wishspeed > maxspeed)
+		wishspeed = maxspeed;
+
 	double A = accel * wishspeed * frametime * pmove_friction;
+
+	if (wishspeed > wishspeed_cap) // Not really used here.
+		wishspeed = wishspeed_cap;
 
 	/* If A is less than 0 here then we'll add speed in an opposite to wishdir
 	   direction, so the angle will be (180 - normal max rotation angle),
@@ -833,9 +849,15 @@ double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, doub
 	return (acos(alphacos) * M_RAD2DEG);
 }
 
-double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction)
+double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction)
 {
+	if (wishspeed > maxspeed)
+		wishspeed = maxspeed;
+
 	double A = accel * wishspeed * frametime * pmove_friction;
+
+	if (wishspeed > wishspeed_cap)
+		wishspeed = wishspeed_cap;
 
 	if (A >= 0)
 	{
@@ -850,13 +872,13 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 	}
 	else
 	{
-		/* Alpha = 0 would not work here if speed is > maxspeed because
+		/* Alpha = 0 would not work here if speed is > wishspeed because
 		   of the addspeed <= 0 check that leads to return.
-		   Alpha = acos(maxspeed / speed) would POTENTIALLY not work
+		   Alpha = acos(wishspeed / speed) would POTENTIALLY not work
 		   because of the said check. This case needs to be handled in
 		   a function ontop of this one. */
 
-		double alphacos = (maxspeed / speed);
+		double alphacos = (wishspeed / speed);
 		if (alphacos >= 1) alphacos = 1;
 
 		double finalspeed_squared = speed*speed + A*A + (2 * speed * A * alphacos);
@@ -876,11 +898,11 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 
 // const vec3_t &velocity is passing a double-pointer here, which is pretty much useless, but for the sake of cleanness.
 bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
-	double maxspeed, double accel, double wishspeed, double frametime, double pmove_friction,
+	double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction,
 	double *leftangle, double *rightangle)
 {
 	double speed = hypot(velocity[0], velocity[1]);
-	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, frametime, pmove_friction);
+	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction);
 	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
 
 	double anglemod_diff_left = normangleengine(vel_angle + alpha) - anglemod(vel_angle + alpha);
@@ -906,7 +928,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 		vec3_t pos;
 		VectorClear(pos);
 		TAS_SimplePredict(alpha_right[i], velocity, pos,
-			maxspeed, accel, wishspeed, frametime, pmove_friction,
+			maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction,
 			0, 0,
 			&newvel, NULL);
 
@@ -929,7 +951,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 		vec3_t pos;
 		VectorClear(pos);
 		TAS_SimplePredict(alpha_left[i], velocity, pos,
-			maxspeed, accel, wishspeed, frametime, pmove_friction,
+			maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction,
 			0, 0,
 			&newvel, NULL);
 
@@ -977,7 +999,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		CL_AdjustAngles ( frametime, viewangles );
 
-		TAS_SimplePredict(0, g_vel, g_org, 320, 10, 320, frametime, 1, 800, 1, NULL, NULL);
+		TAS_SimplePredict(0, g_vel, g_org, 320, 10, 320, 30, frametime, 1, 800, 1, NULL, NULL);
 
 		memset (cmd, 0, sizeof(*cmd));
 
