@@ -1492,6 +1492,14 @@ void PM_AirMove (void)
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
 
+#ifndef CLIENT_DLL
+	if (g_sv_taslog.value != 0)
+	{
+		pmove->Con_Printf("wishspeed: %.8g; forward[0]: %.8g; right[0]: %.8g; forward[1]: %.8g; right[1]: %.8g\n", wishspeed, pmove->forward[0], pmove->right[0], pmove->forward[1], pmove->right[1]);
+		pmove->Con_Printf("wishvel[0]: %.8g; wishvel[1]: %.8g; wishdir[0]: %.8g; wishdir[1]: %.8g\n", wishvel[0], wishvel[1], wishdir[0], wishdir[1]);
+	}
+#endif
+
 	// Clamp to server defined max speed
 	if (wishspeed > pmove->maxspeed)
 	{
