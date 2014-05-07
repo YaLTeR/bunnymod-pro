@@ -161,6 +161,35 @@ static char grgchTextureType[CTEXTURESMAX];
 
 int g_onladder = 0;
 
+// YaLTeR Start
+void PM_TasLog(unsigned int num)
+{
+#ifndef CLIENT_DLL
+	if (g_sv_taslog.value != 0)
+	{
+		switch (num)
+		{
+			case 1:
+				pmove->Con_Printf("-- PM_TasLog Start --\n");
+				pmove->Con_Printf("Velocity: %.8g; %.8g; %.8g; origin: %.8g; %.8g; %.8g\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
+				pmove->Con_Printf("Frametime: %f; maxspeed: %f; pmove_friction: %f\n", (pmove->cmd.msec * 0.001), pmove->maxspeed, pmove->friction);
+				pmove->Con_Printf("Gravity: %f; pmove_gravity: %f\n", pmove->movevars->gravity, pmove->gravity);
+				break;
+
+			case 2:
+				pmove->Con_Printf("New velocity: %.8g; %.8g; %.8g; new origin: %.8g; %.8g; %.8g\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
+				pmove->Con_Printf("-- PM_TasLog End --\n");
+				break;
+
+			case 3:
+				pmove->Con_Printf("Angles: %.8f; %.8f; %.8f\n", pmove->angles[0], pmove->angles[1], pmove->angles[2]);
+				break;
+		}
+	}
+#endif // CLIENT_DLL
+}
+// YaLTeR End
+
 void PM_SwapTextures( int i, int j )
 {
 	char chTemp;
@@ -3026,6 +3055,8 @@ void PM_PlayerMove ( qboolean server )
 	// Adjust speeds etc.
 	PM_CheckParamters();
 
+	PM_TasLog(3); // YaLTeR
+
 	// Assume we don't touch anything
 	pmove->numtouch = 0;
 
@@ -3377,29 +3408,6 @@ void PM_CreateStuckTable( void )
 			}
 		}
 	}
-}
-
-void PM_TasLog(unsigned int num)
-{
-#ifndef CLIENT_DLL
-	if (g_sv_taslog.value != 0)
-	{
-		switch (num)
-		{
-			case 1:
-				pmove->Con_Printf("-- PM_TasLog Start --\n");
-				pmove->Con_Printf("Velocity: %.8g; %.8g; %.8g; origin: %.8g; %.8g; %.8g\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
-				pmove->Con_Printf("Frametime: %f; maxspeed: %f; pmove_friction: %f\n", (pmove->cmd.msec * 0.001), pmove->maxspeed, pmove->friction);
-				pmove->Con_Printf("Gravity: %f; pmove_gravity: %f\n", pmove->movevars->gravity, pmove->gravity);
-				break;
-
-			case 2:
-				pmove->Con_Printf("New velocity: %.8g; %.8g; %.8g; new origin: %.8g; %.8g; %.8g\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
-				pmove->Con_Printf("-- PM_TasLog End --\n");
-				break;
-		}
-	}
-#endif // CLIENT_DLL
 }
 
 /*

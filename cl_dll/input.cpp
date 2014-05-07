@@ -700,7 +700,42 @@ double normangleengine(double angle)
 	return angle;
 }
 
-void TAS_ConstructWishvel() // TBD
+void PM_Math_AngleVectors(const vec3_t &angles, vec3_t &forward, vec3_t &right, vec3_t &up)
+{
+	float angle;
+	float sr, sp, sy, cr, cp, cy;
+
+	angle = angles[YAW] * (M_PI*2 / 360);
+	sy = sin(angle);
+	cy = cos(angle);
+	angle = angles[PITCH] * (M_PI*2 / 360);
+	sp = sin(angle);
+	cp = cos(angle);
+	angle = angles[ROLL] * (M_PI*2 / 360);
+	sr = sin(angle);
+	cr = cos(angle);
+
+	if (forward)
+	{
+		forward[0] = cp*cy;
+		forward[1] = cp*sy;
+		forward[2] = -sp;
+	}
+	if (right)
+	{
+		right[0] = (-1*sr*sp*cy+-1*cr*-sy);
+		right[1] = (-1*sr*sp*sy+-1*cr*cy);
+		right[2] = -1*sr*cp;
+	}
+	if (up)
+	{
+		up[0] = (cr*sp*cy+-sr*-sy);
+		up[1] = (cr*sp*sy+-sr*cy);
+		up[2] = cr*cp;
+	}
+}
+
+//void TAS_ConstructWishvel() // TBD
 
 // Predicts the next origin and velocity as if we were in an empty world.
 // Alpha is the angle between current velocity and acceleration (wishspeed).
@@ -719,7 +754,7 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 	vec3_t wishvel, wishdir;
 	VectorCopy(wishvelocity, wishvel); // So that we can modify it without messing up anything outside.
 	VectorCopy(wishvel, wishdir);
-	double wishspeed = VectorNormalize(wishdir);
+	float wishspeed = VectorNormalize(wishdir);
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
@@ -736,7 +771,7 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 	}
 
 	// AddCorrectGravity
-	double ent_gravity;
+	float ent_gravity;
 	if (pmove_gravity != 0)
 		ent_gravity = pmove_gravity;
 	else
@@ -752,15 +787,15 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 	}
 
 	// Accelerate
-	double wishspd = wishspeed;
+	float wishspd = wishspeed;
 	if (wishspd > wishspeed_cap)
 		wishspd = wishspeed_cap;
 
-	double currentspeed = DotProduct(velocity, wishdir);
-	double addspeed = wishspd - currentspeed;
+	float currentspeed = DotProduct(velocity, wishdir);
+	float addspeed = wishspd - currentspeed;
 	if (addspeed > 0)
 	{
-		double A = accel * wishspeed * frametime * pmove_friction;
+		float A = accel * wishspeed * frametime * pmove_friction;
 		if (A > addspeed)
 			A = addspeed;
 
@@ -1020,10 +1055,12 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		// YaLTeR Start - mess to test stuff.
 		vec3_t properangles;
 		VectorCopy(viewangles, properangles);
-		properangles[PITCH] = anglemod(properangles[PITCH]);
+		properangles[YAW] = normangle(anglemod(properangles[YAW]));
+		properangles[PITCH] = normangle(anglemod(properangles[PITCH]));
+		properangles[ROLL] = normangle(anglemod(properangles[ROLL]));
 		// TBD Remake all that stuff into TAS_ConstructWishvel
 		vec3_t forward, right, up;
-		AngleVectors(properangles, forward, right, up);
+		PM_Math_AngleVectors(properangles, forward, right, up);
 		forward[2] = 0;
 		right[2] = 0;
 		VectorNormalize(forward);
@@ -1034,7 +1071,10 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		wishvel[2] = 0;
 
 		if (CVAR_GET_FLOAT("tas_log") != 0)
+		{
+			gEngfuncs.Con_Printf("CL: angles: %.8f; %.8f; %.8f\n", properangles[0], properangles[1], properangles[2]);
 			gEngfuncs.Con_Printf("CL: forward[0]: %.8g; right[0]: %.8g; forward[1]: %.8g; right[1]: %.8g\n", forward[0], right[0], forward[1], right[1]);
+		}
 
 		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
 		TAS_SimplePredict(wishvel, g_vel, g_org, 320, 10, 30, fpsbug_frametime, 1, 800, 1, NULL, NULL);
