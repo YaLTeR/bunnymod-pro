@@ -985,7 +985,7 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 // Return value is a bool which is false if CCW is more desired and true if CW is more desired.
 
 // const vec3_t &velocity is passing a double-pointer here, which is pretty much useless, but for the sake of cleanness.
-bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
+bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch,
 	double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction,
 	double *leftangle, double *rightangle)
 {
@@ -1017,10 +1017,11 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 		vec3_t pos;
 		VectorClear(pos);
 
-		// Assume we're strafing straight forward with pitch = 0 and roll = 0.
+		// Assume we're strafing straight forward with roll = 0.
 		vec3_t angles;
-		VectorClear(angles);
+		angles[0] = pitch;
 		angles[1] = beta_right[i];
+		angles[2] = 0;
 
 		vec3_t wishvel;
 		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, &wishvel);
@@ -1050,10 +1051,11 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 		vec3_t pos;
 		VectorClear(pos);
 
-		// Assume we're strafing straight forward with pitch = 0 and roll = 0.
+		// Assume we're strafing straight forward with roll = 0.
 		vec3_t angles;
-		VectorClear(angles);
+		angles[0] = pitch;
 		angles[1] = beta_left[i];
+		angles[2] = 0;
 
 		vec3_t wishvel;
 		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, &wishvel);
@@ -1160,13 +1162,18 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		if (CVAR_GET_FLOAT("tas_log"))
 			gEngfuncs.Con_Printf("\n");
 
+		float cvar_maxspeed =      CVAR_GET_FLOAT("sv_maxspeed");
+		float cvar_accelerate =    CVAR_GET_FLOAT("sv_accelerate");
+		float cvar_airaccelerate = CVAR_GET_FLOAT("sv_airaccelerate");
+		float cvar_gravity =       CVAR_GET_FLOAT("sv_gravity");
+
 		vec3_t curviewangles;
 		gEngfuncs.GetViewAngles( (float *)curviewangles );
 
 		vec3_t wishvel;
-		TAS_ConstructWishvel(curviewangles, cl_forwardspeed->value, 0, 0, 320, &wishvel);
+		TAS_ConstructWishvel(curviewangles, cmd->forwardmove, cmd->sidemove, cmd->upmove, cvar_maxspeed, &wishvel);
 		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
-		TAS_SimplePredict(wishvel, g_vel, g_org, 320, 10, 30, fpsbug_frametime, 1, 800, 1, NULL, NULL);
+		TAS_SimplePredict(wishvel, g_vel, g_org, cvar_maxspeed, cvar_airaccelerate, 30, fpsbug_frametime, 1, cvar_gravity, 1, NULL, NULL);
 
 		if (CVAR_GET_FLOAT("tas_log"))
 			gEngfuncs.Con_Printf("\n");
