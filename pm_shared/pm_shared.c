@@ -171,13 +171,13 @@ void PM_TasLog(unsigned int num)
 		{
 			case 1:
 				pmove->Con_Printf("-- PM_TasLog Start --\n");
-				pmove->Con_Printf("Velocity: %.8g; %.8g; %.8g; origin: %.8g; %.8g; %.8g\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
+				pmove->Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
 				pmove->Con_Printf("Frametime: %f; maxspeed: %f; pmove_friction: %f\n", (pmove->cmd.msec * 0.001), pmove->maxspeed, pmove->friction);
 				pmove->Con_Printf("Gravity: %f; pmove_gravity: %f\n", pmove->movevars->gravity, pmove->gravity);
 				break;
 
 			case 2:
-				pmove->Con_Printf("New velocity: %.8g; %.8g; %.8g; new origin: %.8g; %.8g; %.8g\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
+				pmove->Con_Printf("New velocity: %.8f; %.8f; %.8f; new origin: %.8f; %.8f; %.8f\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
 				pmove->Con_Printf("-- PM_TasLog End --\n");
 				break;
 
@@ -1524,7 +1524,7 @@ void PM_AirMove (void)
 #ifndef CLIENT_DLL
 	if (g_sv_taslog.value != 0)
 	{
-		pmove->Con_Printf("wishspeed: %.8g; forward[0]: %.8g; right[0]: %.8g; forward[1]: %.8g; right[1]: %.8g\n", wishspeed, pmove->forward[0], pmove->right[0], pmove->forward[1], pmove->right[1]);
+		pmove->Con_Printf("wishspeed: %.8g; forward: %.8g; %.8g; %.8g; right: %.8g; %.8g; %.8g\n", wishspeed, pmove->forward[0], pmove->forward[1], pmove->forward[2], pmove->right[0], pmove->right[1], pmove->right[2]);
 		pmove->Con_Printf("wishvel[0]: %.8g; wishvel[1]: %.8g; wishdir[0]: %.8g; wishdir[1]: %.8g\n", wishvel[0], wishvel[1], wishdir[0], wishdir[1]);
 	}
 #endif

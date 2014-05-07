@@ -735,7 +735,49 @@ void PM_Math_AngleVectors(const vec3_t &angles, vec3_t &forward, vec3_t &right, 
 	}
 }
 
-//void TAS_ConstructWishvel() // TBD
+void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemove, float upmove, float maxspeed, vec3_t *wishvel)
+{
+	vec3_t properangles;
+	VectorCopy(angles, properangles);
+	properangles[0] = normangle(anglemod(properangles[0]));
+	properangles[1] = normangle(anglemod(properangles[1]));
+	properangles[2] = normangle(anglemod(properangles[2]));
+
+	vec3_t forward, right, up;
+	PM_Math_AngleVectors(properangles, forward, right, up);
+
+	forward[2] = 0;
+	right[2] = 0;
+	VectorNormalize(forward);
+	VectorNormalize(right);
+
+	// CheckParamters
+	float spd = (forwardmove * forwardmove) + (sidemove * sidemove) + (upmove * upmove);
+	spd = sqrt(spd);
+	if ((spd != 0) && (spd > maxspeed))
+	{
+		float fRatio = maxspeed / spd;
+		forwardmove *= fRatio;
+		sidemove *= fRatio;
+		upmove *= fRatio;
+	}
+
+	if (wishvel)
+	{
+		(*wishvel)[0] = forwardmove * forward[0] + sidemove * right[0];
+		(*wishvel)[1] = forwardmove * forward[1] + sidemove * right[1];
+		(*wishvel)[2] = 0; // TBD when needed.
+	}
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_ConstructWishvel Start --\n");
+		gEngfuncs.Con_Printf("Angles: %.8f; %.8f; %.8f\n", angles[0], angles[1], angles[2]);
+		gEngfuncs.Con_Printf("Properangles: %.8f; %.8f; %.8f\n", properangles[0], properangles[1], properangles[2]);
+		gEngfuncs.Con_Printf("Forward: %.8g; %.8g; %.8g; right: %.8g; %.8g; %.8g\n", forward[0], forward[1], forward[2], right[0], right[1], right[2]);
+		gEngfuncs.Con_Printf("-- TAS_ConstructWishvel End --\n");
+	}
+}
 
 // Predicts the next origin and velocity as if we were in an empty world.
 // Alpha is the angle between current velocity and acceleration (wishspeed).
@@ -760,12 +802,16 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 	{
 		double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
 		double wishangle = atan2(wishdir[1], wishdir[0]) * M_RAD2DEG;
+		double speed = hypot(velocity[0], velocity[1]);
 		double alpha = normangle(wishangle - vel_angle);
 
+		if (speed == 0 || wishspeed == 0)
+			alpha = 0;
+
 		gEngfuncs.Con_Printf("-- TAS_SimplePredict Start --\n");
-		gEngfuncs.Con_Printf("Velocity: %.8g; %.8g; %.8g; origin: %.8g; %.8g; %.8g\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
+		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
 		gEngfuncs.Con_Printf("Velocity angle: %.8g; wishangle: %.8g; Alpha: %.8g\n", vel_angle, wishangle, alpha);
-		gEngfuncs.Con_Printf("Wishvel[0]: %.8g; wishvel[1]: %.8g; wishdir[0]: %.8g; wishdir[1]: %.8g\n", wishvel[0], wishvel[1], wishdir[0], wishdir[1]);
+		gEngfuncs.Con_Printf("Wishvel[0]: %.8f; wishvel[1]: %.8f; wishdir[0]: %.8f; wishdir[1]: %.8f\n", wishvel[0], wishvel[1], wishdir[0], wishdir[1]);
 		gEngfuncs.Con_Printf("frametime: %f; maxspeed: %f; accel: %f; wishspeed: %.8g; wishspeed_cap: %f; pmove_friction: %f\n", frametime, maxspeed, accel, wishspeed, wishspeed_cap, pmove_friction);
 		gEngfuncs.Con_Printf("Gravity: %f; pmove_gravity: %f\n", gravity, pmove_gravity);
 	}
@@ -823,7 +869,7 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("New velocity: %.8g; %.8g; %.8g; new origin: %.8g; %.8g; %.8g\n", newvel[0], newvel[1], newvel[2], newpos[0], newpos[1], newpos[2]);
+		gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f; new origin: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2], newpos[0], newpos[1], newpos[2]);
 		gEngfuncs.Con_Printf("-- TAS_SimplePredict End --\n");
 	}
 }
@@ -967,13 +1013,17 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 	{
 		vec3_t newvel;
 
+		// We don't care about position in this test.
 		vec3_t pos;
 		VectorClear(pos);
-		// TBD REMAKE TO USE TAS_ConstructWishvel
+
+		// Assume we're strafing straight forward with pitch = 0 and roll = 0.
+		vec3_t angles;
+		VectorClear(angles);
+		angles[1] = beta_right[i];
+
 		vec3_t wishvel;
-		wishvel[0] = wishspeed * cos(beta_right[i] * M_DEG2RAD);
-		wishvel[1] = wishspeed * sin(beta_right[i] * M_DEG2RAD);
-		wishvel[2] = 0;
+		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, wishspeed_cap, frametime, pmove_friction,
@@ -996,13 +1046,18 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity,
 	{
 		vec3_t newvel;
 
+		// We don't care about position in this test.
 		vec3_t pos;
 		VectorClear(pos);
-		// TBD REMAKE TO USE TAS_ConstructWishvel
+
+		// Assume we're strafing straight forward with pitch = 0 and roll = 0.
+		vec3_t angles;
+		VectorClear(angles);
+		angles[1] = beta_left[i];
+
 		vec3_t wishvel;
-		wishvel[0] = wishspeed * cos(beta_left[i] * M_DEG2RAD);
-		wishvel[1] = wishspeed * sin(beta_left[i] * M_DEG2RAD);
-		wishvel[2] = 0;
+		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, &wishvel);
+
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, wishspeed_cap, frametime, pmove_friction,
 			0, 0,
@@ -1053,31 +1108,16 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		CL_AdjustAngles ( frametime, viewangles );
 
 		// YaLTeR Start - mess to test stuff.
-		vec3_t properangles;
-		VectorCopy(viewangles, properangles);
-		properangles[YAW] = normangle(anglemod(properangles[YAW]));
-		properangles[PITCH] = normangle(anglemod(properangles[PITCH]));
-		properangles[ROLL] = normangle(anglemod(properangles[ROLL]));
-		// TBD Remake all that stuff into TAS_ConstructWishvel
-		vec3_t forward, right, up;
-		PM_Math_AngleVectors(properangles, forward, right, up);
-		forward[2] = 0;
-		right[2] = 0;
-		VectorNormalize(forward);
-		VectorNormalize(right);
+		if (CVAR_GET_FLOAT("tas_log"))
+			gEngfuncs.Con_Printf("\n");
+
 		vec3_t wishvel;
-		wishvel[0] = 320 * forward[0] + 0 * right[0];
-		wishvel[1] = 320 * forward[1] + 0 * right[1];
-		wishvel[2] = 0;
-
-		if (CVAR_GET_FLOAT("tas_log") != 0)
-		{
-			gEngfuncs.Con_Printf("CL: angles: %.8f; %.8f; %.8f\n", properangles[0], properangles[1], properangles[2]);
-			gEngfuncs.Con_Printf("CL: forward[0]: %.8g; right[0]: %.8g; forward[1]: %.8g; right[1]: %.8g\n", forward[0], right[0], forward[1], right[1]);
-		}
-
+		TAS_ConstructWishvel(viewangles, cl_forwardspeed->value, 0, 0, 320, &wishvel);
 		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
 		TAS_SimplePredict(wishvel, g_vel, g_org, 320, 10, 30, fpsbug_frametime, 1, 800, 1, NULL, NULL);
+
+		if (CVAR_GET_FLOAT("tas_log"))
+			gEngfuncs.Con_Printf("\n");
 		// YaLTeR End
 
 		memset (cmd, 0, sizeof(*cmd));
