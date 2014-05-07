@@ -1107,19 +1107,6 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		CL_AdjustAngles ( frametime, viewangles );
 
-		// YaLTeR Start - mess to test stuff.
-		if (CVAR_GET_FLOAT("tas_log"))
-			gEngfuncs.Con_Printf("\n");
-
-		vec3_t wishvel;
-		TAS_ConstructWishvel(viewangles, cl_forwardspeed->value, 0, 0, 320, &wishvel);
-		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
-		TAS_SimplePredict(wishvel, g_vel, g_org, 320, 10, 30, fpsbug_frametime, 1, 800, 1, NULL, NULL);
-
-		if (CVAR_GET_FLOAT("tas_log"))
-			gEngfuncs.Con_Printf("\n");
-		// YaLTeR End
-
 		memset (cmd, 0, sizeof(*cmd));
 
 		gEngfuncs.SetViewAngles( (float *)viewangles );
@@ -1168,6 +1155,22 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		// Allow mice and other controllers to add their inputs
 		IN_Move ( frametime, cmd );
+
+		// YaLTeR Start - mess to test stuff.
+		if (CVAR_GET_FLOAT("tas_log"))
+			gEngfuncs.Con_Printf("\n");
+
+		vec3_t curviewangles;
+		gEngfuncs.GetViewAngles( (float *)curviewangles );
+
+		vec3_t wishvel;
+		TAS_ConstructWishvel(curviewangles, cl_forwardspeed->value, 0, 0, 320, &wishvel);
+		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
+		TAS_SimplePredict(wishvel, g_vel, g_org, 320, 10, 30, fpsbug_frametime, 1, 800, 1, NULL, NULL);
+
+		if (CVAR_GET_FLOAT("tas_log"))
+			gEngfuncs.Con_Printf("\n");
+		// YaLTeR End
 	}
 
 	cmd->impulse = in_impulse;
