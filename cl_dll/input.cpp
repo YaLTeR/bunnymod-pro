@@ -777,9 +777,10 @@ void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemov
 
 	if (wishvel)
 	{
-		(*wishvel)[0] = forwardmove * forward[0] + sidemove * right[0];
-		(*wishvel)[1] = forwardmove * forward[1] + sidemove * right[1];
-		(*wishvel)[2] = 0; // TBD when needed.
+		for (int i = 0; i < 3; i++)
+		{
+			(*wishvel)[i] = forwardmove * forward[i] + sidemove * right[i];
+		}
 	}
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
@@ -792,13 +793,37 @@ void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemov
 	}
 }
 
+// Predicts the next origin and velocity as if we were in an empty world in water.
+// Assume waterlevel is >= 2.
+void TAS_SimpleWaterPredict(const vec3_t &wishvelocity, const vec3_t &velocity, const vec3_t &origin,
+	double maxspeed, double accel, double wishspeed_cap, double frametime, double pmove_friction,
+	double gravity, double pmove_gravity, bool onGround, int waterlevel, float upmove,
+	vec3_t *new_velocity, vec3_t *new_origin)
+{
+	// TODO
+
+	// Return values if needed.
+	if (new_velocity)
+		VectorCopy(velocity, *new_velocity);
+
+	if (new_origin)
+		VectorCopy(origin, *new_origin);
+}
+
 // Predicts the next origin and velocity as if we were in an empty world.
 // Again, we pass double-pointers, which is unnecessary, for the sake of code cleanness.
 void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const vec3_t &origin,
 	double maxspeed, double accel, double wishspeed_cap, double frametime, double pmove_friction,
-	double gravity, double pmove_gravity, bool onGround,
+	double gravity, double pmove_gravity, bool onGround, int waterlevel, float upmove,
 	vec3_t *new_velocity, vec3_t *new_origin)
 {
+	if (waterlevel >= 2)
+	{
+		// Stuff is too different there.
+		TAS_SimpleWaterPredict(wishvelocity, velocity, origin, maxspeed, accel, wishspeed_cap, frametime, pmove_friction, gravity, pmove_gravity, onGround, waterlevel, upmove, new_velocity, new_origin);
+		return;
+	}
+
 	int i;
 
 	vec3_t newvel, newpos;
@@ -925,30 +950,66 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 		gEngfuncs.Con_Printf("InDuck: %s\n", BOOLSTRING(inDuck));
 	}
 
-	int waterlvl = 0; // Water TBD
-
-	if (velocity[2] > 180)
-		return false;
-
-	bool onGround = false;
-
 	vec3_t newpos;
 	VectorCopy(origin, newpos);
 
+	// Water
+	int waterlvl = 0;
+
+	float mins[3], maxs[3];
+	gEngfuncs.pEventAPI->EV_LocalPlayerBounds((inDuck ? 1 : 0), mins, maxs);
+
 	vec3_t point;
 	VectorCopy(origin, point);
-	point[2] -= 2;
+	point[0] += (mins[0] + maxs[0]) * 0.5;
+	point[1] += (mins[1] + maxs[1]) * 0.5;
+	point[2] += mins[2] + 1;
 
 	pmtrace_t tr;
-	gEngfuncs.pEventAPI->EV_SetTraceHull(inDuck ? 1 : 0);
-	gEngfuncs.pEventAPI->EV_PlayerTrace(newpos, point, PM_NORMAL, -1, &tr); // Newpos has not been modified yet.
+	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
+	gEngfuncs.pEventAPI->EV_PlayerTrace(point, point, PM_NORMAL, -1, &tr);
 
-	if (tr.plane.normal[2] >= 0.7)
+	if (tr.inwater)
 	{
-		if ((waterlvl < 2) && !tr.startsolid && !tr.allsolid)
-			VectorCopy(tr.endpos, newpos);
+		waterlvl = 1;
 
-		onGround = true;
+		point[2] = origin[2] + ((mins[2] + maxs[2]) * 0.5);
+		gEngfuncs.pEventAPI->EV_PlayerTrace(point, point, PM_NORMAL, -1, &tr); // Newpos has not been modified yet.
+		if (tr.inwater)
+		{
+			waterlvl = 2;
+
+			vec3_t viewOffset;
+			VectorClear(viewOffset);
+			gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOffset );
+
+			point[2] = origin[2] + viewOffset[2];
+			gEngfuncs.pEventAPI->EV_PlayerTrace(point, point, PM_NORMAL, -1, &tr); // Newpos has not been modified yet.
+			if (tr.inwater)
+			{
+				waterlvl = 3;
+			}
+		}
+	}
+
+	// Ground
+	bool onGround = false;
+
+	if (velocity[2] <= 180)
+	{
+		VectorCopy(origin, point);
+		point[2] -= 2;
+
+		gEngfuncs.pEventAPI->EV_SetTraceHull(inDuck ? 1 : 0);
+		gEngfuncs.pEventAPI->EV_PlayerTrace(newpos, point, PM_NORMAL, -1, &tr); // Newpos has not been modified yet.
+
+		if (tr.plane.normal[2] >= 0.7)
+		{
+			if ((waterlvl < 2) && !tr.startsolid && !tr.allsolid)
+				VectorCopy(tr.endpos, newpos);
+
+			onGround = true;
+		}
 	}
 
 	if (waterlevel)
@@ -959,6 +1020,7 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		gEngfuncs.Con_Printf("Mins: %f; %f; %f; maxs: %f; %f; %f\n", mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2]);
 		gEngfuncs.Con_Printf("New origin: %.8f; %.8f; %.8f; onGround: %s; waterlevel: %d\n", newpos[0], newpos[1], newpos[2], BOOLSTRING(onGround), waterlvl);
 		gEngfuncs.Con_Printf("-- TAS_CheckWaterAndGround End --\n");
 	}
@@ -968,8 +1030,11 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 
 // Level 3 functions - TAS_Get*Angle
 // Return the plain desired angle between velocity and acceleration without anglemod.
-double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction)
+double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, int waterlevel)
 {
+	if (waterlevel >= 2)
+		return 0; // TODO
+
 	if (wishspeed > maxspeed)
 		wishspeed = maxspeed;
 
@@ -1000,8 +1065,11 @@ double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double 
 	}
 }
 
-double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction)
+double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, int waterlevel)
 {
+	if (waterlevel >= 2)
+		return 180; // TODO
+
 	if (wishspeed > maxspeed)
 		wishspeed = maxspeed;
 
@@ -1029,8 +1097,11 @@ double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, doub
 	return (acos(alphacos) * M_RAD2DEG);
 }
 
-double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction)
+double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, int waterlevel)
 {
+	if (waterlevel >= 2)
+		return 180; // TODO
+
 	if (wishspeed > maxspeed)
 		wishspeed = maxspeed;
 
@@ -1079,11 +1150,11 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 // velocityAngleFallback is the angle to be used instead of the velocity angle in a case of speed = 0.
 // const vec3_t &velocity is passing a double-pointer here, which is pretty much useless, but for the sake of cleanness.
 bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround,
+	double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel, float upmove,
 	double *leftangle, double *rightangle)
 {
 	double speed = hypot(velocity[0], velocity[1]);
-	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction);
+	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction, waterlevel);
 	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
 	if (speed == 0)
 		vel_angle = velocityAngleFallback;
@@ -1124,7 +1195,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, wishspeed_cap, frametime, pmove_friction,
-			0, 0, onGround,
+			0, 0, onGround, waterlevel, upmove,
 			&newvel, NULL);
 
 		double newspeed = hypot(newvel[0], newvel[1]);
@@ -1159,7 +1230,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, wishspeed_cap, frametime, pmove_friction,
-			0, 0, onGround,
+			0, 0, onGround, waterlevel, upmove,
 			&newvel, NULL);
 
 		double newspeed = hypot(newvel[0], newvel[1]);
@@ -1181,6 +1252,28 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 // Negative if counter-clockwise, positive otherwise.
 // TBD
 
+// Does everything. Called from CL_CreateMove.
+void TAS_DoStuff(const vec3_t &viewangles, float frametime)
+{float cvar_maxspeed =      CVAR_GET_FLOAT("sv_maxspeed");
+	float cvar_accelerate =    CVAR_GET_FLOAT("sv_accelerate");
+	float cvar_airaccelerate = CVAR_GET_FLOAT("sv_airaccelerate");
+	float cvar_gravity =       CVAR_GET_FLOAT("sv_gravity");
+
+	vec3_t origin, velocity; // Variables that we can mess with.
+	VectorCopy(g_org, origin);
+	VectorCopy(g_vel, velocity);
+
+	if (CVAR_GET_FLOAT("tas_log"))
+		gEngfuncs.Con_Printf("\n");
+
+	bool inDuck = TAS_IsInDuck();
+	int waterlevel;
+	bool onGround = TAS_CheckWaterAndGround(g_vel, g_org, inDuck, &waterlevel, &origin);
+	double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
+
+	if (CVAR_GET_FLOAT("tas_log"))
+		gEngfuncs.Con_Printf("\n");
+}
 // YaLTeR End
 
 /*
@@ -1203,6 +1296,8 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		//memset( viewangles, 0, sizeof( vec3_t ) );
 		//viewangles[ 0 ] = viewangles[ 1 ] = viewangles[ 2 ] = 0.0;
 		gEngfuncs.GetViewAngles( (float *)viewangles );
+
+		TAS_DoStuff(viewangles, frametime);
 
 		CL_AdjustAngles ( frametime, viewangles );
 
@@ -1254,30 +1349,6 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		// Allow mice and other controllers to add their inputs
 		IN_Move ( frametime, cmd );
-
-		// YaLTeR Start - mess to test stuff.
-		if (CVAR_GET_FLOAT("tas_log"))
-			gEngfuncs.Con_Printf("\n");
-
-		float cvar_maxspeed =      CVAR_GET_FLOAT("sv_maxspeed");
-		float cvar_accelerate =    CVAR_GET_FLOAT("sv_accelerate");
-		float cvar_airaccelerate = CVAR_GET_FLOAT("sv_airaccelerate");
-		float cvar_gravity =       CVAR_GET_FLOAT("sv_gravity");
-
-		vec3_t curviewangles;
-		gEngfuncs.GetViewAngles( (float *)curviewangles );
-
-		bool inDuck = TAS_IsInDuck();
-		TAS_CheckWaterAndGround(g_vel, g_org, inDuck, NULL, NULL);
-
-		vec3_t wishvel;
-		TAS_ConstructWishvel(curviewangles, cmd->forwardmove, cmd->sidemove, cmd->upmove, cvar_maxspeed, inDuck, &wishvel);
-		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
-		TAS_SimplePredict(wishvel, g_vel, g_org, cvar_maxspeed, cvar_airaccelerate, 30, fpsbug_frametime, 1, cvar_gravity, 1, false, NULL, NULL);
-
-		if (CVAR_GET_FLOAT("tas_log"))
-			gEngfuncs.Con_Printf("\n");
-		// YaLTeR End
 	}
 
 	cmd->impulse = in_impulse;
