@@ -30,6 +30,9 @@ extern "C"
 #include "vgui_TeamFortressViewport.h"
 
 // YaLTeR Start
+#include "event_api.h" // For tracing and whatnot.
+#include "eventscripts.h" // For VEC_DUCK_VIEW.
+
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
 const double M_RAD2DEG = 180 / M_PI;
 const double M_DEG2RAD = M_PI / 180;
@@ -929,6 +932,14 @@ void TAS_SimpleGroundPredict(const vec3_t &wishvelocity, const vec3_t &velocity,
 	}
 }
 
+bool TAS_IsInDuck()
+{
+	vec3_t viewOffset;
+	VectorClear(viewOffset);
+	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOffset );
+	return (viewOffset[2] == VEC_DUCK_VIEW);
+}
+
 // Level 3 functions - TAS_Get*Angle
 // Return the plain desired angle between velocity and acceleration without anglemod.
 double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction)
@@ -1231,7 +1242,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		gEngfuncs.GetViewAngles( (float *)curviewangles );
 
 		vec3_t wishvel;
-		TAS_ConstructWishvel(curviewangles, cmd->forwardmove, cmd->sidemove, cmd->upmove, cvar_maxspeed, true, &wishvel);
+		TAS_ConstructWishvel(curviewangles, cmd->forwardmove, cmd->sidemove, cmd->upmove, cvar_maxspeed, TAS_IsInDuck(), &wishvel);
 		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
 		TAS_SimplePredict(wishvel, g_vel, g_org, cvar_maxspeed, cvar_airaccelerate, 30, fpsbug_frametime, 1, cvar_gravity, 1, NULL, NULL);
 
