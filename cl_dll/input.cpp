@@ -30,14 +30,16 @@ extern "C"
 #include "vgui_TeamFortressViewport.h"
 
 // YaLTeR Start
-#include "event_api.h" // For tracing and whatnot.
+#include "pm_defs.h" // For tracing stuff.
+#include "event_api.h" // For event functions (tracing and such).
 #include "eventscripts.h" // For VEC_DUCK_VIEW.
 
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
 const double M_RAD2DEG = 180 / M_PI;
 const double M_DEG2RAD = M_PI / 180;
-
 const double M_U = 360.0 / 65536;
+
+#define BOOLSTRING(b) ((b)?"true":"false")
 
 // To be changed - just so it compiles.
 bool g_bPerfectstrafe = false;
@@ -940,6 +942,58 @@ bool TAS_IsInDuck()
 	return (viewOffset[2] == VEC_DUCK_VIEW);
 }
 
+// Analogue of CatagorizePosition.
+// Returns true if on ground, false otherwise, puts the water level into *waterlevel if it's not NULL.
+bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool inDuck, int *waterlevel, vec3_t *new_origin)
+{
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_CheckWaterAndGround Start --\n");
+		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
+		gEngfuncs.Con_Printf("InDuck: %s\n", BOOLSTRING(inDuck));
+	}
+
+	int waterlvl = 0; // Water TBD
+
+	if (velocity[2] > 180)
+		return false;
+
+	bool onGround = false;
+
+	vec3_t newpos;
+	VectorCopy(origin, newpos);
+
+	vec3_t point;
+	VectorCopy(origin, point);
+	point[2] -= 2;
+
+	pmtrace_t tr;
+	gEngfuncs.pEventAPI->EV_SetTraceHull(inDuck ? 1 : 0);
+	gEngfuncs.pEventAPI->EV_PlayerTrace(newpos, point, PM_NORMAL, -1, &tr); // Newpos has not been modified yet.
+
+	if (tr.plane.normal[2] >= 0.7)
+	{
+		if ((waterlvl < 2) && !tr.startsolid && !tr.allsolid)
+			VectorCopy(tr.endpos, newpos);
+
+		onGround = true;
+	}
+
+	if (waterlevel)
+		*waterlevel = waterlvl;
+
+	if (new_origin)
+		VectorCopy(newpos, *new_origin);
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("New origin: %.8f; %.8f; %.8f; onGround: %s; waterlevel: %d\n", newpos[0], newpos[1], newpos[2], BOOLSTRING(onGround), waterlvl);
+		gEngfuncs.Con_Printf("-- TAS_CheckWaterAndGround End --\n");
+	}
+
+	return onGround;
+}
+
 // Level 3 functions - TAS_Get*Angle
 // Return the plain desired angle between velocity and acceleration without anglemod.
 double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction)
@@ -1241,8 +1295,11 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		vec3_t curviewangles;
 		gEngfuncs.GetViewAngles( (float *)curviewangles );
 
+		bool inDuck = TAS_IsInDuck();
+		TAS_CheckWaterAndGround(g_vel, g_org, inDuck, NULL, NULL);
+
 		vec3_t wishvel;
-		TAS_ConstructWishvel(curviewangles, cmd->forwardmove, cmd->sidemove, cmd->upmove, cvar_maxspeed, TAS_IsInDuck(), &wishvel);
+		TAS_ConstructWishvel(curviewangles, cmd->forwardmove, cmd->sidemove, cmd->upmove, cvar_maxspeed, inDuck, &wishvel);
 		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
 		TAS_SimplePredict(wishvel, g_vel, g_org, cvar_maxspeed, cvar_airaccelerate, 30, fpsbug_frametime, 1, cvar_gravity, 1, NULL, NULL);
 
