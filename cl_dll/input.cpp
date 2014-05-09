@@ -796,7 +796,7 @@ void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemov
 // Again, we pass double-pointers, which is unnecessary, for the sake of code cleanness.
 void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const vec3_t &origin,
 	double maxspeed, double accel, double wishspeed_cap, double frametime, double pmove_friction,
-	double gravity, double pmove_gravity,
+	double gravity, double pmove_gravity, bool onGround,
 	vec3_t *new_velocity, vec3_t *new_origin)
 {
 	int i;
@@ -846,9 +846,12 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 		wishspeed = maxspeed;
 	}
 
+	if (onGround)
+		newvel[2] = 0;
+
 	// Accelerate
 	float wishspd = wishspeed;
-	if (wishspd > wishspeed_cap)
+	if (!onGround && (wishspd > wishspeed_cap))
 		wishspd = wishspeed_cap;
 
 	float currentspeed = DotProduct(velocity, wishdir);
@@ -865,6 +868,9 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 		}
 	}
 
+	if (onGround)
+		newvel[2] = 0;
+
 	// FlyMove
 	for (i = 0; i < 3; i++)
 	{
@@ -872,7 +878,19 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 	}
 
 	// FixupGravityVelocity
-	newvel[2] -= ent_gravity * gravity * 0.5 * frametime;
+	if (!onGround)
+		newvel[2] -= ent_gravity * gravity * 0.5 * frametime;
+
+	// Does not take basevelocity into account.
+	if (onGround)
+	{
+		float spd = Length(newvel);
+		if (spd < 1)
+		{
+			VectorClear(newvel);
+			VectorCopy(origin, newpos);
+		}
+	}
 
 	// Return values if needed.
 	if (new_velocity)
@@ -885,52 +903,6 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 	{
 		gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f; new origin: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2], newpos[0], newpos[1], newpos[2]);
 		gEngfuncs.Con_Printf("-- TAS_SimplePredict End --\n");
-	}
-}
-
-// Predicts the next origin and velocity as if we were in an empty world, with an extra check from WalkMove.
-// Walking doesn't have a wishspeed cap, so we just pass maxspeed because it's cut to it anyway.
-// Again, we pass double-pointers, which is unnecessary, for the sake of code cleanness.
-void TAS_SimpleGroundPredict(const vec3_t &wishvelocity, const vec3_t &velocity, const vec3_t &origin,
-	double maxspeed, double accel, double frametime, double pmove_friction,
-	vec3_t *new_velocity, vec3_t *new_origin)
-{
-	if (CVAR_GET_FLOAT("tas_log") != 0)
-	{
-		gEngfuncs.Con_Printf("-- TAS_SimpleGroundPredict Start --\n");
-	}
-
-	vec3_t movevel;
-	VectorCopy(velocity, movevel);
-
-	movevel[2] = 0; // From WalkMove
-
-	vec3_t newvel, newpos;
-	TAS_SimplePredict(wishvelocity, velocity, origin, maxspeed, accel, maxspeed, frametime, pmove_friction, 0, 0, &newvel, &newpos);
-
-	// From WalkMove as well
-	newvel[2] = 0;
-	newpos[2] = origin[2];
-
-	// Does not take basevelocity into account.
-	float spd = Length(newvel);
-	if (spd < 1)
-	{
-		VectorClear(newvel);
-		VectorCopy(origin, newpos);
-	}
-
-	// Return values if needed.
-	if (new_velocity)
-		VectorCopy(newvel, *new_velocity);
-
-	if (new_origin)
-		VectorCopy(newpos, *new_origin);
-
-	if (CVAR_GET_FLOAT("tas_log") != 0)
-	{
-		gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f; new origin: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2], newpos[0], newpos[1], newpos[2]);
-		gEngfuncs.Con_Printf("-- TAS_SimpleGroundPredict End --\n");
 	}
 }
 
@@ -1107,7 +1079,7 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 // velocityAngleFallback is the angle to be used instead of the velocity angle in a case of speed = 0.
 // const vec3_t &velocity is passing a double-pointer here, which is pretty much useless, but for the sake of cleanness.
 bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction,
+	double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround,
 	double *leftangle, double *rightangle)
 {
 	double speed = hypot(velocity[0], velocity[1]);
@@ -1152,7 +1124,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, wishspeed_cap, frametime, pmove_friction,
-			0, 0,
+			0, 0, onGround,
 			&newvel, NULL);
 
 		double newspeed = hypot(newvel[0], newvel[1]);
@@ -1187,7 +1159,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, wishspeed_cap, frametime, pmove_friction,
-			0, 0,
+			0, 0, onGround,
 			&newvel, NULL);
 
 		double newspeed = hypot(newvel[0], newvel[1]);
@@ -1301,7 +1273,7 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		vec3_t wishvel;
 		TAS_ConstructWishvel(curviewangles, cmd->forwardmove, cmd->sidemove, cmd->upmove, cvar_maxspeed, inDuck, &wishvel);
 		double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
-		TAS_SimplePredict(wishvel, g_vel, g_org, cvar_maxspeed, cvar_airaccelerate, 30, fpsbug_frametime, 1, cvar_gravity, 1, NULL, NULL);
+		TAS_SimplePredict(wishvel, g_vel, g_org, cvar_maxspeed, cvar_airaccelerate, 30, fpsbug_frametime, 1, cvar_gravity, 1, false, NULL, NULL);
 
 		if (CVAR_GET_FLOAT("tas_log"))
 			gEngfuncs.Con_Printf("\n");
