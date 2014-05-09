@@ -1131,6 +1131,14 @@ void PM_WalkMove ()
 		wishspeed = pmove->maxspeed;
 	}
 
+#ifndef CLIENT_DLL
+	if (g_sv_taslog.value != 0)
+	{
+		pmove->Con_Printf("wishspeed: %.8g; forward: %.8g; %.8g; %.8g; right: %.8g; %.8g; %.8g\n", wishspeed, pmove->forward[0], pmove->forward[1], pmove->forward[2], pmove->right[0], pmove->right[1], pmove->right[2]);
+		pmove->Con_Printf("wishvel[0]: %.8g; wishvel[1]: %.8g; wishdir[0]: %.8g; wishdir[1]: %.8g\n", wishvel[0], wishvel[1], wishdir[0], wishdir[1]);
+	}
+#endif
+
 	// Set pmove velocity
 	pmove->velocity[2] = 0;
 	PM_Accelerate (wishdir, wishspeed, pmove->movevars->accelerate);
