@@ -1509,6 +1509,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 	int msec = (int)(frametime * 1000);
 	double fpsbug_frametime = (msec / 1000.0);
 
+	if (duckTime == 1000)
+		tryingToDuck = true;
+
 	if (duckTime > 0)
 	{
 		duckTime -= msec;
