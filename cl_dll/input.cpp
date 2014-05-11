@@ -33,6 +33,8 @@ extern "C"
 #include "pm_defs.h" // For tracing stuff.
 #include "event_api.h" // For event functions (tracing and such).
 #include "eventscripts.h" // For VEC_DUCK_VIEW.
+#include "const.h" // For CONTENTS_WATER
+#define CONTENTS_TRANSLUCENT -15 // Commented out of const.h
 
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
 const double M_RAD2DEG = 180 / M_PI;
@@ -965,17 +967,15 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 	point[1] += (mins[1] + maxs[1]) * 0.5;
 	point[2] += mins[2] + 1;
 
-	pmtrace_t tr;
-	gEngfuncs.pEventAPI->EV_SetTraceHull(2);
-	gEngfuncs.pEventAPI->EV_PlayerTrace(point, point, PM_NORMAL, -1, &tr);
-
-	if (tr.inwater)
+	int cont, truecont;
+	cont = gEngfuncs.PM_PointContents(point, &truecont);
+	if (cont <= CONTENTS_WATER && cont > CONTENTS_TRANSLUCENT)
 	{
 		waterlvl = 1;
 
 		point[2] = origin[2] + ((mins[2] + maxs[2]) * 0.5);
-		gEngfuncs.pEventAPI->EV_PlayerTrace(point, point, PM_NORMAL, -1, &tr); // Newpos has not been modified yet.
-		if (tr.inwater)
+		cont = gEngfuncs.PM_PointContents(point, &truecont);
+		if (cont <= CONTENTS_WATER && cont > CONTENTS_TRANSLUCENT)
 		{
 			waterlvl = 2;
 
@@ -984,8 +984,8 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 			gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOffset );
 
 			point[2] = origin[2] + viewOffset[2];
-			gEngfuncs.pEventAPI->EV_PlayerTrace(point, point, PM_NORMAL, -1, &tr); // Newpos has not been modified yet.
-			if (tr.inwater)
+			cont = gEngfuncs.PM_PointContents(point, &truecont);
+			if (cont <= CONTENTS_WATER && cont > CONTENTS_TRANSLUCENT)
 			{
 				waterlvl = 3;
 			}
@@ -1000,13 +1000,13 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 		VectorCopy(origin, point);
 		point[2] -= 2;
 
-		gEngfuncs.pEventAPI->EV_SetTraceHull(inDuck ? 1 : 0);
-		gEngfuncs.pEventAPI->EV_PlayerTrace(newpos, point, PM_NORMAL, -1, &tr); // Newpos has not been modified yet.
+		pmtrace_t *tr;
+		tr = gEngfuncs.PM_TraceLine(newpos, point, PM_NORMAL, (inDuck ? 1 : 0), -1); // Newpos has not been modified yet.
 
-		if (tr.plane.normal[2] >= 0.7)
+		if (tr->plane.normal[2] >= 0.7)
 		{
-			if ((waterlvl < 2) && !tr.startsolid && !tr.allsolid)
-				VectorCopy(tr.endpos, newpos);
+			if ((waterlvl < 2) && !tr->startsolid && !tr->allsolid)
+				VectorCopy(tr->endpos, newpos);
 
 			onGround = true;
 		}
