@@ -268,7 +268,7 @@ void LinkUserMessages( void )
 	gmsgEntityFired = REG_USER_MSG("EntFired", 0);
 	gmsgEntityFireReset = REG_USER_MSG("FireReset", 0);
 	gmsgVelocityClip = REG_USER_MSG("VelClip", 8);
-	gmsgPlayerInfo = REG_USER_MSG("PlayerInfo", 24);
+	gmsgPlayerInfo = REG_USER_MSG("PlayerInfo", 28);
 	// YaLTeR End
 }
 

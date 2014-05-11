@@ -1515,6 +1515,8 @@ void SendAccurateInfo(entvars_t *pev)
 		WRITE_LONG(*(int*)&pev->origin.x);
 		WRITE_LONG(*(int*)&pev->origin.y);
 		WRITE_LONG(*(int*)&pev->origin.z);
+
+		WRITE_LONG(pev->flDuckTime);
 	MESSAGE_END();
 }
 // YaLTeR End

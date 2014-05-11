@@ -43,6 +43,8 @@ const double M_U = 360.0 / 65536;
 
 #define BOOLSTRING(b) ((b)?"true":"false")
 
+int g_duckTime = 0;
+
 // To be changed - just so it compiles.
 bool g_bPerfectstrafe = false;
 bool g_bAutostrafe = false;
@@ -810,13 +812,13 @@ void TAS_CheckVelocity(const vec3_t &velocity, double maxvelocity, vec3_t *new_v
 			newvel[i] = -maxvelocity;
 	}
 
-	if (CVAR_GET_FLOAT("tas_log") != 0)
-	{
-		gEngfuncs.Con_Printf("-- TAS_CheckVelocity Start --\n");
-		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; maxvelocity: %.8f\n", velocity[0], velocity[1], velocity[2], maxvelocity);
-		gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2]);
-		gEngfuncs.Con_Printf("-- TAS_CheckVelocity End --\n");
-	}
+	// if (CVAR_GET_FLOAT("tas_log") != 0)
+	// {
+	// 	gEngfuncs.Con_Printf("-- TAS_CheckVelocity Start --\n");
+	// 	gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; maxvelocity: %.8f\n", velocity[0], velocity[1], velocity[2], maxvelocity);
+	// 	gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2]);
+	// 	gEngfuncs.Con_Printf("-- TAS_CheckVelocity End --\n");
+	// }
 
 	if (new_velocity)
 		VectorCopy(newvel, *new_velocity);
@@ -974,6 +976,15 @@ bool TAS_IsInDuck()
 	return (viewOffset[2] == VEC_DUCK_VIEW);
 }
 
+// Returns true if the player is either fully ducked, or partically ducked.
+bool TAS_IsTryingToDuck()
+{
+	vec3_t viewOffset;
+	VectorClear(viewOffset);
+	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOffset );
+	return (viewOffset[2] < DEFAULT_VIEWHEIGHT);
+}
+
 // Analogue of CatagorizePosition.
 // Returns true if on ground, false otherwise, puts the water level into *waterlevel if it's not NULL.
 bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool inDuck, int *waterlevel, vec3_t *new_origin)
@@ -1061,7 +1072,7 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 	return onGround;
 }
 
-void TAS_ApplyFriction(const vec3_t& velocity, const vec3_t& origin, float frametime, bool inDuck, bool onGround, float pmove_friction, float cvar_friction, float cvar_edgefriction, float cvar_stopspeed, vec3_t* new_velocity)
+void TAS_ApplyFriction(const vec3_t &velocity, const vec3_t &origin, float frametime, bool inDuck, bool onGround, float pmove_friction, float cvar_friction, float cvar_edgefriction, float cvar_stopspeed, vec3_t *new_velocity)
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
@@ -1123,6 +1134,123 @@ void TAS_ApplyFriction(const vec3_t& velocity, const vec3_t& origin, float frame
 
 	if (new_velocity)
 		VectorCopy(newvel, *new_velocity);
+}
+
+// Try to unduck, return true if ended up on the ground, false otherwise.
+bool TAS_UnDuck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool onGround, bool *new_inDuck, int *waterlevel, vec3_t *new_origin)
+{
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_UnDuck Start --\n");
+		gEngfuncs.Con_Printf("Origin: %.8f; %.8f; %.8f; inDuck: %s; onGround: %s\n", origin[0], origin[1], origin[2], BOOLSTRING(inDuck), BOOLSTRING(onGround));
+	}
+
+	vec3_t newpos;
+	VectorCopy(origin, newpos);
+
+	if (onGround)
+	{
+		float mins[3], maxs[3];
+		float mins_ducked[3], maxs_ducked[3];
+		gEngfuncs.pEventAPI->EV_LocalPlayerBounds(0, mins, maxs);
+		gEngfuncs.pEventAPI->EV_LocalPlayerBounds(1, mins_ducked, maxs_ducked);
+
+		for (int i = 0; i < 3; i++)
+			newpos[i] += (mins_ducked[i] - mins[i]);
+	}
+
+	pmtrace_t *tr;
+	tr = gEngfuncs.PM_TraceLine(newpos, newpos, PM_NORMAL, (inDuck ? 1 : 0), -1);
+	if (!tr->startsolid)
+	{
+		tr = gEngfuncs.PM_TraceLine(newpos, newpos, PM_NORMAL, 0, -1);
+		if (!tr->startsolid)
+		{
+			inDuck = false;
+			onGround = TAS_CheckWaterAndGround(velocity, newpos, 0, waterlevel, &newpos);
+		}
+		else
+		{
+			inDuck = true;
+		}
+	}
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("New inDuck: %s; new onGround: %s\n", BOOLSTRING(inDuck), BOOLSTRING(onGround));
+		gEngfuncs.Con_Printf("-- TAS_UnDuck End --\n");
+	}
+
+	if (new_inDuck)
+		*new_inDuck = inDuck;
+
+	if (new_origin)
+		VectorCopy(newpos, *new_origin);
+
+	return onGround;
+}
+
+// Try to duck, return true if successful (changed the hull and possibly origin and perhaps waterlevel), false otherwise.
+bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool onGround, bool tryingToDuck, int duckTime, bool *new_onGround, bool *new_tryingToDuck, int *new_duckTime, int *waterlevel, vec3_t *new_origin)
+{
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_Duck Start --\n");
+		gEngfuncs.Con_Printf("Origin: %.8f; %.8f; %.8f; inDuck: %s; onGround: %s; tryingToDuck: %s; duckTime: %d\n", origin[0], origin[1], origin[2], BOOLSTRING(inDuck), BOOLSTRING(onGround), BOOLSTRING(tryingToDuck), duckTime);
+	}
+
+	vec3_t newpos;
+	VectorCopy(origin, newpos);
+
+	bool ducked = false;
+
+	if (!inDuck)
+	{
+		if (!tryingToDuck)
+		{
+			duckTime = 1000;
+			tryingToDuck = true;
+		}
+
+		if (!onGround || ((float)duckTime / 1000.0 <= (1 - 0.4)))
+		{
+			tryingToDuck = false;
+			ducked = true;
+
+			if (onGround)
+			{
+				float mins[3], maxs[3];
+				float mins_ducked[3], maxs_ducked[3];
+				gEngfuncs.pEventAPI->EV_LocalPlayerBounds(0, mins, maxs);
+				gEngfuncs.pEventAPI->EV_LocalPlayerBounds(1, mins_ducked, maxs_ducked);
+
+				for (int i = 0; i < 3; i++)
+					newpos[i] -= (mins_ducked[i] - mins[i]);
+
+				onGround = TAS_CheckWaterAndGround(velocity, newpos, 1, waterlevel, &newpos); // Should never change onGround.
+			}
+		}
+	}
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("New inDuck: %s; new onGround: %s; new tryingToDuck: %s; new duckTime: %d\n", BOOLSTRING(inDuck), BOOLSTRING(onGround), BOOLSTRING(tryingToDuck), duckTime);
+		gEngfuncs.Con_Printf("-- TAS_Duck End --\n");
+	}
+
+	if (new_onGround)
+		*new_onGround = onGround;
+
+	if (new_tryingToDuck)
+		*new_tryingToDuck = tryingToDuck;
+
+	if (new_duckTime)
+		*new_duckTime = duckTime;
+
+	if (new_origin)
+		VectorCopy(newpos, *new_origin);
+
+	return ducked;
 }
 
 // Level 3 functions - TAS_Get*Angle
@@ -1364,23 +1492,45 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 	float cvar_edgefriction =  CVAR_GET_FLOAT("edgefriction");
 	float cvar_stopspeed =     CVAR_GET_FLOAT("sv_stopspeed");
 
-	vec3_t origin, velocity; // Variables that we can mess with.
+	// Variables that we can mess with.
+	vec3_t origin, velocity;
 	VectorCopy(g_org, origin);
 	VectorCopy(g_vel, velocity);
+
+	int duckTime = g_duckTime;
 
 	if (CVAR_GET_FLOAT("tas_log"))
 		gEngfuncs.Con_Printf("\n");
 
 	bool inDuck = TAS_IsInDuck();
+	bool tryingToDuck = TAS_IsTryingToDuck();
 	int waterlevel;
 	bool onGround = TAS_CheckWaterAndGround(velocity, origin, inDuck, &waterlevel, &origin);
-	double fpsbug_frametime = ((int)(frametime * 1000) / 1000.0);
+	int msec = (int)(frametime * 1000);
+	double fpsbug_frametime = (msec / 1000.0);
+
+	if (duckTime > 0)
+	{
+		duckTime -= msec;
+		if (duckTime < 0)
+			duckTime = 0;
+	}
 
 	// Temporary. Jump handling goes before this, because if we jump then we won't be on the ground.
 	TAS_ApplyFriction(velocity, origin, fpsbug_frametime, inDuck, onGround, 1, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocity);
 
 	vec3_t wishvel;
-	TAS_ConstructWishvel(viewangles, cvar_maxspeed, 0, 0, cvar_maxspeed, inDuck, &wishvel);
+	TAS_ConstructWishvel(viewangles, cvar_maxspeed, 0, 0, cvar_maxspeed, inDuck, &wishvel); // ConstructWishvel goes with the old inDuck.
+
+	if (tryingToDuck && !(in_duck.state & 3))
+	{
+		onGround = TAS_UnDuck(velocity, origin, inDuck, onGround, &inDuck, &waterlevel, &origin);
+	}
+	else if (!inDuck && (in_duck.state & 3))
+	{
+		inDuck = TAS_Duck(velocity, origin, inDuck, onGround, tryingToDuck, duckTime, &onGround, &tryingToDuck, &duckTime, &waterlevel, &origin); // duckTime TODO
+	}
+
 	TAS_SimplePredict(wishvel, velocity, origin, cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, 30, fpsbug_frametime, 1, cvar_gravity, 1, onGround, waterlevel, 0, NULL, NULL);
 
 	if (CVAR_GET_FLOAT("tas_log"))
