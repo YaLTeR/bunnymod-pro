@@ -1589,14 +1589,37 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 // Does everything. Called from CL_CreateMove.
 void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 {
-	float cvar_maxspeed =      CVAR_GET_FLOAT("sv_maxspeed");
-	float cvar_maxvelocity =   CVAR_GET_FLOAT("sv_maxvelocity");
-	float cvar_accelerate =    CVAR_GET_FLOAT("sv_accelerate");
-	float cvar_airaccelerate = CVAR_GET_FLOAT("sv_airaccelerate");
-	float cvar_gravity =       CVAR_GET_FLOAT("sv_gravity");
-	float cvar_friction =      CVAR_GET_FLOAT("sv_friction");
-	float cvar_edgefriction =  CVAR_GET_FLOAT("edgefriction");
-	float cvar_stopspeed =     CVAR_GET_FLOAT("sv_stopspeed");
+	float cvar_accelerate,
+		cvar_airaccelerate,
+		cvar_edgefriction,
+		cvar_friction,
+		cvar_gravity,
+		cvar_maxspeed,
+		cvar_maxvelocity,
+		cvar_stopspeed;
+
+	if ( CVAR_GET_FLOAT("tas_use_custom_cvar_values") != 0 )
+	{
+		cvar_accelerate =    CVAR_GET_FLOAT("tas_custom_accel");
+		cvar_airaccelerate = CVAR_GET_FLOAT("tas_custom_airaccel");
+		cvar_edgefriction =  CVAR_GET_FLOAT("tas_custom_edgefriction");
+		cvar_friction =      CVAR_GET_FLOAT("tas_custom_friction");
+		cvar_gravity =       CVAR_GET_FLOAT("tas_custom_gravity");
+		cvar_maxspeed =      CVAR_GET_FLOAT("tas_custom_maxspeed");
+		cvar_maxvelocity =   CVAR_GET_FLOAT("tas_custom_maxvelocity");
+		cvar_stopspeed =     CVAR_GET_FLOAT("tas_custom_stopspeed");
+	}
+	else
+	{
+		cvar_accelerate =    CVAR_GET_FLOAT("sv_accelerate");
+		cvar_airaccelerate = CVAR_GET_FLOAT("sv_airaccelerate");
+		cvar_edgefriction =  CVAR_GET_FLOAT("edgefriction");
+		cvar_friction =      CVAR_GET_FLOAT("sv_friction");
+		cvar_gravity =       CVAR_GET_FLOAT("sv_gravity");
+		cvar_maxspeed =      CVAR_GET_FLOAT("sv_maxspeed");
+		cvar_maxvelocity =   CVAR_GET_FLOAT("sv_maxvelocity");
+		cvar_stopspeed =     CVAR_GET_FLOAT("sv_stopspeed");
+	}
 
 	bool bhopCap = ( CVAR_GET_FLOAT("cl_bhopcap") == 0 ) ? false : true;
 
@@ -2002,6 +2025,16 @@ void InitInput (void)
 	gEngfuncs.pfnAddCommand( "-tas_ducktap",  IN_DucktapUp    );
 
 	gEngfuncs.pfnRegisterVariable( "tas_log", "0", 0 );
+
+	gEngfuncs.pfnRegisterVariable( "tas_use_custom_cvar_values", "0", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_custom_accel",        "10",   0 );
+	gEngfuncs.pfnRegisterVariable( "tas_custom_airaccel",     "10",   0 );
+	gEngfuncs.pfnRegisterVariable( "tas_custom_edgefriction", "2",    0 );
+	gEngfuncs.pfnRegisterVariable( "tas_custom_friction",     "4",    0 );
+	gEngfuncs.pfnRegisterVariable( "tas_custom_gravity",      "800",  0 );
+	gEngfuncs.pfnRegisterVariable( "tas_custom_maxspeed",     "320",  0 );
+	gEngfuncs.pfnRegisterVariable( "tas_custom_maxvelocity",  "2000", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_custom_stopspeed",    "100",  0 );
 	// YaLTeR End
 
 	lookstrafe			= gEngfuncs.pfnRegisterVariable ( "lookstrafe", "0", FCVAR_ARCHIVE );
