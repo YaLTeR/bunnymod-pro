@@ -31,9 +31,9 @@ extern "C"
 
 // YaLTeR Start
 #include "pm_defs.h" // For tracing stuff.
-#include "event_api.h" // For event functions (tracing and such).
-#include "eventscripts.h" // For VEC_DUCK_VIEW.
-#include "const.h" // For CONTENTS_WATER
+#include "event_api.h" // For event functions (view offset and player bounds).
+#include "eventscripts.h" // For VEC_DUCK_VIEW and DEFAULT_VIEWHEIGHT defines.
+#include "const.h" // For CONTENTS_* defines.
 #define CONTENTS_TRANSLUCENT -15 // Commented out of const.h
 
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
@@ -42,6 +42,8 @@ const double M_DEG2RAD = M_PI / 180;
 const double M_U = 360.0 / 65536;
 
 #define BOOLSTRING(b) ((b)?"true":"false")
+
+const int STATE_SINGLE_FRAME = 8; // Release the button in the end of the movement frame.
 
 extern vec3_t g_vel, g_org;
 int g_duckTime = 0;
@@ -1586,6 +1588,49 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 // Negative if counter-clockwise, positive otherwise.
 // TBD
 
+// Custom KeyDown and KeyUp functions that don't expect a command line argument.
+// TAS_KeyDown also accepts a custom state that can be set to a button.
+void TAS_KeyDown(kbutton_t *b, int customState = 0)
+{
+	int k = -1; // Typed into the console.
+
+	if ( (k == b->down[0]) || (k == b->down[1]) )
+	{
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			gEngfuncs.Con_Printf("-- TAS_KeyDown: repeating key.\n");
+
+		return;
+	}
+
+	if ( !b->down[0] )
+		b->down[0] = k;
+	else if ( !b->down[1] )
+		b->down[1] = k;
+	else
+	{
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			gEngfuncs.Con_Printf("-- TAS_KeyDown: three keys down for a button.\n");
+
+		return;
+	}
+
+	if (b->state & 1)
+	{
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			gEngfuncs.Con_Printf("-- TAS_KeyDown: the key is already down.\n");
+
+		return;
+	}
+
+	b->state |= 1 + 2 + customState; // Down + impulse down + potentially a custom state.
+}
+
+void TAS_KeyUp(kbutton_t *b)
+{
+	b->down[0] = b->down[1] = 0; // Clear everything.
+	b->state = 4; // Impulse up.
+}
+
 // Does everything. Called from CL_CreateMove.
 void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 {
@@ -1672,6 +1717,34 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 	if (onGround && (in_use.state & 3)) // Before TAS_Jump, but after TAS_Duck / UnDuck.
 		VectorScale(velocity, 0.3, velocity);
 
+	// Moving automatic actions into separate functions would require a whole bunch of parameters getting passed.
+
+	// Autojump
+	// Check the custom buttons against & 1, so 0-frame inputs won't get processed (unlike standart commands).
+	if ((in_autojump.state & 1) != 0)
+	{
+		if ((in_jump.state & 7) == 0) // Filter out just pressed / was already down / just released. Can't do anything on this frame.
+		{
+			// We've ended up with a situation where jump was _not_ down on the last frame.
+			if (onGround) // If we're on ground then we can jump, regardless of the water level.
+			{
+				if ( CVAR_GET_FLOAT("tas_autojump_ground") != 0 )
+					TAS_KeyDown(&in_jump, STATE_SINGLE_FRAME);
+			}
+		}
+
+		if ((in_jump.state & 1) == 0)
+		{
+			// Jump is not pressed at the moment.
+			if (waterlevel >= 2)
+			{
+				// We're in deep water where we can swim up.
+				if ( CVAR_GET_FLOAT("tas_autojump_water") != 0 )
+					TAS_KeyDown(&in_jump, STATE_SINGLE_FRAME);
+			}
+		}
+	}
+
 	if (in_jump.state & 3)
 	{
 		vec3_t forward; // No lj handling for now.
@@ -1685,6 +1758,20 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 
 	if (CVAR_GET_FLOAT("tas_log"))
 		gEngfuncs.Con_Printf("-- TAS_DoStuff End --\n\n");
+}
+
+// Called from the very end of CL_CreateMove.
+void TAS_FrameEnd()
+{
+	// Reset key state impulses like it was probably supposed to be done. This does not seem to affect any of the standart functionality, although it does make custom functionality much cleaner.
+	in_duck.state &= ~(2 + 4);
+	in_jump.state &= ~(2 + 4);
+
+	// Releasing the buttons should go after the impulse resetting as it can set impulse up.
+	if ((in_duck.state & STATE_SINGLE_FRAME) != 0)
+		TAS_KeyUp(&in_duck);
+	if ((in_jump.state & STATE_SINGLE_FRAME) != 0)
+		TAS_KeyUp(&in_jump);
 }
 // YaLTeR End
 
@@ -1802,6 +1889,8 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 	{
 		VectorCopy( oldangles, cmd->viewangles );
 	}
+
+	TAS_FrameEnd(); // Do stuff like resetting buttons.
 
 }
 
@@ -2025,6 +2114,10 @@ void InitInput (void)
 	gEngfuncs.pfnAddCommand( "-tas_ducktap",  IN_DucktapUp    );
 
 	gEngfuncs.pfnRegisterVariable( "tas_log", "0", 0 );
+
+	gEngfuncs.pfnRegisterVariable( "tas_autojump_ground", "1", FCVAR_ARCHIVE ); // Jump upon reaching the ground.
+	gEngfuncs.pfnRegisterVariable( "tas_autojump_water",  "1", FCVAR_ARCHIVE ); // Swim up in water.
+	gEngfuncs.pfnRegisterVariable( "tas_autojump_ladder", "1", FCVAR_ARCHIVE ); // Jump off of ladders.
 
 	gEngfuncs.pfnRegisterVariable( "tas_use_custom_cvar_values", "0", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_custom_accel",        "10",   0 );
