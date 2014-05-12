@@ -1632,6 +1632,8 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 			duckTime = 0;
 	}
 
+	// TODO ladders & water *eventually*.
+
 	if (tryingToDuck && !(in_duck.state & 3))
 	{
 		inDuck = TAS_UnDuck(velocity, origin, inDuck, onGround, &onGround, &waterlevel, &watertype, &origin);
@@ -1656,7 +1658,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 	TAS_ApplyFriction(velocity, origin, fpsbug_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocityWithFriction);
 
 	if (CVAR_GET_FLOAT("tas_log"))
-		gEngfuncs.Con_Printf("\n-- TAS_DoStuff End --\n");
+		gEngfuncs.Con_Printf("-- TAS_DoStuff End --\n\n");
 }
 // YaLTeR End
 
