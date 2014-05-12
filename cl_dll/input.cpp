@@ -1136,8 +1136,8 @@ void TAS_ApplyFriction(const vec3_t &velocity, const vec3_t &origin, float frame
 		VectorCopy(newvel, *new_velocity);
 }
 
-// Try to unduck, return true if ended up on the ground, false otherwise.
-bool TAS_UnDuck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool onGround, bool *new_inDuck, int *waterlevel, vec3_t *new_origin)
+// Try to unduck, return the new inDuck state.
+bool TAS_UnDuck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool onGround, bool *new_onGround, int *waterlevel, vec3_t *new_origin)
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
@@ -1181,13 +1181,13 @@ bool TAS_UnDuck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool 
 		gEngfuncs.Con_Printf("-- TAS_UnDuck End --\n");
 	}
 
-	if (new_inDuck)
-		*new_inDuck = inDuck;
+	if (new_onGround)
+		*new_onGround = onGround;
 
 	if (new_origin)
 		VectorCopy(newpos, *new_origin);
 
-	return onGround;
+	return inDuck;
 }
 
 // Try to duck, return true if successful (changed the hull and possibly origin and perhaps waterlevel), false otherwise.
@@ -1527,7 +1527,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 
 	if (tryingToDuck && !(in_duck.state & 3))
 	{
-		onGround = TAS_UnDuck(velocity, origin, inDuck, onGround, &inDuck, &waterlevel, &origin);
+		inDuck = TAS_UnDuck(velocity, origin, inDuck, onGround, &onGround, &waterlevel, &origin);
 	}
 	else if (!inDuck && (in_duck.state & 3))
 	{
