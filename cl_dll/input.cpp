@@ -1634,6 +1634,9 @@ void TAS_KeyUp(kbutton_t *b)
 // Does everything. Called from CL_CreateMove.
 void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 {
+	if ( CVAR_GET_FLOAT("tas_enable") == 0 )
+		return;
+
 	float cvar_accelerate,
 		cvar_airaccelerate,
 		cvar_edgefriction,
@@ -1763,6 +1766,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 // Called from the very end of CL_CreateMove.
 void TAS_FrameEnd()
 {
+	if ( CVAR_GET_FLOAT("tas_enable") == 0 )
+		return;
+
 	// Reset key state impulses like it was probably supposed to be done. This does not seem to affect any of the standart functionality, although it does make custom functionality much cleaner.
 	in_duck.state &= ~(2 + 4);
 	in_jump.state &= ~(2 + 4);
@@ -2113,7 +2119,8 @@ void InitInput (void)
 	gEngfuncs.pfnAddCommand( "+tas_ducktap",  IN_DucktapDown  );
 	gEngfuncs.pfnAddCommand( "-tas_ducktap",  IN_DucktapUp    );
 
-	gEngfuncs.pfnRegisterVariable( "tas_log", "0", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_enable", "1", FCVAR_ARCHIVE );
+	gEngfuncs.pfnRegisterVariable( "tas_log",    "0", 0 );
 
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_ground", "1", FCVAR_ARCHIVE ); // Jump upon reaching the ground.
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_water",  "1", FCVAR_ARCHIVE ); // Swim up in water.
