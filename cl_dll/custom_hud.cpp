@@ -139,7 +139,6 @@ int playingback = 0;
 
 unsigned long int g_ullFramecounter = 0;
 
-extern cvar_t *tas_log;
 extern int g_duckTime;
 
 int CHudCustom::Draw( float fTime )
@@ -1045,7 +1044,7 @@ int CHudCustom::MsgFunc_PlayerInfo( const char *pszName, int iSize, void *pbuf )
 
 	g_bDontUpdateInfoThisTime = true;
 
-    if (tas_log->value)
+    if ( CVAR_GET_FLOAT("tas_log") != 0 )
     {
         gEngfuncs.Con_DPrintf("Received player info! Velocity: %f, %f, %f; origin: %f, %f, %f; duckTime: %d\n", g_vel[0], g_vel[1], g_vel[2], g_org[0], g_org[1], g_org[2], g_duckTime);
     }

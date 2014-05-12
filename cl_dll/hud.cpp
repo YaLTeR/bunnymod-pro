@@ -335,48 +335,9 @@ cvar_t *cl_gauss_tracer;
 
 cvar_t *cl_boxes_render;
 
-cvar_t *cl_printpos;
-
-cvar_t *tas_perfectstrafe_accel;
-cvar_t *tas_perfectstrafe_airaccel;
-cvar_t *tas_perfectstrafe_friction;
-cvar_t *tas_perfectstrafe_maxspeed;
-cvar_t *tas_perfectstrafe_autojump;
-cvar_t *tas_perfectstrafe_movetype;
-
-cvar_t *tas_autostrafe_desiredviewangle;
-cvar_t *tas_autostrafe_manualangle;
-
-/*
-    0 - W/S (going left)
-    1 - WA/WD
-    2 - A/D
-    3 - SA/SD
-    4 - W/S (going right)
-    5 - SA/SD (backwards)
-    6 - A/D (backwards)
-    7 - WA/WD (backwards)
-*/
-cvar_t *tas_autostrafe_airdir;
-cvar_t *tas_autostrafe_grounddir;
-
-/*
-    0 - D
-    1 - SD
-    2 - S
-    3 - SA
-    4 - A
-    5 - WA
-    6 - W
-    7 - WD
-*/
-cvar_t *tas_autostrafe_backpedaldir;
-
-cvar_t *tas_log;
-
 cvar_t *con_color;
 
-cvar_t *cl_bhopcap; // Used for correct movement prediction.
+cvar_t *cl_bhopcap; // Used for correct movement prediction, also for TAS functions.
 
 bool g_bResetDemorecCounter = false;
 
@@ -507,100 +468,6 @@ void DumpFrameCounter( void )
 {
 	gEngfuncs.Con_Printf("Frame counter is at: %u\n", g_ullFramecounter);
 }
-
-extern bool g_bPerfectstrafe;
-
-void ActivatePerfectstrafe( void )
-{
-	g_bPerfectstrafe = true;
-}
-
-void DeactivatePerfectstrafe( void )
-{
-	g_bPerfectstrafe = false;
-}
-
-extern bool g_bAutostrafe;
-
-void ActivateAutostrafe( void )
-{
-	g_bAutostrafe = true;
-}
-
-void DeactivateAutostrafe( void )
-{
-	g_bAutostrafe = false;
-}
-
-extern bool g_bInBhop;
-
-void DisableInBhop( void )
-{
-	g_bInBhop = false;
-}
-
-extern bool g_bGroundduck;
-
-void ActivateGroundduck( void )
-{
-	g_bGroundduck = true;
-}
-
-void DeactivateGroundduck( void )
-{
-	g_bGroundduck = false;
-}
-
-extern bool g_bClAutojump;
-
-void ActivateClAutojump( void )
-{
-	g_bClAutojump = true;
-}
-
-void DeactivateClAutojump( void )
-{
-	g_bClAutojump = false;
-}
-
-extern float setYaw, setPitch;
-#define INVALID_ANGLE -361.0f
-
-void SetYaw( void )
-{
-	if (gEngfuncs.Cmd_Argc() != 2)
-	{
-		gEngfuncs.Con_Printf( "Usage: tas_setyaw <yaw>\n" );
-		return;
-	}
-
-	sscanf( gEngfuncs.Cmd_Argv( 1 ), "%f", &setYaw );
-
-	if ((setYaw < -360.0f) || (setYaw > 360.0f))
-	{
-		setYaw = INVALID_ANGLE;
-		gEngfuncs.Con_Printf( "Invalid angle.\n" );
-	}
-}
-
-void SetPitch( void )
-{
-	if (gEngfuncs.Cmd_Argc() != 2)
-	{
-		gEngfuncs.Con_Printf( "Usage: tas_setpitch <pitch>\n" );
-		return;
-	}
-
-	sscanf( gEngfuncs.Cmd_Argv( 1 ), "%f", &setPitch );
-
-	if ((setPitch < -360.0f) || (setPitch > 360.0f))
-	{
-		setPitch = INVALID_ANGLE;
-		gEngfuncs.Con_Printf( "Invalid angle.\n" );
-	}
-}
-
-#undef INVALID_ANGLE
 
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
@@ -759,23 +626,6 @@ cl_gauss_tracer = CVAR_CREATE( "cl_gauss_tracer", "0", FCVAR_ARCHIVE );
 
 cl_boxes_render = CVAR_CREATE( "cl_boxes_render", "1", FCVAR_ARCHIVE );
 
-cl_printpos = CVAR_CREATE( "cl_printpos", "0", 0 );
-
-tas_perfectstrafe_accel = CVAR_CREATE( "tas_perfectstrafe_accel", "10", 0 );
-tas_perfectstrafe_airaccel = CVAR_CREATE( "tas_perfectstrafe_airaccel", "10", 0 );
-tas_perfectstrafe_friction = CVAR_CREATE( "tas_perfectstrafe_friction", "4", 0 );
-tas_perfectstrafe_maxspeed = CVAR_CREATE( "tas_perfectstrafe_maxspeed", "320", 0 );
-tas_perfectstrafe_autojump = CVAR_CREATE( "tas_perfectstrafe_autojump", "0", FCVAR_ARCHIVE );
-tas_perfectstrafe_movetype = CVAR_CREATE( "tas_perfectstrafe_movetype", "0", 0 );
-tas_autostrafe_airdir = CVAR_CREATE( "tas_autostrafe_airdir", "2", 0 );
-tas_autostrafe_grounddir = CVAR_CREATE( "tas_autostrafe_grounddir", "1", 0 );
-tas_autostrafe_backpedaldir = CVAR_CREATE( "tas_autostrafe_backpedaldir", "2", 0 );
-
-tas_autostrafe_desiredviewangle = CVAR_CREATE( "tas_autostrafe_desiredviewangle", "0.0", 0 );
-tas_autostrafe_manualangle = CVAR_CREATE( "tas_autostrafe_manualangle", "0", FCVAR_ARCHIVE );
-
-tas_log = CVAR_CREATE( "tas_log", "0", 0 );
-
 cl_bhopcap = CVAR_CREATE( "cl_bhopcap", "0", FCVAR_ARCHIVE );
 
 gEngfuncs.pfnAddCommand("hud_demorec_reset", ResetDemorecCounter);
@@ -810,20 +660,6 @@ gEngfuncs.pfnAddCommand( "fps_restore", RestoreFPSMax );
 
 gEngfuncs.pfnAddCommand("hud_framecounter_reset", ResetFrameCounter);
 gEngfuncs.pfnAddCommand("hud_framecounter_dump", DumpFrameCounter);
-
-gEngfuncs.pfnAddCommand( "tas_setyaw",   SetYaw );
-gEngfuncs.pfnAddCommand( "tas_setpitch", SetPitch );
-
-gEngfuncs.pfnAddCommand( "+tas_perfectstrafe", ActivatePerfectstrafe );
-gEngfuncs.pfnAddCommand( "-tas_perfectstrafe", DeactivatePerfectstrafe );
-gEngfuncs.pfnAddCommand( "+tas_autostrafe", ActivateAutostrafe );
-gEngfuncs.pfnAddCommand( "-tas_autostrafe", DeactivateAutostrafe );
-gEngfuncs.pfnAddCommand( "tas_stopbhop", DisableInBhop );
-
-gEngfuncs.pfnAddCommand( "+tas_groundduck", ActivateGroundduck );
-gEngfuncs.pfnAddCommand( "-tas_groundduck", DeactivateGroundduck );
-gEngfuncs.pfnAddCommand( "+tas_autojump", ActivateClAutojump );
-gEngfuncs.pfnAddCommand( "-tas_autojump", DeactivateClAutojump );
 
 gEngfuncs.pfnAddCommand( "alias_ex", AliasEx );
 gEngfuncs.pfnAddCommand( "_", AliasExCmd );

@@ -43,17 +43,8 @@ const double M_U = 360.0 / 65536;
 
 #define BOOLSTRING(b) ((b)?"true":"false")
 
-int g_duckTime = 0;
-
-// To be changed - just so it compiles.
-bool g_bPerfectstrafe = false;
-bool g_bAutostrafe = false;
-bool g_bInBhop = false;
-bool g_bGroundduck = false;
-bool g_bClAutojump = false;
-float setYaw = 0;
-float setPitch = 0;
 extern vec3_t g_vel, g_org;
+int g_duckTime = 0;
 // YaLTeR End
 
 extern "C"
@@ -150,6 +141,11 @@ kbutton_t	in_alt1;
 kbutton_t	in_score;
 kbutton_t	in_break;
 kbutton_t	in_graph;  // Display the netgraph
+
+// YaLTeR Start - custom keys.
+kbutton_t in_autojump;
+kbutton_t in_ducktap;
+// YaLTeR End
 
 typedef struct kblist_s
 {
@@ -568,6 +564,13 @@ void IN_MLookUp (void)
 		V_StartPitchDrift();
 	}
 }
+
+// YaLTeR Start - custom keys.
+void IN_AutojumpDown() { KeyDown(&in_autojump); }
+void IN_AutojumpUp()   { KeyUp  (&in_autojump); }
+void IN_DucktapDown()  { KeyDown(&in_ducktap);  }
+void IN_DucktapUp()    { KeyUp  (&in_ducktap);  }
+// YaLTeR End
 
 /*
 ===============
@@ -1991,6 +1994,15 @@ void InitInput (void)
 	gEngfuncs.pfnAddCommand ("-graph", IN_GraphUp);
 	gEngfuncs.pfnAddCommand ("+break",IN_BreakDown);
 	gEngfuncs.pfnAddCommand ("-break",IN_BreakUp);
+
+	// YaLTeR Start - custom keys and cvars.
+	gEngfuncs.pfnAddCommand( "+tas_autojump", IN_AutojumpDown );
+	gEngfuncs.pfnAddCommand( "-tas_autojump", IN_AutojumpUp   );
+	gEngfuncs.pfnAddCommand( "+tas_ducktap",  IN_DucktapDown  );
+	gEngfuncs.pfnAddCommand( "-tas_ducktap",  IN_DucktapUp    );
+
+	gEngfuncs.pfnRegisterVariable( "tas_log", "0", 0 );
+	// YaLTeR End
 
 	lookstrafe			= gEngfuncs.pfnRegisterVariable ( "lookstrafe", "0", FCVAR_ARCHIVE );
 	lookspring			= gEngfuncs.pfnRegisterVariable ( "lookspring", "0", FCVAR_ARCHIVE );
