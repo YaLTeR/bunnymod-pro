@@ -1716,14 +1716,13 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 		if ((in_duck.state & 7) == 0) // Filter out just pressed / was already down / just released. Can't do anything on this frame.
 		{
 			// tryingToDuck CAN be true in a very rare case of a place where we can stand straight, but which is too tight to ducktap.
-			// Handling of that TODO.
-			if (tryingToDuck)
-				gEngfuncs.Con_Printf("Error: tryingToDuck is true in ducktap! This should never happen!\n");
-			else
+			bool newTryingToDuck;
+			TAS_Duck(velocity, origin, inDuck, onGround, tryingToDuck, duckTime, NULL, &newTryingToDuck, NULL, NULL, NULL, NULL); // Try ducking.
+			if (newTryingToDuck) // If we ended up tryingToDuck, then everything is fine with the exception of a rare case mentioned before, so we need to check for that.
 			{
-				bool newTryingToDuck;
-				TAS_Duck(velocity, origin, inDuck, onGround, tryingToDuck, duckTime, NULL, &newTryingToDuck, NULL, NULL, NULL, NULL); // Try ducking.
-				if (newTryingToDuck) // If we ended up tryingToDuck, then everything is fine.
+				bool newOnGround;
+				TAS_UnDuck(velocity, origin, inDuck, onGround, &newOnGround, NULL, NULL, NULL);
+				if (!newOnGround) // If we ended up in the air then everything is fine for sure.
 				{
 					TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
 					shouldAutojump = false; // If we're doing groundduck, then we shouldn't autojump on this frame.
