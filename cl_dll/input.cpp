@@ -1003,7 +1003,7 @@ bool TAS_IsTryingToDuck()
 	vec3_t viewOffset;
 	VectorClear(viewOffset);
 	gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOffset );
-	return (viewOffset[2] < DEFAULT_VIEWHEIGHT);
+	return ((viewOffset[2] < DEFAULT_VIEWHEIGHT) && (viewOffset[2] != VEC_DUCK_VIEW));
 }
 
 // Analogue of CatagorizePosition.
@@ -1232,11 +1232,8 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 
 	if (!inDuck)
 	{
-		if (!tryingToDuck)
-		{
-			duckTime = 1000;
-			tryingToDuck = true;
-		}
+		duckTime = 1000;
+		tryingToDuck = true;
 
 		if (!onGround || ((float)duckTime / 1000.0 <= (1 - 0.4)))
 		{
@@ -1718,7 +1715,8 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 
 		if ((in_duck.state & 7) == 0) // Filter out just pressed / was already down / just released. Can't do anything on this frame.
 		{
-			// tryingToDuck should be false because we didn't have duck pressed on the previous frame.
+			// tryingToDuck CAN be true in a very rare case of a place where we can stand straight, but which is too tight to ducktap.
+			// Handling of that TODO.
 			if (tryingToDuck)
 				gEngfuncs.Con_Printf("Error: tryingToDuck is true in ducktap! This should never happen!\n");
 			else
@@ -1737,7 +1735,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 			gEngfuncs.Con_Printf("-- Ducktap End -- \n");
 	}
 
-	if (tryingToDuck && !(in_duck.state & 3))
+	if ((inDuck || tryingToDuck) && !(in_duck.state & 3))
 	{
 		inDuck = TAS_UnDuck(velocity, origin, inDuck, onGround, &onGround, &waterlevel, &watertype, &origin);
 	}
