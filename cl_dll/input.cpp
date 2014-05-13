@@ -1260,7 +1260,7 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("New inDuck: %s; new onGround: %s; new tryingToDuck: %s; new duckTime: %d\n", BOOLSTRING(inDuck), BOOLSTRING(onGround), BOOLSTRING(tryingToDuck), duckTime);
+		gEngfuncs.Con_Printf("New inDuck: %s; new onGround: %s; new tryingToDuck: %s; new duckTime: %d\n", BOOLSTRING(ducked), BOOLSTRING(onGround), BOOLSTRING(tryingToDuck), duckTime);
 		gEngfuncs.Con_Printf("-- TAS_Duck End --\n");
 	}
 
@@ -1708,6 +1708,35 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 
 	// TODO ladders & water *eventually*.
 
+	// Moving automatic actions into separate functions would require a whole bunch of parameters getting passed.
+	// Ducktap
+	bool shouldAutojump = true;
+	if ((in_ducktap.state & 1) != 0)
+	{
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			gEngfuncs.Con_Printf("-- Ducktap Start -- \n");
+
+		if ((in_duck.state & 7) == 0) // Filter out just pressed / was already down / just released. Can't do anything on this frame.
+		{
+			// tryingToDuck should be false because we didn't have duck pressed on the previous frame.
+			if (tryingToDuck)
+				gEngfuncs.Con_Printf("Error: tryingToDuck is true in ducktap! This should never happen!\n");
+			else
+			{
+				bool newTryingToDuck;
+				TAS_Duck(velocity, origin, inDuck, onGround, tryingToDuck, duckTime, NULL, &newTryingToDuck, NULL, NULL, NULL, NULL); // Try ducking.
+				if (newTryingToDuck) // If we ended up tryingToDuck, then everything is fine.
+				{
+					TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
+					shouldAutojump = false; // If we're doing groundduck, then we shouldn't autojump on this frame.
+				}
+			}
+		}
+
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			gEngfuncs.Con_Printf("-- Ducktap End -- \n");
+	}
+
 	if (tryingToDuck && !(in_duck.state & 3))
 	{
 		inDuck = TAS_UnDuck(velocity, origin, inDuck, onGround, &onGround, &waterlevel, &watertype, &origin);
@@ -1720,11 +1749,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 	if (onGround && (in_use.state & 3)) // Before TAS_Jump, but after TAS_Duck / UnDuck.
 		VectorScale(velocity, 0.3, velocity);
 
-	// Moving automatic actions into separate functions would require a whole bunch of parameters getting passed.
-
 	// Autojump
 	// Check the custom buttons against & 1, so 0-frame inputs won't get processed (unlike standart commands).
-	if ((in_autojump.state & 1) != 0)
+	if ( ((in_autojump.state & 1) != 0) && shouldAutojump )
 	{
 		if ((in_jump.state & 7) == 0) // Filter out just pressed / was already down / just released. Can't do anything on this frame.
 		{
