@@ -1232,8 +1232,11 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 
 	if (!inDuck)
 	{
-		duckTime = 1000;
-		tryingToDuck = true;
+		if (!tryingToDuck)
+		{
+			duckTime = 1000;
+			tryingToDuck = true;
+		}
 
 		if (!onGround || ((float)duckTime / 1000.0 <= (1 - 0.4)))
 		{
@@ -1720,6 +1723,8 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 			TAS_Duck(velocity, origin, inDuck, onGround, tryingToDuck, duckTime, NULL, &newTryingToDuck, NULL, NULL, NULL, NULL); // Try ducking.
 			if (newTryingToDuck) // If we ended up tryingToDuck, then everything is fine with the exception of a rare case mentioned before, so we need to check for that.
 			{
+				// UnDuck should be checked against the new origin that I'll obtain through prediction,
+				// but that's TODO when strafing is ready.
 				bool newOnGround;
 				TAS_UnDuck(velocity, origin, inDuck, onGround, &newOnGround, NULL, NULL, NULL);
 				if (!newOnGround) // If we ended up in the air then everything is fine for sure.
