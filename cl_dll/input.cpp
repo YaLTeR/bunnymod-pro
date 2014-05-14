@@ -1509,12 +1509,6 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 	if (speed == 0)
 		vel_angle = velocityAngleFallback;
 
-	if (CVAR_GET_FLOAT("tas_log") != 0)
-	{
-		gEngfuncs.Con_Printf("-- TAS_StrafeMaxSpeed Start --\n");
-		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround));
-	}
-
 	double anglemod_diff_left = normangleengine(vel_angle + alpha) - anglemod(vel_angle + alpha);
 	double anglemod_diff_right = normangleengine(vel_angle - alpha) - anglemod(vel_angle - alpha);
 	double beta_left[2], beta_right[2];
@@ -1531,6 +1525,13 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 	alpha_left[1] = normangle(beta_left[1] - vel_angle);
 	alpha_right[0] = normangle(beta_right[0] - vel_angle);
 	alpha_right[1] = normangle(beta_right[1] - vel_angle);
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_StrafeMaxSpeed Start --\n");
+		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround));
+		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
+	}
 
 	double final_angle_left;
 	double speed_max_left = 0;
@@ -2109,6 +2110,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 		VectorClear(forward);
 		onGround = TAS_Jump(velocity, forward, onGround, inDuck, tryingToDuck, bhopCap, false, waterlevel, watertype, physics_frametime, cvar_maxspeed, cvar_maxvelocity, cvar_gravity, pmove_gravity, &velocity);
 	}
+
+	if (onGround)
+		wishspeed_cap = cvar_maxspeed;
 
 	// Friction is applied after we ducked / unducked and after we jumped.
 	TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocity);
