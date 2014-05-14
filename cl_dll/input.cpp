@@ -1518,7 +1518,10 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 	beta_left[0] = anglemod(vel_angle + alpha);
 	beta_left[1] = beta_left[0] + copysign(M_U, anglemod_diff_left);
 	beta_right[0] = anglemod(vel_angle - alpha);
-	beta_right[1] = beta_right[0] + copysign(M_U, anglemod_diff_right);
+	if (beta_right[0] != beta_left[0])
+		beta_right[1] = beta_right[0] + copysign(M_U, anglemod_diff_right);
+	else
+		beta_right[1] = beta_right[0] - M_U;
 
 	double alpha_left[2], alpha_right[2];
 	alpha_left[0] = normangle(beta_left[0] - vel_angle);
@@ -1591,6 +1594,22 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 			speed_max_right = newspeed;
 			final_angle_right = alpha_right[i];
 		}
+	}
+
+	if (final_angle_right > 0)
+	{
+		if (alpha_right[0] <= 0)
+			final_angle_right = alpha_right[0];
+		else if (alpha_right[1] <= 0)
+			final_angle_right = alpha_right[1];
+	}
+
+	if (final_angle_left < 0)
+	{
+		if (alpha_left[0] >= 0)
+			final_angle_left = alpha_left[0];
+		else if (alpha_left[1] >= 0)
+			final_angle_left = alpha_left[1];
 	}
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
