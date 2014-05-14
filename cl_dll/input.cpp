@@ -158,6 +158,7 @@ kbutton_t	in_graph;  // Display the netgraph
 // YaLTeR Start - custom keys.
 kbutton_t in_autojump;
 kbutton_t in_ducktap;
+kbutton_t in_tasstrafe;
 // YaLTeR End
 
 typedef struct kblist_s
@@ -579,10 +580,12 @@ void IN_MLookUp (void)
 }
 
 // YaLTeR Start - custom keys.
-void IN_AutojumpDown() { KeyDown(&in_autojump); }
-void IN_AutojumpUp()   { KeyUp  (&in_autojump); }
-void IN_DucktapDown()  { KeyDown(&in_ducktap);  }
-void IN_DucktapUp()    { KeyUp  (&in_ducktap);  }
+void IN_AutojumpDown()  { KeyDown(&in_autojump);  }
+void IN_AutojumpUp()    { KeyUp  (&in_autojump);  }
+void IN_DucktapDown()   { KeyDown(&in_ducktap);   }
+void IN_DucktapUp()     { KeyUp  (&in_ducktap);   }
+void IN_TASStrafeDown() { KeyDown(&in_tasstrafe); }
+void IN_TASStrafeUp()   { KeyUp  (&in_tasstrafe); }
 // YaLTeR End
 
 /*
@@ -1654,6 +1657,32 @@ void TAS_StrafeFunc(int strafetype, const vec3_t &velocity, float pitch, float v
 // Returns the final desired angle between velocity and acceleration, anglemod'd.
 // Positive if counter-clockwise, negative otherwise.
 
+// Strafes to the side. To the left is strafeLeft is true, to the right otherwise.
+float TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
+{
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_SideStrafe Start --\n");
+		gEngfuncs.Con_Printf("Velocity angle: %.8g; strafeLeft: %s; strafetype: %d\n", vel_angle, BOOLSTRING(strafeLeft), strafetype);
+	}
+
+	double leftangle, rightangle;
+	TAS_StrafeFunc(strafetype, velocity, pitch, velocityAngleFallback,
+		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+		&leftangle, &rightangle);
+
+	float final_angle = (strafeLeft ? leftangle : rightangle);
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("Final angle: %.8f\n", final_angle);
+		gEngfuncs.Con_Printf("-- TAS_YawStrafe End --\n");
+	}
+
+	return final_angle;
+}
+
 // Strafes to the given yaw.
 float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
 	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
@@ -1751,15 +1780,24 @@ void TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, double maxspee
 	}
 
 	double accel = (onGround ? accelerate : airaccelerate);
+	double speed = hypot(velocity[0], velocity[1]);
+	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG; // Note: set to 0 is speed = 0. Check with the correct fallback in the switch statement.
 
 	float wishangle = 0;
 	switch (strafedir)
 	{
+		case STRAFEDIR_LEFT, STRAFEDIR_RIGHT:
+			double velocityAngleFallback = viewangles[1];
+			if (speed == 0)
+				vel_angle = velocityAngleFallback;
+
+			float final_difference = TAS_SideStrafe(((strafedir == -1) ? true : false), strafetype, velocity, viewangles[0], velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			wishangle = normangleengine(vel_angle + final_difference);
+			break;
+
 		case STRAFEDIR_YAW:
 			float desiredYaw = CVAR_GET_FLOAT("tas_strafe_yaw");
 			double velocityAngleFallback = desiredYaw;
-			double speed = hypot(velocity[0], velocity[1]);
-			double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
 			if (speed == 0)
 				vel_angle = velocityAngleFallback;
 
@@ -1872,7 +1910,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 
 	int duckTime = g_duckTime;
 
-	if (CVAR_GET_FLOAT("tas_log"))
+	if (CVAR_GET_FLOAT("tas_log") != 0)
 		gEngfuncs.Con_Printf("\n-- TAS_DoStuff Start --\n");
 
 	bool inDuck = TAS_IsInDuck();
@@ -1880,7 +1918,8 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 	int waterlevel, watertype;
 	bool onGround = TAS_CheckWaterAndGround(velocity, origin, inDuck, &waterlevel, &watertype, &origin);
 	int msec = (int)(frametime * 1000);
-	double fpsbug_frametime = (msec / 1000.0);
+	if (CVAR_GET_FLOAT("tas_consider_fps_bug") != 0)
+		frametime = (msec / 1000.0);
 
 	double wishspeed = cvar_maxspeed;
 	if (inDuck) // Checking the current duck state, before TAS_Duck / UnDuck.
@@ -1975,13 +2014,12 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 	}
 
 	// Friction is applied after we ducked / unducked and after we jumped.
-	vec3_t velocityWithFriction; // Save it into a separate variable for lgagst.
-	TAS_ApplyFriction(velocity, origin, fpsbug_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocityWithFriction);
+	TAS_ApplyFriction(velocity, origin, fpsbug_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocity);
 
-	// Buttons TBD
-	TAS_Strafe(viewangles, velocityWithFriction, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, fpsbug_frametime, pmove_friction, onGround, waterlevel);
+	if ((in_tasstrafe.state & 1) != 0)
+		TAS_Strafe(viewangles, velocity, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, fpsbug_frametime, pmove_friction, onGround, waterlevel);
 
-	if (CVAR_GET_FLOAT("tas_log"))
+	if (CVAR_GET_FLOAT("tas_log") != 0)
 		gEngfuncs.Con_Printf("-- TAS_DoStuff End --\n\n");
 }
 
@@ -2336,13 +2374,16 @@ void InitInput (void)
 	gEngfuncs.pfnAddCommand ("-break",IN_BreakUp);
 
 	// YaLTeR Start - custom keys and cvars.
-	gEngfuncs.pfnAddCommand( "+tas_autojump", IN_AutojumpDown );
-	gEngfuncs.pfnAddCommand( "-tas_autojump", IN_AutojumpUp   );
-	gEngfuncs.pfnAddCommand( "+tas_ducktap",  IN_DucktapDown  );
-	gEngfuncs.pfnAddCommand( "-tas_ducktap",  IN_DucktapUp    );
+	gEngfuncs.pfnAddCommand( "+tas_autojump", IN_AutojumpDown  );
+	gEngfuncs.pfnAddCommand( "-tas_autojump", IN_AutojumpUp    );
+	gEngfuncs.pfnAddCommand( "+tas_ducktap",  IN_DucktapDown   );
+	gEngfuncs.pfnAddCommand( "-tas_ducktap",  IN_DucktapUp     );
+	gEngfuncs.pfnAddCommand( "+tas_strafe",   IN_TASStrafeDown );
+	gEngfuncs.pfnAddCommand( "-tas_strafe",   IN_TASStrafeUp   );
 
 	gEngfuncs.pfnRegisterVariable( "tas_enable", "1", FCVAR_ARCHIVE );
 	gEngfuncs.pfnRegisterVariable( "tas_log",    "0", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_consider_fps_bug", "1", FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_ground", "1", FCVAR_ARCHIVE ); // Jump upon reaching the ground.
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_water",  "1", FCVAR_ARCHIVE ); // Swim up in water.
