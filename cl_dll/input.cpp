@@ -700,9 +700,9 @@ void CL_AdjustAngles ( float frametime, float *viewangles )
 inline double copysign(double value, double sign)
 {
 	if (sign >= 0)
-		return abs(value);
+		return fabs(value);
 	else
-		return -abs(value);
+		return -fabs(value);
 }
 
 double normangle(double angle)
