@@ -640,7 +640,7 @@ float CL_KeyState (kbutton_t *key)
 	}
 
 	// clear impulses
-	key->state &= 1;
+	key->state &= ~(2 + 4); // YaLTeR - use ~(2 + 4) instead of 1 to support custom button states.
 	return val;
 }
 
@@ -1869,10 +1869,12 @@ double TAS_StateMultiplier(const kbutton_t &button)
 	bool impulseup = ((button.state & 4) != 0);
 
 	if (impulsedown)
+	{
 		if (impulseup)
 			return 0.75;
 		else
 			return 0.5;
+	}
 
 	return 1;
 }
@@ -1926,13 +1928,13 @@ void TAS_SetWishspeed(const vec3_t &viewangles, const vec3_t &velocity, float wi
 	if (onGround)
 		buttonsToUse = rotatingLeft ?
 			CVAR_GET_FLOAT("tas_strafe_leftbuttons_ground") :
-			-CVAR_GET_FLOAT("tas_strafe_rightbuttons_ground");
+			CVAR_GET_FLOAT("tas_strafe_rightbuttons_ground");
 	else
 		buttonsToUse = rotatingLeft ?
 			CVAR_GET_FLOAT("tas_strafe_leftbuttons_air") :
-			-CVAR_GET_FLOAT("tas_strafe_rightbuttons_air");
+			CVAR_GET_FLOAT("tas_strafe_rightbuttons_air");
 
-	double targetYaw = normangleengine(wishangle + (45 * buttonsToUse));
+	double targetYaw = normangleengine(wishangle - (45 * buttonsToUse));
 	double yawDifference = normangle(targetYaw - viewangles[1]);
 	double yawspeed = yawDifference / frametime;
 
@@ -1947,7 +1949,7 @@ void TAS_SetWishspeed(const vec3_t &viewangles, const vec3_t &velocity, float wi
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
 		gEngfuncs.Con_Printf("-- TAS_SetWishspeed Start --\n");
-		gEngfuncs.Con_Printf("YawDifference: %f; yawspeed: %f; buttonsToUse: %d\n", yawDifference, yawspeed, buttonsToUse);
+		gEngfuncs.Con_Printf("TargetYaw: %f; yawDifference: %f; yawspeed: %f; buttonsToUse: %d\n", targetYaw, yawDifference, yawspeed, buttonsToUse);
 		gEngfuncs.Con_Printf("-- TAS_SetWishspeed End --\n");
 	}
 }
