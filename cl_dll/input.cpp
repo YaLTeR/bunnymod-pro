@@ -1924,26 +1924,26 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 }
 
 // Invokes the strafing function based on the strafetype.
-void TAS_StrafeFunc(int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
+bool TAS_StrafeFunc(int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
 	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel,
 	double *leftangle, double *rightangle)
 {
 	switch (strafetype)
 	{
 		case STRAFETYPE_MAXSPEED:
-			TAS_StrafeMaxSpeed(velocity, pitch, velocityAngleFallback,
+			return TAS_StrafeMaxSpeed(velocity, pitch, velocityAngleFallback,
 				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
 				leftangle, rightangle);
 			break;
 
 		case STRAFETYPE_MAXANGLE:
-			TAS_StrafeMaxAngle(velocity, pitch, velocityAngleFallback,
+			return TAS_StrafeMaxAngle(velocity, pitch, velocityAngleFallback,
 				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
 				leftangle, rightangle);
 			break;
 
 		case STRAFETYPE_LEASTSPEED:
-			TAS_StrafeLeastSpeed(velocity, pitch, velocityAngleFallback,
+			return TAS_StrafeLeastSpeed(velocity, pitch, velocityAngleFallback,
 				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
 				leftangle, rightangle);
 			break;
@@ -1975,6 +1975,33 @@ float TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, fl
 	{
 		gEngfuncs.Con_Printf("Final angle: %.8f\n", final_angle);
 		gEngfuncs.Con_Printf("-- TAS_YawStrafe End --\n");
+	}
+
+	return final_angle;
+}
+
+// Strafes to the maximum of the given strafetype.
+// Not actually best unless least speed strafing. :p
+float TAS_BestStrafe(int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
+{
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_BestStrafe Start --\n");
+		gEngfuncs.Con_Printf("Strafetype: %d\n", strafetype);
+	}
+
+	double leftangle, rightangle;
+	bool leftAngleIsBetter = TAS_StrafeFunc(strafetype, velocity, pitch, velocityAngleFallback,
+		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+		&leftangle, &rightangle);
+
+	float final_angle = (leftAngleIsBetter ? leftangle : rightangle);
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("LeftAngleIsBetter: %s; final angle: %.8f\n", BOOLSTRING(leftAngleIsBetter), final_angle);
+		gEngfuncs.Con_Printf("-- TAS_BestStrafe End --\n");
 	}
 
 	return final_angle;
@@ -2091,6 +2118,17 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, double maxspe
 				vel_angle = velocityAngleFallback;
 
 			float final_difference = TAS_SideStrafe(((strafedir == -1) ? true : false), strafetype, velocity, viewangles[0], velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			wishangle = normangleengine(vel_angle + final_difference);
+			break;
+		}
+
+		case STRAFEDIR_BEST:
+		{
+			double velocityAngleFallback = viewangles[1];
+			if (speed == 0)
+				vel_angle = velocityAngleFallback;
+
+			float final_difference = TAS_BestStrafe(strafetype, velocity, viewangles[0], velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
 			wishangle = normangleengine(vel_angle + final_difference);
 			break;
 		}
