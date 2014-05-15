@@ -1551,7 +1551,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
 
-	double final_angle_left;
+	double final_angle_left = 0;
 	double speed_max_left = 0;
 	int i; // VC++6.0 compiler, pls...
 	for (i = 0; i < 2; i++)
@@ -1585,7 +1585,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 		}
 	}
 
-	double final_angle_right;
+	double final_angle_right = 0;
 	double speed_max_right = 0;
 	for (i = 0; i < 2; i++)
 	{
@@ -1683,7 +1683,7 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
 
-	double final_angle_left;
+	double final_angle_left = 0;
 	double max_angle_difference_left = 0;
 	int i; // VC++6.0 compiler, pls...
 	for (i = 0; i < 2; i++)
@@ -1722,7 +1722,7 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 		}
 	}
 
-	double final_angle_right;
+	double final_angle_right = 0;
 	double max_angle_difference_right = 0;
 	for (i = 0; i < 2; i++)
 	{
@@ -1825,7 +1825,7 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
 
-	double final_angle_left;
+	double final_angle_left = 0;
 	double speed_least_left = speed;
 	int i; // VC++6.0 compiler, pls...
 	for (i = 0; i < 2; i++)
@@ -1859,7 +1859,7 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 		}
 	}
 
-	double final_angle_right;
+	double final_angle_right = 0;
 	double speed_least_right = speed;
 	for (i = 0; i < 2; i++)
 	{
