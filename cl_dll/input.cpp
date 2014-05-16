@@ -735,6 +735,15 @@ double normangleengine(double angle)
 	return angle;
 }
 
+double roundToMultiple(double a, double b)
+{
+	double mod = fmod(a, b);
+	if (mod < (b / 2))
+		return (a - mod);
+	else
+		return (a - mod + b);
+}
+
 void ConCmd_TAS_SetPitch()
 {
 	if (gEngfuncs.Cmd_Argc() != 2)
@@ -755,6 +764,8 @@ void ConCmd_TAS_SetPitch()
 	if (pitch < -pitchup)
 		pitch = -pitchup;
 
+	pitch = roundToMultiple(pitch, M_U);
+
 	tas_setpitch.value = pitch;
 	tas_setpitch.set = true;
 }
@@ -770,6 +781,8 @@ void ConCmd_TAS_SetYaw()
 	float yaw = 0;
 	sscanf( gEngfuncs.Cmd_Argv(1), "%f", &yaw );
 	yaw = normangle(yaw);
+
+	yaw = roundToMultiple(yaw, M_U);
 
 	tas_setyaw.value = yaw;
 	tas_setyaw.set = true;
