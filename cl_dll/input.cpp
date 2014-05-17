@@ -2016,7 +2016,7 @@ bool TAS_StrafeFunc(int strafetype, const vec3_t &velocity, float pitch, float v
 // Positive if counter-clockwise, negative otherwise.
 
 // Strafes to the side. To the left is strafeLeft is true, to the right otherwise.
-float TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
+float TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, const vec3_t &origin, float pitch, float velocityAngleFallback,
 	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
@@ -2043,7 +2043,7 @@ float TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, fl
 
 // Strafes to the maximum of the given strafetype.
 // Not actually best unless least speed strafing. :p
-float TAS_BestStrafe(int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
+float TAS_BestStrafe(int strafetype, const vec3_t &velocity, const vec3_t &origin, float pitch, float velocityAngleFallback,
 	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
@@ -2069,7 +2069,7 @@ float TAS_BestStrafe(int strafetype, const vec3_t &velocity, float pitch, float 
 }
 
 // Strafes to the given yaw.
-float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
+float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, const vec3_t &origin, float pitch, float velocityAngleFallback,
 	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
 {
 	desiredYaw = normangleengine(desiredYaw);
@@ -2095,8 +2095,7 @@ float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, fl
 	double angle_dif[2], newspeed[2];
 	for (int i = 0; i < 2; i++)
 	{
-		vec3_t pos, viewangles, wishvel;
-		VectorClear(pos);
+		vec3_t viewangles, wishvel;
 
 		viewangles[0] = pitch;
 		viewangles[1] = beta[i];
@@ -2104,7 +2103,7 @@ float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, fl
 
 		TAS_ConstructWishvel(viewangles, wishspeed, 0, 0, maxspeed, false, &wishvel);
 
-		TAS_SimplePredict(wishvel, velocity, pos,
+		TAS_SimplePredict(wishvel, velocity, origin,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
 			0, 0, onGround, waterlevel, 0,
 			&newvel[i], NULL);
@@ -2152,8 +2151,66 @@ float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, fl
 	return final_angle;
 }
 
+// Strafes to the given point.
+float TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocity, const vec3_t &origin, float pitch, float velocityAngleFallback,
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
+{
+	double speed = hypot(velocity[0], velocity[1]);
+	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
+	if (speed == 0)
+		vel_angle = velocityAngleFallback;
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("-- TAS_PointStrafe Start --\n");
+		gEngfuncs.Con_Printf("Velocity angle: %.8g (%.8g); point: %f; %f; strafetype: %d\n", vel_angle, normangleengine(vel_angle), point[0], point[1], strafetype);
+	}
+
+	double leftangle, rightangle;
+	TAS_StrafeFunc(strafetype, velocity, pitch, velocityAngleFallback,
+		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+		&leftangle, &rightangle);
+
+	double beta[2] = { normangleengine(vel_angle + leftangle), normangleengine(vel_angle + rightangle) };
+
+	double distanceToPoint[2];
+	for (int i = 0; i < 2; i++)
+	{
+		vec3_t newpos, viewangles, wishvel;
+
+		viewangles[0] = pitch;
+		viewangles[1] = beta[i];
+		viewangles[2] = 0;
+
+		TAS_ConstructWishvel(viewangles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_SimplePredict(wishvel, velocity, origin,
+			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
+			0, 0, onGround, waterlevel, 0,
+			NULL, &newpos);
+
+		float distVector[2] = { point[0] - newpos[0], point[1] - newpos[1] };
+		distanceToPoint[i] = hypot(distVector[0], distVector[1]);
+	}
+
+	float final_angle;
+
+	if (distanceToPoint[0] <= distanceToPoint[1])
+		final_angle = leftangle;
+	else
+		final_angle = rightangle;
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		gEngfuncs.Con_Printf("Distance (left): %.8g; distance (right): %.8g\n", distanceToPoint[0], distanceToPoint[1]);
+		gEngfuncs.Con_Printf("Final angle: %.8f\n", final_angle);
+		gEngfuncs.Con_Printf("-- TAS_PointStrafe End --\n");
+	}
+
+	return final_angle;
+}
+
 // Does all strafing. Returns wishangle.
-float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, double maxspeed, double accelerate, double airaccelerate, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel, float pitch)
+float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t &origin, double maxspeed, double accelerate, double airaccelerate, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel, float pitch)
 {
 	int strafetype = CVAR_GET_FLOAT("tas_strafe_type"),
 	    strafedir  = CVAR_GET_FLOAT("tas_strafe_dir");
@@ -2178,7 +2235,7 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, double maxspe
 			if (speed == 0)
 				vel_angle = velocityAngleFallback;
 
-			float final_difference = TAS_SideStrafe(((strafedir == -1) ? true : false), strafetype, velocity, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			float final_difference = TAS_SideStrafe(((strafedir == -1) ? true : false), strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
 			wishangle = normangleengine(vel_angle + final_difference);
 			break;
 		}
@@ -2189,7 +2246,7 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, double maxspe
 			if (speed == 0)
 				vel_angle = velocityAngleFallback;
 
-			float final_difference = TAS_BestStrafe(strafetype, velocity, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			float final_difference = TAS_BestStrafe(strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
 			wishangle = normangleengine(vel_angle + final_difference);
 			break;
 		}
@@ -2201,7 +2258,21 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, double maxspe
 			if (speed == 0)
 				vel_angle = velocityAngleFallback;
 
-			float final_difference = TAS_YawStrafe(desiredYaw, strafetype, velocity, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			float final_difference = TAS_YawStrafe(desiredYaw, strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			wishangle = normangleengine(vel_angle + final_difference);
+			break;
+		}
+
+		case STRAFEDIR_POINT:
+		{
+			float point[2] = { CVAR_GET_FLOAT("tas_strafe_point_x"), CVAR_GET_FLOAT("tas_strafe_point_y") };
+
+			float dirToPoint[2] = { point[0] - origin[0], point[1] - origin[1] };
+			double velocityAngleFallback = atan2(dirToPoint[1], dirToPoint[0]) * M_RAD2DEG;
+			if (speed == 0)
+				vel_angle = velocityAngleFallback;
+
+			float final_difference = TAS_PointStrafe(point, strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
 			wishangle = normangleengine(vel_angle + final_difference);
 			break;
 		}
@@ -2549,8 +2620,8 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 					double alpha_ground = TAS_GetMaxSpeedAngle(speedWithFriction, cvar_maxspeed, cvar_accelerate,    wishspeed, cvar_maxspeed, physics_frametime, pmove_friction, waterlevel);
 					if (((alpha_air != 0) && (alpha_ground != 0)) || (CVAR_GET_FLOAT("tas_strafe_autojump_on_low_speed") != 0))
 					{
-						float wishangle_ground = TAS_Strafe(viewangles, velocityWithFriction, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, cvar_maxspeed, physics_frametime, pmove_friction, true, waterlevel, pitch);
-						float wishangle_air =    TAS_Strafe(viewangles, velocity,             cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, false, waterlevel, pitch);
+						float wishangle_ground = TAS_Strafe(viewangles, velocityWithFriction, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, cvar_maxspeed, physics_frametime, pmove_friction, true, waterlevel, pitch);
+						float wishangle_air =    TAS_Strafe(viewangles, velocity,             origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, false, waterlevel, pitch);
 
 						double newspeed_ground, newspeed_air;
 
@@ -2604,7 +2675,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 			// Friction is applied after we ducked / unducked and after we jumped.
 			TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocity);
 
-			float wishangle = TAS_Strafe(viewangles, velocity, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, waterlevel, pitch);
+			float wishangle = TAS_Strafe(viewangles, velocity, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, waterlevel, pitch);
 			TAS_SetWishspeed(viewangles, velocity, wishangle, frametime, onGround); // Needs the actual frametime (regardless of the fps bug).
 		}
 	}
@@ -3009,7 +3080,8 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_strafe_type",     "0",   0 ); // Same as STRAFETYPE_ constants.
 	gEngfuncs.pfnRegisterVariable( "tas_strafe_dir",      "2",   0 ); // -1 is left, 0 is best for the given strafe type, 1 is right, 2 is yawstrafe, 3 is pointstrafe, 4 is linestrafe, ... (many stuff TBD)
 	gEngfuncs.pfnRegisterVariable( "tas_strafe_yaw",      "0",   0 ); // Yaw for the yawstrafe.
-	gEngfuncs.pfnRegisterVariable( "tas_strafe_point",    "0 0", 0 ); // Point coordinates for the pointstrafe.
+	gEngfuncs.pfnRegisterVariable( "tas_strafe_point_x",  "0",   0 ); // X coordinate of a point for the pointstrafe.
+	gEngfuncs.pfnRegisterVariable( "tas_strafe_point_y",  "0",   0 ); // Y coordinate of a point for the pointstrafe.
 	gEngfuncs.pfnRegisterVariable( "tas_strafe_autojump", "1",   0 ); // Lgagst.
 	gEngfuncs.pfnRegisterVariable( "tas_strafe_autojump_on_low_speed", "0", 0 ); // Lgagst on low speed, may be useful in case there's a VERY tiny distance to travel.
 
