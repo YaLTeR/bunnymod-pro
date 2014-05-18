@@ -65,6 +65,7 @@ tas_setfunc_t tas_setpitch = { 0, false },
               tas_setyaw =   { 0, false };
 
 extern vec3_t g_vel, g_org;
+extern bool g_bPaused;
 int g_duckTime = 0;
 // YaLTeR End
 
@@ -2443,6 +2444,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime)
 	if ( CVAR_GET_FLOAT("tas_enable") == 0 )
 		return;
 
+	if ( CVAR_GET_FLOAT("tas_paused") != 0 ) // Don't do anything if paused.
+		return;
+
 	float cvar_accelerate,
 	      cvar_airaccelerate,
 	      cvar_edgefriction,
@@ -3072,6 +3076,7 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_enable", "1", FCVAR_ARCHIVE );
 	gEngfuncs.pfnRegisterVariable( "tas_log",    "0", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_consider_fps_bug", "1", FCVAR_ARCHIVE);
+	gEngfuncs.pfnRegisterVariable( "tas_paused", "0", 0 );
 
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_ground", "1", FCVAR_ARCHIVE ); // Jump upon reaching the ground.
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_water",  "1", FCVAR_ARCHIVE ); // Swim up in water.

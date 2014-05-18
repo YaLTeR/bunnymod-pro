@@ -174,6 +174,7 @@ void PM_TasLog(unsigned int num)
 				pmove->Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
 				pmove->Con_Printf("Frametime: %f; maxspeed: %f; pmove_friction: %f\n", (pmove->cmd.msec * 0.001), pmove->maxspeed, pmove->friction);
 				pmove->Con_Printf("Gravity: %f; pmove_gravity: %f\n", pmove->movevars->gravity, pmove->gravity);
+				pmove->Con_Printf("Flags: %d\n", pmove->flags);
 				break;
 
 			case 2:
