@@ -1435,7 +1435,7 @@ bool TAS_Jump(const vec3_t &velocity, const vec3_t &forward, bool onGround, bool
 	return onGround;
 }
 
-bool TAS_CanMove(const vec3_t &start, const vec3_t &end, bool inDuck)
+bool TAS_CanMove(const vec3_t &start, const vec3_t &end, bool inDuck, vec3_t *normal)
 {
 	vec3_t m_start, m_end;
 	VectorCopy(start, m_start);
@@ -1443,6 +1443,10 @@ bool TAS_CanMove(const vec3_t &start, const vec3_t &end, bool inDuck)
 
 	pmtrace_t *tr;
 	tr = gEngfuncs.PM_TraceLine(m_start, m_end, PM_NORMAL, (inDuck ? 1 : 0), -1);
+
+	if (normal)
+		VectorCopy(tr->plane.normal, *normal);
+
 	return (tr->fraction == 1);
 }
 
@@ -2568,6 +2572,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 	}
 
 	// TODO ladders & water *eventually*.
+	// TODO remake all autostuff that uses prediction to proper prediction considering the geometry and vel clipping and whatnot.
 
 	// Moving automatic actions into separate functions would require a whole bunch of parameters getting passed.
 	// Ducktap
@@ -2602,8 +2607,11 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 	// Duck before collision.
 	int db4c = CVAR_GET_FLOAT("tas_db4c");
-	if (db4c > 0)
+	if ((db4c > 0) || (db4c == -1))
 	{
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			gEngfuncs.Con_Printf("-- Db4c Start -- \n");
+
 		if (!onGround && ((in_duck.state & 1) == 0)) // Flying in the air and duck is not pressed.
 		{
 			vec3_t angles;
@@ -2630,12 +2638,25 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 				cvar_gravity, pmove_gravity, false, waterlevel, 0,
 				NULL, &newpos);
 
-			if ( !TAS_CanMove(origin, newpos, false) && TAS_CanMove(origin, newpos, true) ) // If we can't move while unducked and can while ducked.
+			vec3_t normal;
+			bool canMoveUnducked = TAS_CanMove(origin, newpos, false, &normal);
+			if ( !canMoveUnducked && TAS_CanMove(origin, newpos, true, NULL) ) // If we can't move while unducked and can while ducked.
 			{
-				//db4c--;
-				TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
+				if ((normal[2] >= 0) || (CVAR_GET_FLOAT("tas_db4c_ceiling") != 0))
+				{
+					if ((normal[2] < 0.7) || (CVAR_GET_FLOAT("tas_db4c_slanted") != 0))
+					{
+						if (db4c > 0)
+							db4c--;
+
+						TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
+					}
+				}
 			}
 		}
+
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			gEngfuncs.Con_Printf("-- Db4c End -- \n");
 	}
 	else
 		db4c = 0;
@@ -3167,6 +3188,8 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_paused", "0", 0 );
 
 	gEngfuncs.pfnRegisterVariable( "tas_db4c", "0", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_db4c_ceiling", "0", FCVAR_ARCHIVE );
+	gEngfuncs.pfnRegisterVariable( "tas_db4c_slanted", "0", FCVAR_ARCHIVE );
 
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_ground", "1", FCVAR_ARCHIVE ); // Jump upon reaching the ground.
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_water",  "1", FCVAR_ARCHIVE ); // Swim up in water.
