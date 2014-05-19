@@ -2550,7 +2550,12 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 	double wishspeed = cvar_maxspeed;
 	if (inDuck) // Checking the current duck state, before TAS_Duck / UnDuck.
+	{
 		wishspeed *= 0.333;
+		forwardmove *= 0.333;
+		sidemove *= 0.333;
+		upmove *= 0.333;
+	}
 
 	if (duckTime == 1000)
 		tryingToDuck = true;
@@ -2596,18 +2601,46 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 	}
 
 	// Duck before collision.
-	// int db4c = CVAR_GET_FLOAT("tas_db4c");
-	// if (db4c > 0)
-	// {
-	// 	if (!onGround && ((in_duck.state & 1) == 0)) // Flying in the air and duck not pressed.
-	// 	{
-	// 		TAS_SimplePredict()
-	// 	}
-	// }
-	// else
-	// 	db4c = 0;
+	int db4c = CVAR_GET_FLOAT("tas_db4c");
+	if (db4c > 0)
+	{
+		if (!onGround && ((in_duck.state & 1) == 0)) // Flying in the air and duck is not pressed.
+		{
+			vec3_t angles;
+			angles[0] = pitch;
+			angles[2] = 0;
 
-//	gEngfuncs.Cvar_SetValue("tas_db4c", db4c);
+			vec3_t wishvel;
+
+			if (!manualMovement)
+			{
+				float wishangle = TAS_Strafe(viewangles, velocity, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, false, waterlevel, pitch);
+				angles[1] = wishangle;
+				TAS_ConstructWishvel(angles, wishspeed, 0, 0, cvar_maxspeed, false, &wishvel);
+			}
+			else
+			{
+				angles[1] = viewangles[1];
+				TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, false, &wishvel);
+			}
+
+			vec3_t newpos;
+			TAS_SimplePredict(wishvel, velocity, origin,
+				cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
+				cvar_gravity, pmove_gravity, false, waterlevel, 0,
+				NULL, &newpos);
+
+			if ( !TAS_CanMove(origin, newpos, false) && TAS_CanMove(origin, newpos, true) ) // If we can't move while unducked and can while ducked.
+			{
+				//db4c--;
+				TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
+			}
+		}
+	}
+	else
+		db4c = 0;
+
+	gEngfuncs.Cvar_SetValue("tas_db4c", db4c);
 
 	if ((inDuck || tryingToDuck) && !(in_duck.state & 3))
 	{
