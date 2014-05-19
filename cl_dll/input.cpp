@@ -2644,7 +2644,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 			{
 				if ((normal[2] >= 0) || (CVAR_GET_FLOAT("tas_db4c_ceiling") != 0))
 				{
-					if ((normal[2] < 0.7) || (CVAR_GET_FLOAT("tas_db4c_slanted") != 0))
+					if ((normal[2] == 0) || (CVAR_GET_FLOAT("tas_db4c_slanted") != 0))
 					{
 						if (db4c > 0)
 							db4c--;
