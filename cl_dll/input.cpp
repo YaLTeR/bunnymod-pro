@@ -2614,42 +2614,56 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 		if (!onGround && ((in_duck.state & 1) == 0)) // Flying in the air and duck is not pressed.
 		{
-			vec3_t angles;
-			angles[0] = pitch;
-			angles[2] = 0;
-
-			vec3_t wishvel;
-
-			if (!manualMovement)
+			int duckedWaterlevel;
+			vec3_t duckedOrigin;
+			if (!inDuck && TAS_Duck(velocity, origin, inDuck, onGround, tryingToDuck, duckTime, NULL, NULL, NULL, &duckedWaterlevel, NULL, &duckedOrigin))
 			{
-				float wishangle = TAS_Strafe(viewangles, velocity, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, false, waterlevel, pitch);
-				angles[1] = wishangle;
-				TAS_ConstructWishvel(angles, wishspeed, 0, 0, cvar_maxspeed, false, &wishvel);
-			}
-			else
-			{
-				angles[1] = viewangles[1];
-				TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, false, &wishvel);
-			}
+				// Be on the safe side - compute everything for both ducked and unducked cases.
+				vec3_t angles;
+				angles[0] = pitch;
+				angles[2] = 0;
 
-			vec3_t newpos;
-			TAS_SimplePredict(wishvel, velocity, origin,
-				cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
-				cvar_gravity, pmove_gravity, false, waterlevel, 0,
-				NULL, &newpos);
+				vec3_t wishvel_unducked, wishvel_ducked;
 
-			vec3_t normal;
-			bool canMoveUnducked = TAS_CanMove(origin, newpos, false, &normal);
-			if ( !canMoveUnducked && TAS_CanMove(origin, newpos, true, NULL) ) // If we can't move while unducked and can while ducked.
-			{
-				if ((normal[2] >= 0) || (CVAR_GET_FLOAT("tas_db4c_ceiling") != 0))
+				if (!manualMovement)
 				{
-					if ((normal[2] == 0) || (CVAR_GET_FLOAT("tas_db4c_slanted") != 0))
-					{
-						if (db4c > 0)
-							db4c--;
+					float wishangle_unducked = TAS_Strafe(viewangles, velocity, origin,       cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, waterlevel,       pitch);
+					float wishangle_ducked =   TAS_Strafe(viewangles, velocity, duckedOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, duckedWaterlevel, pitch);
+					angles[1] = wishangle_unducked;
+					TAS_ConstructWishvel(angles, wishspeed, 0, 0, cvar_maxspeed, false, &wishvel_unducked);
+					angles[1] = wishangle_ducked;
+					TAS_ConstructWishvel(angles, wishspeed, 0, 0, cvar_maxspeed, false, &wishvel_ducked);
+				}
+				else
+				{
+					angles[1] = viewangles[1];
+					TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, false, &wishvel_unducked);
+					VectorCopy(wishvel_unducked, wishvel_ducked);
+				}
 
-						TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
+				vec3_t newpos_unducked, newpos_ducked;
+				TAS_SimplePredict(wishvel_unducked, velocity, origin,
+					cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
+					cvar_gravity, pmove_gravity, onGround, waterlevel, 0,
+					NULL, &newpos_unducked);
+				TAS_SimplePredict(wishvel_ducked, velocity, duckedOrigin,
+					cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
+					cvar_gravity, pmove_gravity, onGround, duckedWaterlevel, 0,
+					NULL, &newpos_ducked);
+
+				vec3_t normal;
+				bool canMoveUnducked = TAS_CanMove(origin, newpos_unducked, false, &normal);
+				if ( !canMoveUnducked && TAS_CanMove(duckedOrigin, newpos_ducked, true, NULL) ) // If we can't move while unducked and can while ducked.
+				{
+					if ((normal[2] >= 0) || (CVAR_GET_FLOAT("tas_db4c_ceiling") != 0))
+					{
+						if (((normal[2] == 0) || (normal[2] == -1)) || (CVAR_GET_FLOAT("tas_db4c_slanted") != 0))
+						{
+							if (db4c > 0)
+								db4c--;
+
+							TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
+						}
 					}
 				}
 			}
