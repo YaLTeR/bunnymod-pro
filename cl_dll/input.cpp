@@ -36,6 +36,9 @@ extern "C"
 #include "const.h" // For CONTENTS_* defines.
 #define CONTENTS_TRANSLUCENT -15 // Commented out of const.h
 
+#include "indenter.h"
+Indenter *indenter;
+
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
 const double M_RAD2DEG = 180 / M_PI;
 const double M_DEG2RAD = M_PI / 180;
@@ -67,6 +70,9 @@ tas_setfunc_t tas_setpitch = { 0, false },
 extern vec3_t g_vel, g_org;
 extern bool g_bPaused;
 int g_duckTime = 0;
+
+// Testing
+extern bool g_bOnGroundDemoInaccurate;
 // YaLTeR End
 
 extern "C"
@@ -868,11 +874,14 @@ void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemov
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_ConstructWishvel Start --\n");
+		indenter->startSection("TAS_ConstructWishvel");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Angles: %.8f; %.8f; %.8f\n", angles[0], angles[1], angles[2]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Properangles: %.8f; %.8f; %.8f\n", properangles[0], properangles[1], properangles[2]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Forward: %.8g; %.8g; %.8g; right: %.8g; %.8g; %.8g\n", forward[0], forward[1], forward[2], right[0], right[1], right[2]);
-		gEngfuncs.Con_Printf("-- TAS_ConstructWishvel End --\n");
+		indenter->endSection("TAS_ConstructWishvel");
 	}
 }
 
@@ -893,10 +902,12 @@ void TAS_CheckVelocity(const vec3_t &velocity, double maxvelocity, vec3_t *new_v
 
 	// if (CVAR_GET_FLOAT("tas_log") != 0)
 	// {
-	// 	gEngfuncs.Con_Printf("-- TAS_CheckVelocity Start --\n");
-	// 	gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; maxvelocity: %.8f\n", velocity[0], velocity[1], velocity[2], maxvelocity);
-	// 	gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2]);
-	// 	gEngfuncs.Con_Printf("-- TAS_CheckVelocity End --\n");
+	// 	indenter->startSection("TAS_CheckVelocity");
+	// 	indenter->indent();
+ 	//  gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; maxvelocity: %.8f\n", velocity[0], velocity[1], velocity[2], maxvelocity);
+	// 	indenter->indent();
+ 	//  gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2]);
+	// 	indenter->endSection("TAS_CheckVelocity");
 	// }
 
 	if (new_velocity)
@@ -977,11 +988,16 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 		if (speed == 0 || wishspeed == 0)
 			alpha = 0;
 
-		gEngfuncs.Con_Printf("-- TAS_SimplePredict Start --\n");
+		indenter->startSection("TAS_SimplePredict");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Velocity angle: %.8g; wishangle: %.8g; Alpha: %.8g\n", vel_angle, wishangle, alpha);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Wishvel[0]: %.8f; wishvel[1]: %.8f; wishdir[0]: %.8f; wishdir[1]: %.8f\n", wishvel[0], wishvel[1], wishdir[0], wishdir[1]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("frametime: %f; maxspeed: %f; accel: %f; wishspeed: %.8g; wishspeed_cap: %f; pmove_friction: %f\n", frametime, maxspeed, accel, wishspeed, wishspeed_cap, pmove_friction);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Gravity: %f; pmove_gravity: %f\n", gravity, pmove_gravity);
 	}
 
@@ -1058,8 +1074,9 @@ void TAS_SimplePredict(const vec3_t &wishvelocity, const vec3_t &velocity, const
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f; new origin: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2], newpos[0], newpos[1], newpos[2]);
-		gEngfuncs.Con_Printf("-- TAS_SimplePredict End --\n");
+		indenter->endSection("TAS_SimplePredict");
 	}
 }
 
@@ -1086,9 +1103,13 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_CheckWaterAndGround Start --\n");
+		indenter->startSection("TAS_CheckWaterAndGround");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("InDuck: %s\n", BOOLSTRING(inDuck));
+		indenter->indent();
+		gEngfuncs.Con_Printf("g_bOnGroundDemoInaccurate: %s\n", BOOLSTRING(g_bOnGroundDemoInaccurate));
 	}
 
 	vec3_t newpos;
@@ -1164,9 +1185,11 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("Mins: %f; %f; %f; maxs: %f; %f; %f\n", mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("New origin: %.8f; %.8f; %.8f; onGround: %s; waterlevel: %d; watertype: %d\n", newpos[0], newpos[1], newpos[2], BOOLSTRING(onGround), waterlvl, wtype);
-		gEngfuncs.Con_Printf("-- TAS_CheckWaterAndGround End --\n");
+		indenter->endSection("TAS_CheckWaterAndGround");
 	}
 
 	return onGround;
@@ -1176,8 +1199,10 @@ void TAS_ApplyFriction(const vec3_t &velocity, const vec3_t &origin, float frame
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_ApplyFriction Start --\n");
+		indenter->startSection("TAS_ApplyFriction");
+		indenter->indent();
 		gEngfuncs.Con_Printf("InDuck: %s; onGround: %s; pmove_friction: %f; friction: %f; edgefriction: %f; stopspeed: %f\n", BOOLSTRING(inDuck), BOOLSTRING(onGround), pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
 	}
 
@@ -1228,8 +1253,9 @@ void TAS_ApplyFriction(const vec3_t &velocity, const vec3_t &origin, float frame
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2]);
-		gEngfuncs.Con_Printf("-- TAS_ApplyFriction End --\n");
+		indenter->endSection("TAS_ApplyFriction");
 	}
 
 	if (new_velocity)
@@ -1241,7 +1267,8 @@ bool TAS_UnDuck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool 
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_UnDuck Start --\n");
+		indenter->startSection("TAS_UnDuck");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Origin: %.8f; %.8f; %.8f; inDuck: %s; onGround: %s\n", origin[0], origin[1], origin[2], BOOLSTRING(inDuck), BOOLSTRING(onGround));
 	}
 
@@ -1277,8 +1304,9 @@ bool TAS_UnDuck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool 
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("New inDuck: %s; new onGround: %s\n", BOOLSTRING(inDuck), BOOLSTRING(onGround));
-		gEngfuncs.Con_Printf("-- TAS_UnDuck End --\n");
+		indenter->endSection("TAS_UnDuck");
 	}
 
 	if (new_onGround)
@@ -1295,7 +1323,8 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_Duck Start --\n");
+		indenter->startSection("TAS_Duck");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Origin: %.8f; %.8f; %.8f; inDuck: %s; onGround: %s; tryingToDuck: %s; duckTime: %d\n", origin[0], origin[1], origin[2], BOOLSTRING(inDuck), BOOLSTRING(onGround), BOOLSTRING(tryingToDuck), duckTime);
 	}
 
@@ -1334,8 +1363,9 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("New inDuck: %s; new onGround: %s; new tryingToDuck: %s; new duckTime: %d\n", BOOLSTRING(ducked), BOOLSTRING(onGround), BOOLSTRING(tryingToDuck), duckTime);
-		gEngfuncs.Con_Printf("-- TAS_Duck End --\n");
+		indenter->endSection("TAS_Duck");
 	}
 
 	if (new_onGround)
@@ -1361,9 +1391,12 @@ bool TAS_Jump(const vec3_t &velocity, const vec3_t &forward, bool onGround, bool
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_Jump Start --\n");
+		indenter->startSection("TAS_Jump");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; forward: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], forward[0], forward[1], forward[2]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("OnGround: %s; inDuck: %s; tryingToDuck: %s; bhopCap: %s; cansuperjump: %s\n", BOOLSTRING(onGround), BOOLSTRING(inDuck), BOOLSTRING(tryingToDuck), BOOLSTRING(bhopCap), BOOLSTRING(cansuperjump));
+		indenter->indent();
 		gEngfuncs.Con_Printf("Waterlevel: %d; watertype: %d\n", waterlevel, watertype);
 	}
 
@@ -1425,8 +1458,9 @@ bool TAS_Jump(const vec3_t &velocity, const vec3_t &forward, bool onGround, bool
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f; new onGround: %s\n", newvel[0], newvel[1], newvel[2], BOOLSTRING(onGround));
-		gEngfuncs.Con_Printf("-- TAS_Jump End --\n");
+		indenter->endSection("TAS_Jump");
 	}
 
 	if (new_velocity)
@@ -1621,8 +1655,10 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_StrafeMaxSpeed Start --\n");
+		indenter->startSection("TAS_StrafeMaxSpeed");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround));
+		indenter->indent();
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
 
@@ -1711,8 +1747,9 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("Speed max (left): %f; speed max (right): %f; leftangle: %.8f; rightangle: %.8f\n", speed_max_left, speed_max_right, final_angle_left, final_angle_right);
-		gEngfuncs.Con_Printf("-- TAS_StrafeMaxSpeed End --\n");
+		indenter->endSection("TAS_StrafeMaxSpeed");
 	}
 
 	if (leftangle)
@@ -1753,8 +1790,10 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_StrafeMaxAngle Start --\n");
+		indenter->startSection("TAS_StrafeMaxAngle");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround));
+		indenter->indent();
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
 
@@ -1853,8 +1892,9 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("Angle difference max (left): %f; angle difference max (right): %f; leftangle: %.8f; rightangle: %.8f\n", max_angle_difference_left, max_angle_difference_right, final_angle_left, final_angle_right);
-		gEngfuncs.Con_Printf("-- TAS_StrafeMaxAngle End --\n");
+		indenter->endSection("TAS_StrafeMaxAngle");
 	}
 
 	if (leftangle)
@@ -1895,8 +1935,10 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_StrafeLeastSpeed Start --\n");
+		indenter->startSection("TAS_StrafeLeastSpeed");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround));
+		indenter->indent();
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
 
@@ -1985,8 +2027,9 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("Speed least (left): %f; speed least (right): %f; leftangle: %.8f; rightangle: %.8f\n", speed_least_left, speed_least_right, final_angle_left, final_angle_right);
-		gEngfuncs.Con_Printf("-- TAS_StrafeLeastSpeed End --\n");
+		indenter->endSection("TAS_StrafeLeastSpeed");
 	}
 
 	if (leftangle)
@@ -2037,7 +2080,8 @@ float TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, co
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_SideStrafe Start --\n");
+		indenter->startSection("TAS_SideStrafe");
+		indenter->indent();
 		gEngfuncs.Con_Printf("StrafeLeft: %s; strafetype: %d\n", BOOLSTRING(strafeLeft), strafetype);
 	}
 
@@ -2050,8 +2094,9 @@ float TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, co
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("Final angle: %.8f\n", final_angle);
-		gEngfuncs.Con_Printf("-- TAS_YawStrafe End --\n");
+		indenter->endSection("TAS_YawStrafe");
 	}
 
 	return final_angle;
@@ -2064,7 +2109,8 @@ float TAS_BestStrafe(int strafetype, const vec3_t &velocity, const vec3_t &origi
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_BestStrafe Start --\n");
+		indenter->startSection("TAS_BestStrafe");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Strafetype: %d\n", strafetype);
 	}
 
@@ -2077,8 +2123,9 @@ float TAS_BestStrafe(int strafetype, const vec3_t &velocity, const vec3_t &origi
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("LeftAngleIsBetter: %s; final angle: %.8f\n", BOOLSTRING(leftAngleIsBetter), final_angle);
-		gEngfuncs.Con_Printf("-- TAS_BestStrafe End --\n");
+		indenter->endSection("TAS_BestStrafe");
 	}
 
 	return final_angle;
@@ -2096,7 +2143,8 @@ float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, co
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_YawStrafe Start --\n");
+		indenter->startSection("TAS_YawStrafe");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Velocity angle: %.8g (%.8g); desiredYaw: %f; strafetype: %d\n", vel_angle, normangleengine(vel_angle), desiredYaw, strafetype);
 	}
 
@@ -2150,6 +2198,7 @@ float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, co
 				final_angle = rightangle;
 			if (CVAR_GET_FLOAT("tas_log") != 0)
 			{
+				indenter->indent();
 				gEngfuncs.Con_Printf("Vel_projection (left): %.8f; vel_projection (right): %.8f\n", vel_projection[0], vel_projection[1]);
 			}
 
@@ -2158,10 +2207,13 @@ float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, co
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("Angle_dif (left): %.8g; angle_dif (right): %.8g\n", angle_dif[0], angle_dif[1]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Speed (left): %f; speed (right): %f\n", newspeed[0], newspeed[1]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Final angle: %.8f\n", final_angle);
-		gEngfuncs.Con_Printf("-- TAS_YawStrafe End --\n");
+		indenter->endSection("TAS_YawStrafe");
 	}
 
 	return final_angle;
@@ -2178,7 +2230,8 @@ float TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocity
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_PointStrafe Start --\n");
+		indenter->startSection("TAS_PointStrafe");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Velocity angle: %.8g (%.8g); point: %f; %f; strafetype: %d\n", vel_angle, normangleengine(vel_angle), point[0], point[1], strafetype);
 	}
 
@@ -2217,9 +2270,11 @@ float TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocity
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("Distance (left): %.8g; distance (right): %.8g\n", distanceToPoint[0], distanceToPoint[1]);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Final angle: %.8f\n", final_angle);
-		gEngfuncs.Con_Printf("-- TAS_PointStrafe End --\n");
+		indenter->endSection("TAS_PointStrafe");
 	}
 
 	return final_angle;
@@ -2233,7 +2288,8 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t 
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_Strafe Start --\n");
+		indenter->startSection("TAS_Strafe");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Strafe type: %d; strafe dir: %d\n", strafetype, strafedir);
 	}
 
@@ -2296,8 +2352,9 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t 
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
+		indenter->indent();
 		gEngfuncs.Con_Printf("Wishangle: %.8f\n", wishangle);
-		gEngfuncs.Con_Printf("-- TAS_Strafe End --\n");
+		indenter->endSection("TAS_Strafe");
 	}
 
 	return wishangle;
@@ -2447,9 +2504,10 @@ void TAS_SetWishspeed(const vec3_t &viewangles, const vec3_t &velocity, float wi
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("-- TAS_SetWishspeed Start --\n");
+		indenter->startSection("TAS_SetWishspeed");
+		indenter->indent();
 		gEngfuncs.Con_Printf("TargetYaw: %f; buttonsToUse: %d\n", targetYaw, buttonsToUse);
-		gEngfuncs.Con_Printf("-- TAS_SetWishspeed End --\n");
+		indenter->endSection("TAS_SetWishspeed");
 	}
 }
 
@@ -2528,7 +2586,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
-		gEngfuncs.Con_Printf("\n-- TAS_DoStuff Start --\n");
+		gEngfuncs.Con_Printf("\n");
+		indenter->startSection("TAS_DoStuff");
+		indenter->indent();
 		gEngfuncs.Con_Printf("Manual pass: %s\n", BOOLSTRING(manualMovement));
 	}
 
@@ -2580,7 +2640,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 	if ((in_ducktap.state & 1) != 0)
 	{
 		if ( CVAR_GET_FLOAT("tas_log") != 0 )
-			gEngfuncs.Con_Printf("-- Ducktap Start -- \n");
+			indenter->startSection("Ducktap");
 
 		if ((in_duck.state & 7) == 0) // Filter out just pressed / was already down / just released. Can't do anything on this frame.
 		{
@@ -2602,7 +2662,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 		}
 
 		if ( CVAR_GET_FLOAT("tas_log") != 0 )
-			gEngfuncs.Con_Printf("-- Ducktap End -- \n");
+			indenter->endSection("Ducktap");
 	}
 
 	// Duck before collision.
@@ -2610,7 +2670,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 	if ((db4c > 0) || (db4c == -1))
 	{
 		if ( CVAR_GET_FLOAT("tas_log") != 0 )
-			gEngfuncs.Con_Printf("-- Db4c Start -- \n");
+			indenter->startSection("Db4c");
 
 		if (!onGround && ((in_duck.state & 1) == 0)) // Flying in the air and duck is not pressed.
 		{
@@ -2670,7 +2730,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 		}
 
 		if ( CVAR_GET_FLOAT("tas_log") != 0 )
-			gEngfuncs.Con_Printf("-- Db4c End -- \n");
+			indenter->endSection("Db4c");
 	}
 	else
 		db4c = 0;
@@ -2734,7 +2794,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 					if (shouldAutojump && onGround && (strafetype == STRAFETYPE_MAXSPEED) && ((in_jump.state & 7) == 0))
 					{
 						if (CVAR_GET_FLOAT("tas_log") != 0)
-							gEngfuncs.Con_Printf("-- Lgagst Start -- \n");
+							indenter->startSection("Lgagst");
 
 						vec3_t velocityWithFriction;
 						TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, true, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocityWithFriction);
@@ -2778,11 +2838,14 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 								TAS_KeyDown(&in_jump, STATE_SINGLE_FRAME);
 
 							if (CVAR_GET_FLOAT("tas_log") != 0)
+							{
+								indenter->indent();
 								gEngfuncs.Con_Printf("Newspeed_air: %.8f; newspeed_ground: %.8f\n", newspeed_air, newspeed_ground);
+							}
 						}
 
 						if (CVAR_GET_FLOAT("tas_log") != 0)
-							gEngfuncs.Con_Printf("-- Lgagst End -- \n");
+							indenter->endSection("Lgagst");
 					}
 				}
 
@@ -2806,7 +2869,10 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 	}
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
-		gEngfuncs.Con_Printf("-- TAS_DoStuff End --\n\n");
+	{
+		indenter->endSection("TAS_DoStuff");
+		gEngfuncs.Con_Printf("\n");
+	}
 }
 
 // Called from the very end of CL_CreateMove.
@@ -3239,6 +3305,9 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_custom_maxspeed",     "320",  0 );
 	gEngfuncs.pfnRegisterVariable( "tas_custom_maxvelocity",  "2000", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_custom_stopspeed",    "100",  0 );
+
+	// Initialize the indenter.
+	indenter = new Indenter(gEngfuncs.Con_Printf, "\t");
 	// YaLTeR End
 
 	lookstrafe			= gEngfuncs.pfnRegisterVariable ( "lookstrafe", "0", FCVAR_ARCHIVE );
@@ -3280,6 +3349,10 @@ void ShutdownInput (void)
 {
 	IN_Shutdown();
 	KB_Shutdown();
+
+	// YaLTeR - clean up.
+	if (indenter)
+		delete indenter;
 }
 
 void DLLEXPORT HUD_Shutdown( void )
