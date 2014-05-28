@@ -880,9 +880,72 @@ void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemov
 		indenter->indent();
 		gEngfuncs.Con_Printf("Properangles: %.8f; %.8f; %.8f\n", properangles[0], properangles[1], properangles[2]);
 		indenter->indent();
+		gEngfuncs.Con_Printf("Forwardmove: %.8f; sidemove: %.8f; upmove: %.8f\n", forwardmove, sidemove, upmove);
+		indenter->indent();
 		gEngfuncs.Con_Printf("Forward: %.8g; %.8g; %.8g; right: %.8g; %.8g; %.8g\n", forward[0], forward[1], forward[2], right[0], right[1], right[2]);
 		indenter->endSection("TAS_ConstructWishvel");
 	}
+}
+
+void TAS_ConstructWishvelWithButtons(const vec3_t &angles, const vec3_t &velocity, float velocityAngleFallback, float wishspeed, float upmove, float maxspeed, bool inDuck, bool onGround, vec3_t *wishvel)
+{
+	double speed = hypot(velocity[0], velocity[1]);
+	double vel_angle;
+	if (speed == 0)
+		vel_angle = velocityAngleFallback;
+	else
+		vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
+
+	bool rotatingLeft = (normangle(angles[1] - vel_angle) > 0);
+
+	int buttons;
+	if (onGround)
+		buttons = rotatingLeft ?
+			CVAR_GET_FLOAT("tas_strafe_leftbuttons_ground") :
+			CVAR_GET_FLOAT("tas_strafe_rightbuttons_ground");
+	else
+		buttons = rotatingLeft ?
+			CVAR_GET_FLOAT("tas_strafe_leftbuttons_air") :
+			CVAR_GET_FLOAT("tas_strafe_rightbuttons_air");
+
+	float forwardmove = 0,
+	      sidemove = 0;
+
+	if ((buttons == 0)
+		|| (buttons == 1)
+		|| (buttons == 7))
+		forwardmove = wishspeed;
+
+	if ((buttons == 3)
+		|| (buttons == 4)
+		|| (buttons == 5))
+		forwardmove = -wishspeed;
+
+	if ((buttons == 1)
+		|| (buttons == 2)
+		|| (buttons == 3))
+		sidemove = -wishspeed;
+
+	if ((buttons == 5)
+		|| (buttons == 6)
+		|| (buttons == 7))
+		sidemove = wishspeed;
+
+	vec3_t newangles;
+	VectorCopy(angles, newangles);
+	newangles[1] = normangleengine(newangles[1] - (45 * buttons));
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		indenter->startSection("TAS_ConstructWishvelWithButtons");
+		indenter->indent();
+		gEngfuncs.Con_Printf("Angle: %.8f newangle: %.8f; buttons: %d\n", angles[1], newangles[1], buttons);
+	}
+
+	TAS_ConstructWishvel(newangles, forwardmove, sidemove, upmove, maxspeed, inDuck, wishvel);
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+		indenter->endSection("TAS_ConstructWishvelWithButtons");
 }
 
 // Checks if the velocity is too high.
@@ -1681,7 +1744,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, velocityAngleFallback, wishspeed, 0, maxspeed, false, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -1714,7 +1777,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, velocityAngleFallback, wishspeed, 0, maxspeed, false, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -1816,7 +1879,7 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, velocityAngleFallback, wishspeed, 0, maxspeed, false, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -1854,7 +1917,7 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, velocityAngleFallback, wishspeed, 0, maxspeed, false, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -1961,7 +2024,7 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, velocityAngleFallback, wishspeed, 0, maxspeed, false, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -1994,7 +2057,7 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvel(angles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, velocityAngleFallback, wishspeed, 0, maxspeed, false, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2165,7 +2228,7 @@ float TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, co
 		viewangles[1] = beta[i];
 		viewangles[2] = 0;
 
-		TAS_ConstructWishvel(viewangles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_ConstructWishvelWithButtons(viewangles, velocity, velocityAngleFallback, wishspeed, 0, maxspeed, false, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, origin,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2251,7 +2314,7 @@ float TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocity
 		viewangles[1] = beta[i];
 		viewangles[2] = 0;
 
-		TAS_ConstructWishvel(viewangles, wishspeed, 0, 0, maxspeed, false, &wishvel);
+		TAS_ConstructWishvelWithButtons(viewangles, velocity, velocityAngleFallback, wishspeed, 0, maxspeed, false, onGround, &wishvel);
 		TAS_SimplePredict(wishvel, velocity, origin,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
 			0, 0, onGround, waterlevel, 0,
@@ -2690,9 +2753,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 					float wishangle_unducked = TAS_Strafe(viewangles, velocity, origin,       cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, waterlevel,       pitch);
 					float wishangle_ducked =   TAS_Strafe(viewangles, velocity, duckedOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, duckedWaterlevel, pitch);
 					angles[1] = wishangle_unducked;
-					TAS_ConstructWishvel(angles, wishspeed, 0, 0, cvar_maxspeed, false, &wishvel_unducked);
+					TAS_ConstructWishvelWithButtons(angles, velocity, angles[1], wishspeed, 0, cvar_maxspeed, false, onGround, &wishvel_unducked);
 					angles[1] = wishangle_ducked;
-					TAS_ConstructWishvel(angles, wishspeed, 0, 0, cvar_maxspeed, false, &wishvel_ducked);
+					TAS_ConstructWishvelWithButtons(angles, velocity, angles[1], wishspeed, 0, cvar_maxspeed, false, onGround, &wishvel_ducked);
 				}
 				else
 				{
@@ -2815,7 +2878,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 							angles[2] = 0;
 
 							vec3_t wishvel;
-							TAS_ConstructWishvel(angles, wishspeed, 0, 0, cvar_maxspeed, false, &wishvel);
+							TAS_ConstructWishvelWithButtons(angles, velocity, angles[1], wishspeed, 0, cvar_maxspeed, false, true, &wishvel);
 
 							vec3_t newvel;
 							TAS_SimplePredict(wishvel, velocityWithFriction, origin,
@@ -2826,7 +2889,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 							newspeed_ground = hypot(newvel[0], newvel[1]);
 
 							angles[1] = wishangle_air;
-							TAS_ConstructWishvel(angles, wishspeed, 0, 0, cvar_maxspeed, false, &wishvel);
+							TAS_ConstructWishvelWithButtons(angles, velocity, angles[1], wishspeed, 0, cvar_maxspeed, false, false, &wishvel);
 							TAS_SimplePredict(wishvel, velocity, origin,
 								cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
 								cvar_gravity, pmove_gravity, false, waterlevel, 0,
