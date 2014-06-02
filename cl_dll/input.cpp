@@ -2341,7 +2341,7 @@ double TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocit
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
 		indenter->indent();
-		gEngfuncs.Con_Printf("Distance (left): %.8g; distance (right): %.8g\n", distanceToPoint[0], distanceToPoint[1]);
+		gEngfuncs.Con_Printf("Distance (left): %.8f; distance (right): %.8f\n", distanceToPoint[0], distanceToPoint[1]);
 		indenter->indent();
 		gEngfuncs.Con_Printf("Final angle: %.8f\n", final_angle);
 		indenter->endSection("TAS_PointStrafe");
