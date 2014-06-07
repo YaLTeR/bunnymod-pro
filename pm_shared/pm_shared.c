@@ -185,6 +185,10 @@ void PM_TasLog(unsigned int num)
 			case 3:
 				pmove->Con_Printf("Angles: %.8f; %.8f; %.8f\n", pmove->angles[0], pmove->angles[1], pmove->angles[2]);
 				break;
+
+			case 4:
+				pmove->Con_Printf("-- PM_FlyMove: velocity %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
+				break;
 		}
 	}
 #endif // CLIENT_DLL
@@ -757,6 +761,11 @@ int PM_ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce)
 	float angle;
 	int		i, blocked;
 
+#ifndef CLIENT_DLL
+	if (g_sv_taslog.value != 0)
+		pmove->Con_Printf("-- PM_ClipVelocity: in: %.8f; %.8f; %.8f; normal: %.8f; %.8f; %.8f\n", in[0], in[1], in[2], normal[0], normal[1], normal[2]);
+#endif
+
 	angle = normal[ 2 ];
 
 	blocked = 0x00;            // Assume unblocked.
@@ -851,6 +860,8 @@ int PM_FlyMove (void)
 	vec3_t		end;
 	float		time_left, allFraction;
 	int			blocked;
+
+	PM_TasLog(4);
 
 	numbumps  = 4;           // Bump up to four times
 
@@ -1020,6 +1031,8 @@ int PM_FlyMove (void)
 		VectorCopy (vec3_origin, pmove->velocity);
 		//Con_DPrintf( "Don't stick\n" );
 	}
+
+	PM_TasLog(4);
 
 	return blocked;
 }
