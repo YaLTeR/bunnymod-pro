@@ -3177,6 +3177,70 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 	gEngfuncs.Cvar_SetValue("tas_db4c", db4c);
 
+	// Duck before floor
+	int db4f = CVAR_GET_FLOAT("tas_db4f");
+	if ((db4f > 0) || (db4f == -1))
+	{
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			indenter->startSection("Db4f");
+
+		if (!onGround && ((in_duck.state & 1) == 0)) // Flying in the air and duck is not pressed.
+		{
+			bool unduckOnGround = onGround;
+			int newWaterlevel = waterlevel;
+			vec3_t newOrigin;
+			VectorCopy(origin, newOrigin);
+			bool newInDuck = inDuck;
+			if (inDuck)
+				newInDuck = TAS_UnDuck(velocity, origin, inDuck, onGround, &unduckOnGround, &newWaterlevel, NULL, &newOrigin);
+
+			if ((!inDuck && TAS_Duck(velocity, origin, inDuck, onGround, tryingToDuck, duckTime, NULL, NULL, NULL, NULL, NULL, NULL))
+				|| (inDuck && !newInDuck))
+			{
+				bool newOnGround = false;
+				if (!inDuck || !unduckOnGround)
+				{
+					vec3_t angles;
+					angles[0] = pitch;
+					angles[2] = 0;
+
+					vec3_t wishvel;
+					if (!manualMovement)
+					{
+						float wishangle = TAS_Strafe(viewangles, velocity, newOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, newWaterlevel, pitch);
+						angles[1] = wishangle;
+						TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, false, onGround, &wishvel);
+					}
+					else
+					{
+						angles[1] = viewangles[1];
+						TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, false, &wishvel);
+					}
+
+					TAS_Predict(wishvel, velocity, newOrigin,
+						cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, cvar_bounce, cvar_stepsize, wishspeed_cap, physics_frametime, pmove_friction,
+						cvar_gravity, pmove_gravity, onGround, false, false, newWaterlevel, 0,
+						&newOnGround, NULL, NULL, NULL, NULL);
+				}
+
+				if (newOnGround || (inDuck && unduckOnGround))
+				{
+					if (db4f > 0)
+						db4f--;
+
+					TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
+				}
+			}
+		}
+
+		if ( CVAR_GET_FLOAT("tas_log") != 0 )
+			indenter->endSection("Db4f");
+	}
+	else
+		db4f = 0;
+
+	gEngfuncs.Cvar_SetValue("tas_db4f", db4f);
+
 	if ((inDuck || tryingToDuck) && !(in_duck.state & 3))
 	{
 		inDuck = TAS_UnDuck(velocity, origin, inDuck, onGround, &onGround, &waterlevel, &watertype, &origin);
@@ -3714,6 +3778,8 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_db4c", "0", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_db4c_ceiling", "0", FCVAR_ARCHIVE );
 	gEngfuncs.pfnRegisterVariable( "tas_db4c_slanted", "0", FCVAR_ARCHIVE );
+
+	gEngfuncs.pfnRegisterVariable( "tas_db4f", "0", 0 );
 
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_ground", "1", FCVAR_ARCHIVE ); // Jump upon reaching the ground.
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_water",  "1", FCVAR_ARCHIVE ); // Swim up in water.
