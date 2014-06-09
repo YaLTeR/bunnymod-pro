@@ -175,6 +175,7 @@ kbutton_t	in_graph;  // Display the netgraph
 kbutton_t in_autojump;
 kbutton_t in_ducktap;
 kbutton_t in_tasstrafe;
+kbutton_t in_db4f;
 // YaLTeR End
 
 typedef struct kblist_s
@@ -602,6 +603,8 @@ void IN_DucktapDown()   { KeyDown(&in_ducktap);   }
 void IN_DucktapUp()     { KeyUp  (&in_ducktap);   }
 void IN_TASStrafeDown() { KeyDown(&in_tasstrafe); }
 void IN_TASStrafeUp()   { KeyUp  (&in_tasstrafe); }
+void IN_Db4fDown()      { KeyDown(&in_db4f);      }
+void IN_Db4fUp()        { KeyUp  (&in_db4f);      }
 // YaLTeR End
 
 /*
@@ -3178,8 +3181,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 	gEngfuncs.Cvar_SetValue("tas_db4c", db4c);
 
 	// Duck before floor
-	int db4f = CVAR_GET_FLOAT("tas_db4f");
-	if ((db4f > 0) || (db4f == -1))
+	if ((in_db4f.state & 1) != 0)
 	{
 		if ( CVAR_GET_FLOAT("tas_log") != 0 )
 			indenter->startSection("Db4f");
@@ -3225,9 +3227,6 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 				if (newOnGround || (inDuck && unduckOnGround))
 				{
-					if (db4f > 0)
-						db4f--;
-
 					TAS_KeyDown(&in_duck, STATE_SINGLE_FRAME);
 				}
 			}
@@ -3236,10 +3235,6 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 		if ( CVAR_GET_FLOAT("tas_log") != 0 )
 			indenter->endSection("Db4f");
 	}
-	else
-		db4f = 0;
-
-	gEngfuncs.Cvar_SetValue("tas_db4f", db4f);
 
 	if ((inDuck || tryingToDuck) && !(in_duck.state & 3))
 	{
@@ -3766,6 +3761,8 @@ void InitInput (void)
 	gEngfuncs.pfnAddCommand( "-tas_ducktap",  IN_DucktapUp     );
 	gEngfuncs.pfnAddCommand( "+tas_strafe",   IN_TASStrafeDown );
 	gEngfuncs.pfnAddCommand( "-tas_strafe",   IN_TASStrafeUp   );
+	gEngfuncs.pfnAddCommand( "+tas_db4f",     IN_Db4fDown      );
+	gEngfuncs.pfnAddCommand( "-tas_db4f",     IN_Db4fUp        );
 
 	gEngfuncs.pfnAddCommand( "tas_setpitch", ConCmd_TAS_SetPitch );
 	gEngfuncs.pfnAddCommand( "tas_setyaw",   ConCmd_TAS_SetYaw   );
@@ -3778,8 +3775,6 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_db4c", "0", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_db4c_ceiling", "0", FCVAR_ARCHIVE );
 	gEngfuncs.pfnRegisterVariable( "tas_db4c_slanted", "0", FCVAR_ARCHIVE );
-
-	gEngfuncs.pfnRegisterVariable( "tas_db4f", "0", 0 );
 
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_ground", "1", FCVAR_ARCHIVE ); // Jump upon reaching the ground.
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_water",  "1", FCVAR_ARCHIVE ); // Swim up in water.
