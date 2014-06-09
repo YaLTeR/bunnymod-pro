@@ -1903,8 +1903,11 @@ bool TAS_CanMove(const vec3_t &start, const vec3_t &end, bool inDuck, vec3_t *no
 
 // Level 3 functions - TAS_Get*Angle
 // Return the plain desired angle between velocity and acceleration without anglemod.
-double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, int waterlevel)
+double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool wasInDuck, int waterlevel)
 {
+	if (wasInDuck)
+		wishspeed *= 0.333;
+
 	if (waterlevel >= 2)
 		return 0; // TODO
 
@@ -1938,8 +1941,11 @@ double TAS_GetMaxSpeedAngle(double speed, double maxspeed, double accel, double 
 	}
 }
 
-double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, int waterlevel)
+double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool wasInDuck, int waterlevel)
 {
+	if (wasInDuck)
+		wishspeed *= 0.333;
+
 	if (waterlevel >= 2)
 		return 180; // TODO
 
@@ -1977,8 +1983,11 @@ double TAS_GetMaxRotationAngle(double speed, double maxspeed, double accel, doub
 	return (acos(alphacos) * M_RAD2DEG);
 }
 
-double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, int waterlevel)
+double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool wasInDuck, int waterlevel)
 {
+	if (wasInDuck)
+		wishspeed *= 0.333;
+
 	if (waterlevel >= 2)
 		return 180; // TODO
 
@@ -2044,11 +2053,11 @@ double TAS_GetLeastSpeedAngle(double speed, double maxspeed, double accel, doubl
 // velocityAngleFallback is the angle to be used instead of the velocity angle in a case of speed = 0.
 // const vec3_t &velocity is passing a double-pointer here, which is pretty much useless, but for the sake of cleanness.
 bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel,
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel,
 	double *leftangle, double *rightangle)
 {
 	double speed = hypot(velocity[0], velocity[1]);
-	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction, waterlevel);
+	double alpha = TAS_GetMaxSpeedAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction, wasInDuck, waterlevel);
 	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
 	if (speed == 0)
 		vel_angle = velocityAngleFallback;
@@ -2074,7 +2083,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 	{
 		indenter->startSection("TAS_StrafeMaxSpeed");
 		indenter->indent();
-		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround));
+		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s; wasInDuck: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround), BOOLSTRING(wasInDuck));
 		indenter->indent();
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
@@ -2091,14 +2100,13 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 		VectorClear(pos);
 
 		// Assume we're strafing straight forward with roll = 0.
-		// Passing false as inDuck because if we're ducking our wishspeed is modified already.
 		vec3_t angles;
 		angles[0] = pitch;
 		angles[1] = beta_left[i];
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, false, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2124,14 +2132,13 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 		VectorClear(pos);
 
 		// Assume we're strafing straight forward with roll = 0.
-		// Passing false as inDuck because if we're ducking our wishspeed is modified already.
 		vec3_t angles;
 		angles[0] = pitch;
 		angles[1] = beta_right[i];
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, false, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2179,11 +2186,11 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 }
 
 bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel,
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel,
 	double *leftangle, double *rightangle)
 {
 	double speed = hypot(velocity[0], velocity[1]);
-	double alpha = TAS_GetMaxRotationAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction, waterlevel);
+	double alpha = TAS_GetMaxRotationAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction, wasInDuck, waterlevel);
 	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
 	if (speed == 0)
 		vel_angle = velocityAngleFallback;
@@ -2209,7 +2216,7 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 	{
 		indenter->startSection("TAS_StrafeMaxAngle");
 		indenter->indent();
-		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround));
+		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s; wasInDuck: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround), BOOLSTRING(wasInDuck));
 		indenter->indent();
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
@@ -2226,14 +2233,13 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 		VectorClear(pos);
 
 		// Assume we're strafing straight forward with roll = 0.
-		// Passing false as inDuck because if we're ducking our wishspeed is modified already.
 		vec3_t angles;
 		angles[0] = pitch;
 		angles[1] = beta_left[i];
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, false, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2264,14 +2270,13 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 		VectorClear(pos);
 
 		// Assume we're strafing straight forward with roll = 0.
-		// Passing false as inDuck because if we're ducking our wishspeed is modified already.
 		vec3_t angles;
 		angles[0] = pitch;
 		angles[1] = beta_right[i];
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, false, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2324,11 +2329,11 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 }
 
 bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel,
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel,
 	double *leftangle, double *rightangle)
 {
 	double speed = hypot(velocity[0], velocity[1]);
-	double alpha = TAS_GetLeastSpeedAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction, waterlevel);
+	double alpha = TAS_GetLeastSpeedAngle(speed, maxspeed, accel, wishspeed, wishspeed_cap, frametime, pmove_friction, wasInDuck, waterlevel);
 	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
 	if (speed == 0)
 		vel_angle = velocityAngleFallback;
@@ -2354,7 +2359,7 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 	{
 		indenter->startSection("TAS_StrafeLeastSpeed");
 		indenter->indent();
-		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround));
+		gEngfuncs.Con_Printf("Speed: %f; velocity angle: %.8f; wishspeed: %f; onGround: %s; wasInDuck: %s\n", speed, vel_angle, wishspeed, BOOLSTRING(onGround), BOOLSTRING(wasInDuck));
 		indenter->indent();
 		gEngfuncs.Con_Printf("Alpha: %f; alpha_left: %f; %f; alpha_right: %f; %f\n", alpha, alpha_left[0], alpha_left[1], alpha_right[0], alpha_right[1]);
 	}
@@ -2371,14 +2376,13 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 		VectorClear(pos);
 
 		// Assume we're strafing straight forward with roll = 0.
-		// Passing false as inDuck because if we're ducking our wishspeed is modified already.
 		vec3_t angles;
 		angles[0] = pitch;
 		angles[1] = beta_left[i];
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, false, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2404,14 +2408,13 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 		VectorClear(pos);
 
 		// Assume we're strafing straight forward with roll = 0.
-		// Passing false as inDuck because if we're ducking our wishspeed is modified already.
 		vec3_t angles;
 		angles[0] = pitch;
 		angles[1] = beta_right[i];
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, false, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2460,26 +2463,26 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 
 // Invokes the strafing function based on the strafetype.
 bool TAS_StrafeFunc(int strafetype, const vec3_t &velocity, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel,
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel,
 	double *leftangle, double *rightangle)
 {
 	switch (strafetype)
 	{
 		case STRAFETYPE_MAXSPEED:
 			return TAS_StrafeMaxSpeed(velocity, pitch, velocityAngleFallback,
-				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel,
 				leftangle, rightangle);
 			break;
 
 		case STRAFETYPE_MAXANGLE:
 			return TAS_StrafeMaxAngle(velocity, pitch, velocityAngleFallback,
-				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel,
 				leftangle, rightangle);
 			break;
 
 		case STRAFETYPE_LEASTSPEED:
 			return TAS_StrafeLeastSpeed(velocity, pitch, velocityAngleFallback,
-				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+				maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel,
 				leftangle, rightangle);
 			break;
 	}
@@ -2493,7 +2496,7 @@ bool TAS_StrafeFunc(int strafetype, const vec3_t &velocity, float pitch, float v
 
 // Strafes to the side. To the left is strafeLeft is true, to the right otherwise.
 double TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, const vec3_t &origin, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel)
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
@@ -2504,7 +2507,7 @@ double TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, c
 
 	double leftangle, rightangle;
 	TAS_StrafeFunc(strafetype, velocity, pitch, velocityAngleFallback,
-		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel,
 		&leftangle, &rightangle);
 
 	double final_angle = (strafeLeft ? leftangle : rightangle);
@@ -2522,7 +2525,7 @@ double TAS_SideStrafe(bool strafeLeft, int strafetype, const vec3_t &velocity, c
 // Strafes to the maximum of the given strafetype.
 // Not actually best unless least speed strafing. :p
 double TAS_BestStrafe(int strafetype, const vec3_t &velocity, const vec3_t &origin, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel)
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
@@ -2533,7 +2536,7 @@ double TAS_BestStrafe(int strafetype, const vec3_t &velocity, const vec3_t &orig
 
 	double leftangle, rightangle;
 	bool leftAngleIsBetter = TAS_StrafeFunc(strafetype, velocity, pitch, velocityAngleFallback,
-		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel,
 		&leftangle, &rightangle);
 
 	double final_angle = (leftAngleIsBetter ? leftangle : rightangle);
@@ -2550,7 +2553,7 @@ double TAS_BestStrafe(int strafetype, const vec3_t &velocity, const vec3_t &orig
 
 // Strafes to the given yaw.
 double TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, const vec3_t &origin, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel)
 {
 	desiredYaw = normangleengine(desiredYaw);
 	double speed = hypot(velocity[0], velocity[1]);
@@ -2567,7 +2570,7 @@ double TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, c
 
 	double leftangle, rightangle;
 	TAS_StrafeFunc(strafetype, velocity, pitch, velocityAngleFallback,
-		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel,
 		&leftangle, &rightangle);
 
 	double beta[2] = { normangleengine(vel_angle + leftangle), normangleengine(vel_angle + rightangle) };
@@ -2582,7 +2585,7 @@ double TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, c
 		viewangles[1] = beta[i];
 		viewangles[2] = 0;
 
-		TAS_ConstructWishvelWithButtons(viewangles, velocity, wishspeed, 0, maxspeed, false, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(viewangles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, origin,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2638,7 +2641,7 @@ double TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, c
 
 // Strafes to the given point.
 double TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocity, const vec3_t &origin, float pitch, float velocityAngleFallback,
-	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel)
+	double maxspeed, double accel, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel)
 {
 	double speed = hypot(velocity[0], velocity[1]);
 	double vel_angle = atan2(velocity[1], velocity[0]) * M_RAD2DEG;
@@ -2654,7 +2657,7 @@ double TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocit
 
 	double leftangle, rightangle;
 	TAS_StrafeFunc(strafetype, velocity, pitch, velocityAngleFallback,
-		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel,
+		maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel,
 		&leftangle, &rightangle);
 
 	double beta[2] = { normangleengine(vel_angle + leftangle), normangleengine(vel_angle + rightangle) };
@@ -2668,7 +2671,7 @@ double TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocit
 		viewangles[1] = beta[i];
 		viewangles[2] = 0;
 
-		TAS_ConstructWishvelWithButtons(viewangles, velocity, wishspeed, 0, maxspeed, false, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(viewangles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
 		TAS_SimplePredict(wishvel, velocity, origin,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
 			0, 0, onGround, false, waterlevel, 0,
@@ -2698,7 +2701,7 @@ double TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocit
 }
 
 // Does all strafing. Returns wishangle.
-float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t &origin, double maxspeed, double accelerate, double airaccelerate, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, int waterlevel, float pitch)
+float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t &origin, double maxspeed, double accelerate, double airaccelerate, double maxvelocity, double wishspeed, double wishspeed_cap, double frametime, double pmove_friction, bool onGround, bool wasInDuck, int waterlevel, float pitch)
 {
 	int strafetype = CVAR_GET_FLOAT("tas_strafe_type"),
 	    strafedir  = CVAR_GET_FLOAT("tas_strafe_dir");
@@ -2724,7 +2727,7 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t 
 			if (speed == 0)
 				vel_angle = velocityAngleFallback;
 
-			double final_difference = TAS_SideStrafe(((strafedir == -1) ? true : false), strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			double final_difference = TAS_SideStrafe(((strafedir == -1) ? true : false), strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel);
 			wishangle = anglemod( normangleengine(vel_angle + final_difference) );
 			break;
 		}
@@ -2735,7 +2738,7 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t 
 			if (speed == 0)
 				vel_angle = velocityAngleFallback;
 
-			double final_difference = TAS_BestStrafe(strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			double final_difference = TAS_BestStrafe(strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel);
 			wishangle = anglemod( normangleengine(vel_angle + final_difference) );
 			break;
 		}
@@ -2747,7 +2750,7 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t 
 			if (speed == 0)
 				vel_angle = velocityAngleFallback;
 
-			double final_difference = TAS_YawStrafe(desiredYaw, strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			double final_difference = TAS_YawStrafe(desiredYaw, strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel);
 			wishangle = anglemod( normangleengine(vel_angle + final_difference) );
 			break;
 		}
@@ -2761,7 +2764,7 @@ float TAS_Strafe(const vec3_t &viewangles, const vec3_t &velocity, const vec3_t 
 			if (speed == 0)
 				vel_angle = velocityAngleFallback;
 
-			double final_difference = TAS_PointStrafe(point, strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, waterlevel);
+			double final_difference = TAS_PointStrafe(point, strafetype, velocity, origin, pitch, velocityAngleFallback, maxspeed, accel, maxvelocity, wishspeed, wishspeed_cap, frametime, pmove_friction, onGround, wasInDuck, waterlevel);
 			wishangle = anglemod( normangleengine(vel_angle + final_difference) );
 			break;
 		}
@@ -3036,6 +3039,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 	}
 
 	bool inDuck = TAS_IsInDuck();
+	bool wasInDuck = inDuck;
 	bool tryingToDuck = TAS_IsTryingToDuck();
 	int waterlevel, watertype;
 	bool onGround = TAS_CheckWaterAndGround(velocity, origin, inDuck, &waterlevel, &watertype, &origin);
@@ -3058,7 +3062,6 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 	double wishspeed = cvar_maxspeed;
 	if (inDuck) // Checking the current duck state, before TAS_Duck / UnDuck.
 	{
-		wishspeed *= 0.333;
 		forwardmove *= 0.333;
 		sidemove *= 0.333;
 		upmove *= 0.333;
@@ -3130,12 +3133,12 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 				if (!manualMovement)
 				{
-					float wishangle_unducked = TAS_Strafe(viewangles, velocity, origin,       cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, waterlevel,       pitch);
-					float wishangle_ducked =   TAS_Strafe(viewangles, velocity, duckedOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, duckedWaterlevel, pitch);
+					float wishangle_unducked = TAS_Strafe(viewangles, velocity, origin,       cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, waterlevel,       pitch);
+					float wishangle_ducked =   TAS_Strafe(viewangles, velocity, duckedOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, duckedWaterlevel, pitch);
 					angles[1] = wishangle_unducked;
-					TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, false, onGround, &wishvel_unducked);
+					TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, &wishvel_unducked);
 					angles[1] = wishangle_ducked;
-					TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, false, onGround, &wishvel_ducked);
+					TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, &wishvel_ducked);
 				}
 				else
 				{
@@ -3209,9 +3212,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 					vec3_t wishvel;
 					if (!manualMovement)
 					{
-						float wishangle = TAS_Strafe(viewangles, velocity, newOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, newWaterlevel, pitch);
+						float wishangle = TAS_Strafe(viewangles, velocity, newOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, newWaterlevel, pitch);
 						angles[1] = wishangle;
-						TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, false, onGround, &wishvel);
+						TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, &wishvel);
 					}
 					else
 					{
@@ -3299,12 +3302,12 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 						TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, true, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocityWithFriction);
 						double speed = hypot(velocity[0], velocity[1]);
 						double speedWithFriction = hypot(velocityWithFriction[0], velocityWithFriction[1]);
-						double alpha_air =    TAS_GetMaxSpeedAngle(speed,             cvar_maxspeed, cvar_airaccelerate, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, waterlevel);
-						double alpha_ground = TAS_GetMaxSpeedAngle(speedWithFriction, cvar_maxspeed, cvar_accelerate,    wishspeed, cvar_maxspeed, physics_frametime, pmove_friction, waterlevel);
+						double alpha_air =    TAS_GetMaxSpeedAngle(speed,             cvar_maxspeed, cvar_airaccelerate, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, wasInDuck, waterlevel);
+						double alpha_ground = TAS_GetMaxSpeedAngle(speedWithFriction, cvar_maxspeed, cvar_accelerate,    wishspeed, cvar_maxspeed, physics_frametime, pmove_friction, wasInDuck, waterlevel);
 						if (((alpha_air != 0) && (alpha_ground != 0)) || (CVAR_GET_FLOAT("tas_strafe_autojump_on_low_speed") != 0))
 						{
-							float wishangle_ground = TAS_Strafe(viewangles, velocityWithFriction, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, cvar_maxspeed, physics_frametime, pmove_friction, true, waterlevel, pitch);
-							float wishangle_air =    TAS_Strafe(viewangles, velocity,             origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, false, waterlevel, pitch);
+							float wishangle_air =    TAS_Strafe(viewangles, velocity,             origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, false, wasInDuck, waterlevel, pitch);
+							float wishangle_ground = TAS_Strafe(viewangles, velocityWithFriction, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, cvar_maxspeed, physics_frametime, pmove_friction, true,  wasInDuck, waterlevel, pitch);
 
 							double newspeed_ground, newspeed_air;
 
@@ -3314,7 +3317,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 							angles[2] = 0;
 
 							vec3_t wishvel;
-							TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, false, true, &wishvel);
+							TAS_ConstructWishvelWithButtons(angles, velocityWithFriction, wishspeed, 0, cvar_maxspeed, wasInDuck, true, &wishvel);
 
 							vec3_t newvel;
 							TAS_SimplePredict(wishvel, velocityWithFriction, origin,
@@ -3325,7 +3328,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 							newspeed_ground = hypot(newvel[0], newvel[1]);
 
 							angles[1] = wishangle_air;
-							TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, false, false, &wishvel);
+							TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, false, &wishvel);
 							TAS_SimplePredict(wishvel, velocity, origin,
 								cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
 								cvar_gravity, pmove_gravity, false, true, waterlevel, 0,
@@ -3361,7 +3364,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 				// Friction is applied after we ducked / unducked and after we jumped.
 				TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocity);
 
-				float wishangle = TAS_Strafe(viewangles, velocity, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, waterlevel, pitch);
+				float wishangle = TAS_Strafe(viewangles, velocity, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, waterlevel, pitch);
 				TAS_SetWishspeed(viewangles, velocity, wishangle, frametime, onGround); // Needs the actual frametime (regardless of the fps bug).
 			}
 		}
