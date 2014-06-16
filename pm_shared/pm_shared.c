@@ -189,6 +189,10 @@ void PM_TasLog(unsigned int num)
 			case 4:
 				pmove->Con_Printf("-- PM_FlyMove: velocity %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2], pmove->origin[0], pmove->origin[1], pmove->origin[2]);
 				break;
+
+			case 5:
+				pmove->Con_Printf("OnGround: %d; usehull: %d\n", pmove->onground, pmove->usehull);
+				break;
 		}
 	}
 #endif // CLIENT_DLL
@@ -3111,6 +3115,8 @@ void PM_PlayerMove ( qboolean server )
 
 	// Now that we are "unstuck", see where we are ( waterlevel and type, pmove->onground ).
 	PM_CatagorizePosition();
+
+	PM_TasLog(5);
 
 	// Store off the starting water level
 	pmove->oldwaterlevel = pmove->waterlevel;

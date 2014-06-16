@@ -1213,7 +1213,7 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 	gEngfuncs.pEventAPI->EV_LocalPlayerBounds((inDuck ? 1 : 0), mins, maxs);
 
 	vec3_t point;
-	VectorCopy(origin, point);
+	VectorCopy(newpos, point);
 	point[0] += (mins[0] + maxs[0]) * 0.5;
 	point[1] += (mins[1] + maxs[1]) * 0.5;
 	point[2] += mins[2] + 1;
@@ -1225,7 +1225,7 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 		waterlvl = 1;
 		wtype = cont;
 
-		point[2] = origin[2] + ((mins[2] + maxs[2]) * 0.5);
+		point[2] = newpos[2] + ((mins[2] + maxs[2]) * 0.5);
 		cont = gEngfuncs.PM_PointContents(point, &truecont);
 		if (cont <= CONTENTS_WATER && cont > CONTENTS_TRANSLUCENT)
 		{
@@ -1235,7 +1235,7 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 			VectorClear(viewOffset);
 			gEngfuncs.pEventAPI->EV_LocalPlayerViewheight( viewOffset );
 
-			point[2] = origin[2] + viewOffset[2];
+			point[2] = newpos[2] + viewOffset[2];
 			cont = gEngfuncs.PM_PointContents(point, &truecont);
 			if (cont <= CONTENTS_WATER && cont > CONTENTS_TRANSLUCENT)
 			{
@@ -1249,11 +1249,17 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 
 	if (velocity[2] <= 180)
 	{
-		VectorCopy(origin, point);
+		VectorCopy(newpos, point);
 		point[2] -= 2;
 
 		pmtrace_t *tr;
 		tr = gEngfuncs.PM_TraceLine(newpos, point, PM_NORMAL, (inDuck ? 1 : 0), -1); // Newpos has not been modified yet.
+
+		if (CVAR_GET_FLOAT("tas_log") != 0)
+		{
+			indenter->indent();
+			gEngfuncs.Con_Printf("Plane: %f; ent: %d\n", tr->plane.normal[2], tr->ent);
+		}
 
 		if (tr->plane.normal[2] >= 0.7)
 		{
