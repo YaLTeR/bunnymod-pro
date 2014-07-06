@@ -1505,6 +1505,21 @@ int GetWeaponData( struct edict_s *player, struct weapon_data_s *info )
 	return 1;
 }
 
+// YaLTeR Start - a function to send accurate data to the client.
+extern int gmsgPlayerInfo;
+void SendAccurateInfo(entvars_t *pev)
+{
+    MESSAGE_BEGIN(MSG_ONE, gmsgPlayerInfo, NULL, pev);
+		WRITE_LONG(*(int*)&pev->velocity.x);
+		WRITE_LONG(*(int*)&pev->velocity.y);
+		WRITE_LONG(*(int*)&pev->velocity.z);
+		WRITE_LONG(*(int*)&pev->origin.x);
+		WRITE_LONG(*(int*)&pev->origin.y);
+		WRITE_LONG(*(int*)&pev->origin.z);
+	MESSAGE_END();
+}
+// YaLTeR End
+
 /*
 =================
 UpdateClientData
@@ -1522,6 +1537,8 @@ void UpdateClientData ( const struct edict_s *ent, int sendweapons, struct clien
 		WRITE_LONG(*(int*)&pev->velocity.y);
 		WRITE_LONG(*(int*)&pev->velocity.z);
 	MESSAGE_END();
+
+	SendAccurateInfo(pev);
     // YaLTeR End
 
 	cd->flags			= ent->v.flags;

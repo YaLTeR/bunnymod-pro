@@ -36,6 +36,11 @@ extern "C"
 extern int _mx;
 
 // YaLTeR Start
+#include "MotionExporter.h"
+MotionExporter exporter;
+
+vec3_t g_accurateOrigin;
+
 float yawRotation = 0.0f;
 bool firstRotationInTheAir = true;
 bool shouldForceJump = false;
@@ -1021,6 +1026,9 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 		//viewangles[ 0 ] = viewangles[ 1 ] = viewangles[ 2 ] = 0.0;
 		gEngfuncs.GetViewAngles( (float *)viewangles );
 
+		exporter.ConsiderCVarValues(CVAR_GET_FLOAT("tas_motionexporter_enable"), CVAR_GET_STRING("tas_motionexporter_filename"), frametime);
+		exporter.ConsiderPlayerData(g_accurateOrigin, viewangles);
+
 		// YaLTeR Start
         if (!g_bPaused && cl_printpos->value)
         {
@@ -1867,6 +1875,11 @@ void InitInput (void)
 	m_yaw				= gEngfuncs.pfnRegisterVariable ( "m_yaw","0.022", FCVAR_ARCHIVE );
 	m_forward			= gEngfuncs.pfnRegisterVariable ( "m_forward","1", FCVAR_ARCHIVE );
 	m_side				= gEngfuncs.pfnRegisterVariable ( "m_side","0.8", FCVAR_ARCHIVE );
+
+	// YaLTeR Start
+	gEngfuncs.pfnRegisterVariable( "tas_motionexporter_enable",   "0", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_motionexporter_filename", "motion", FCVAR_ARCHIVE );
+	// YaLTeR End
 
 	// Initialize third person camera controls.
 	CAM_Init();

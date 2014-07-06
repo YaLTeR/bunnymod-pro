@@ -22,6 +22,7 @@ DECLARE_MESSAGE( m_CustomHud, EntFired )
 DECLARE_MESSAGE( m_CustomHud, FireReset )
 DECLARE_MESSAGE( m_CustomHud, PlrSpeed )
 DECLARE_MESSAGE( m_CustomHud, VelClip )
+DECLARE_MESSAGE( m_CustomHud, PlayerInfo )
 
 int CHudCustom::Init( void )
 {
@@ -31,6 +32,7 @@ int CHudCustom::Init( void )
 	HOOK_MESSAGE( FireReset )
 	HOOK_MESSAGE( PlrSpeed )
 	HOOK_MESSAGE( VelClip )
+	HOOK_MESSAGE( PlayerInfo )
 
 	m_iFlags = HUD_ACTIVE;
 	m_fJumpspeedFadeGreen = 0;
@@ -1043,6 +1045,21 @@ int CHudCustom::MsgFunc_PlrSpeed( const char *pszName, int iSize, void *pbuf )
     {
         gEngfuncs.Con_Printf("Received velocity (x, y, z): %f, %f, %f\n", g_vel[0], g_vel[1], g_vel[2]);
     }
+
+	return 1;
+}
+
+extern vec3_t g_accurateOrigin;
+int CHudCustom::MsgFunc_PlayerInfo( const char *pszName, int iSize, void *pbuf )
+{
+	BEGIN_READ( pbuf, iSize );
+
+	READ_FLOAT();
+	READ_FLOAT();
+	READ_FLOAT();
+	g_accurateOrigin[0] = READ_FLOAT();
+	g_accurateOrigin[1] = READ_FLOAT();
+	g_accurateOrigin[2] = READ_FLOAT();
 
 	return 1;
 }

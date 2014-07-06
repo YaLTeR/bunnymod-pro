@@ -212,6 +212,8 @@ int gmsgEntityFireReset = 0;
 int gmsgPlayerSpeed = 0;
 
 int gmsgVelocityClip = 0;
+
+int gmsgPlayerInfo = 0;
 // YaLTeR End
 
 char m_szLastFiremonTarget[128];
@@ -270,6 +272,7 @@ void LinkUserMessages( void )
 	gmsgEntityFireReset = REG_USER_MSG("FireReset", 0);
 	gmsgPlayerSpeed = REG_USER_MSG("PlrSpeed", 12);
 	gmsgVelocityClip = REG_USER_MSG("VelClip", 8);
+	gmsgPlayerInfo = REG_USER_MSG("PlayerInfo", 24);
 	// YaLTeR End
 }
 
