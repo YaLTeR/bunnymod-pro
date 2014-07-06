@@ -277,6 +277,9 @@
     <ClCompile Include="indenter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MotionExporter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="parsemsg.h">
@@ -419,6 +422,9 @@
     </ClInclude>
     <ClInclude Include="indenter.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MotionExporter.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

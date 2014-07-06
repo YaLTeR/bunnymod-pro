@@ -40,6 +40,9 @@ extern "C"
 #include "indenter.h"
 Indenter *indenter;
 
+#include "MotionExporter.h"
+MotionExporter exporter;
+
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
 const double M_RAD2DEG = 180 / M_PI;
 const double M_DEG2RAD = M_PI / 180;
@@ -3044,6 +3047,9 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 		gEngfuncs.Con_Printf("Manual pass: %s\n", BOOLSTRING(manualMovement));
 	}
 
+	exporter.ConsiderCVarValues(CVAR_GET_FLOAT("tas_motionexporter_enable"), CVAR_GET_STRING("tas_motionexporter_filename"), frametime);
+	exporter.ConsiderPlayerData(origin, viewangles);
+
 	bool inDuck = TAS_IsInDuck();
 	bool wasInDuck = inDuck;
 	bool tryingToDuck = TAS_IsTryingToDuck();
@@ -3821,6 +3827,9 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_custom_maxvelocity",  "2000", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_custom_stepsize",     "18",   0 );
 	gEngfuncs.pfnRegisterVariable( "tas_custom_stopspeed",    "100",  0 );
+
+	gEngfuncs.pfnRegisterVariable( "tas_motionexporter_enable", "0", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_motionexporter_filename", "motion", FCVAR_ARCHIVE );
 
 	// Initialize the indenter.
 	indenter = new Indenter(gEngfuncs.Con_Printf, "\t");
