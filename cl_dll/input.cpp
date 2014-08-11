@@ -1757,8 +1757,6 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 	vec3_t newpos;
 	VectorCopy(origin, newpos);
 
-	bool ducked = false;
-
 	if (!inDuck)
 	{
 		if (!tryingToDuck)
@@ -1770,7 +1768,7 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 		if (!onGround || ((float)duckTime / 1000.0 <= (1 - 0.4)))
 		{
 			tryingToDuck = false;
-			ducked = true;
+			inDuck = true;
 
 			if (onGround)
 			{
@@ -1790,7 +1788,7 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
 		indenter->indent();
-		gEngfuncs.Con_Printf("New inDuck: %s; new onGround: %s; new tryingToDuck: %s; new duckTime: %d\n", BOOLSTRING(ducked), BOOLSTRING(onGround), BOOLSTRING(tryingToDuck), duckTime);
+		gEngfuncs.Con_Printf("New inDuck: %s; new onGround: %s; new tryingToDuck: %s; new duckTime: %d\n", BOOLSTRING(inDuck), BOOLSTRING(onGround), BOOLSTRING(tryingToDuck), duckTime);
 		indenter->endSection("TAS_Duck");
 	}
 
@@ -1806,7 +1804,7 @@ bool TAS_Duck(const vec3_t &velocity, const vec3_t &origin, bool inDuck, bool on
 	if (new_origin)
 		VectorCopy(newpos, *new_origin);
 
-	return ducked;
+	return inDuck;
 }
 
 // Try to jump, return the new onGround state.
