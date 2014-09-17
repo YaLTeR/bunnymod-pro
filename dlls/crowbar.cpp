@@ -234,17 +234,22 @@ int CCrowbar::Swing( int fFirst )
 
 		ClearMultiDamage( );
 
-        float dmgMultiplier = (sv_crowbar_won_damage.value != 0.0f) ? 1.5f : 1.0f;
-
+#ifdef CLIENT_WEAPONS
+        if ( (m_flNextPrimaryAttack + 1 < UTIL_WeaponTimeBase() )
+        	|| ((sv_crowbar_won_damage.value != 0.0f) && (m_flNextPrimaryAttack == -1.0f))
+        	|| g_pGameRules->IsMultiplayer() )
+		{
+#else
 		if ( (m_flNextPrimaryAttack + 1 < UTIL_WeaponTimeBase() ) || g_pGameRules->IsMultiplayer() )
 		{
+#endif
 			// first swing does full damage
-			pEntity->TraceAttack(m_pPlayer->pev, gSkillData.plrDmgCrowbar * dmgMultiplier, gpGlobals->v_forward, &tr, DMG_CLUB ); 
+			pEntity->TraceAttack(m_pPlayer->pev, gSkillData.plrDmgCrowbar, gpGlobals->v_forward, &tr, DMG_CLUB ); 
 		}
 		else
 		{
 			// subsequent swings do half
-			pEntity->TraceAttack(m_pPlayer->pev, gSkillData.plrDmgCrowbar * dmgMultiplier / 2, gpGlobals->v_forward, &tr, DMG_CLUB ); 
+			pEntity->TraceAttack(m_pPlayer->pev, gSkillData.plrDmgCrowbar / 2, gpGlobals->v_forward, &tr, DMG_CLUB ); 
 		}	
 		ApplyMultiDamage( m_pPlayer->pev, m_pPlayer->pev );
 
