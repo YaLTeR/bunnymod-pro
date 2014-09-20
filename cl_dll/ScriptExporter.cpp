@@ -100,7 +100,7 @@ void ScriptExporter::FrameEnd(const vec3_t& viewangles, int buttons)
 	const double M_U_HALF = 0.00274658203125;
 
 	// m_oldFrametime here is equal to the current frametime.
-	double pitchspeed = ((viewangles[0] - m_startPitch + M_U_HALF) / m_oldFrametime),
+	double pitchspeed = ((viewangles[0] - m_startPitch) / m_oldFrametime),
 	       yawspeed   = ((viewangles[1] - m_startYaw + M_U_HALF) / m_oldFrametime);
 
 	if (pitchspeed != m_oldPitchspeed)
