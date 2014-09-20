@@ -3847,9 +3847,9 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_motionexporter_filename", "motion", FCVAR_ARCHIVE );
 
 	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_enable", "0", 0 );
-	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_filename", "export.cfg", FCVAR_ARCHIVE );
-	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_demoname", "", 0 );
-	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_savename", "", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_filename", "export", FCVAR_ARCHIVE );
+	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_demoname", "export", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_savename", "export", 0 );
 
 	// Initialize the indenter.
 	indenter = new Indenter(gEngfuncs.Con_Printf, "\t");
