@@ -77,8 +77,10 @@ void ScriptExporter::FrameEnd(const vec3_t& viewangles, int buttons)
 	if (!m_out.is_open())
 		return;
 
-	float pitchDifference = viewangles[0] - m_startPitch,
-	      yawDifference   = viewangles[1] - m_startYaw;
+	const double M_U_HALF = 0.00274658203125;
+
+	double pitchDifference = (viewangles[0] - m_startPitch + M_U_HALF),
+	       yawDifference   = (viewangles[1] - m_startYaw + M_U_HALF);
 
 	// m_oldFrametime here is equal to the current frametime.
 	if (pitchDifference != m_oldPitchDifference)

@@ -11,10 +11,10 @@ public:
 
 protected:
 	std::ofstream m_out;
-	float m_startPitch;
-	float m_startYaw;
-	float m_oldPitchDifference;
-	float m_oldYawDifference;
+	double m_startPitch;
+	double m_startYaw;
+	double m_oldPitchDifference;
+	double m_oldYawDifference;
 	int m_oldButtons;
 	float m_oldFrametime;
 };
