@@ -12,5 +12,4 @@ protected:
 	std::ofstream m_out;
 	std::streampos m_framesPos;
 	long int m_frameCount;
-
 };

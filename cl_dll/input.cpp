@@ -43,6 +43,9 @@ Indenter *indenter;
 #include "MotionExporter.h"
 MotionExporter exporter;
 
+#include "ScriptExporter.h"
+ScriptExporter scriptExporter;
+
 const double M_PI = 3.14159265358979323846;  // matches value in gcc v2 math.h
 const double M_RAD2DEG = 180 / M_PI;
 const double M_DEG2RAD = M_PI / 180;
@@ -3434,9 +3437,21 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 	vec3_t viewangles;
 	static vec3_t oldangles;
 
-	// YaLTeR Start - save (in case we change them for custom rotation) to restore in the end of the frame.
+	// YaLTeR Start
+	// Save (in case we change them for custom rotation) to restore in the end of the frame.
 	float yawspeed =   CVAR_GET_FLOAT("cl_yawspeed"),
 	      pitchspeed = CVAR_GET_FLOAT("cl_pitchspeed");
+
+	// Script exporter stuff.
+	vec3_t preangles;
+	gEngfuncs.GetViewAngles((float *)preangles);
+
+	scriptExporter.ConsiderCVarValues(CVAR_GET_FLOAT("tas_scriptexporter_enable"),
+	                                  CVAR_GET_STRING("tas_scriptexporter_filename"),
+	                                  CVAR_GET_FLOAT("tas_paused"),
+	                                  CVAR_GET_STRING("tas_scriptexporter_demoname"),
+	                                  CVAR_GET_STRING("tas_scriptexporter_savename"));
+	scriptExporter.FrameStart(preangles, frametime);
 	// YaLTeR End
 
 	if ( active )
@@ -3546,6 +3561,8 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 	}
 
 	// YaLTeR Start - frame end stuff.
+	scriptExporter.FrameEnd(viewangles, cmd->buttons);
+
 	TAS_FrameEnd(); // Do stuff like resetting buttons.
 
 	// Restore speeds.
@@ -3828,6 +3845,11 @@ void InitInput (void)
 
 	gEngfuncs.pfnRegisterVariable( "tas_motionexporter_enable", "0", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_motionexporter_filename", "motion", FCVAR_ARCHIVE );
+
+	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_enable", "0", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_filename", "export.cfg", FCVAR_ARCHIVE );
+	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_demoname", "", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_scriptexporter_savename", "", 0 );
 
 	// Initialize the indenter.
 	indenter = new Indenter(gEngfuncs.Con_Printf, "\t");

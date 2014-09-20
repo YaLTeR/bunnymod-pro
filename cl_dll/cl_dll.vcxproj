@@ -209,6 +209,7 @@
     <ClCompile Include="..\pm_shared\pm_shared.c" />
     <ClCompile Include="ruler.cpp" />
     <ClCompile Include="saytext.cpp" />
+    <ClCompile Include="ScriptExporter.cpp" />
     <ClCompile Include="status_icons.cpp" />
     <ClCompile Include="statusbar.cpp" />
     <ClCompile Include="studio_util.cpp" />
@@ -268,6 +269,7 @@
     <ClInclude Include="..\pm_shared\pm_movevars.h" />
     <ClInclude Include="..\pm_shared\pm_shared.h" />
     <ClInclude Include="ruler.h" />
+    <ClInclude Include="ScriptExporter.h" />
     <ClInclude Include="studio_util.h" />
     <ClInclude Include="StudioModelRenderer.h" />
     <ClInclude Include="util.h" />
