@@ -65,6 +65,9 @@ void ScriptExporter::ConsiderCVarValues(float enable, const char* fileName, floa
 				m_out << "\n-" << buttonCommands[i];
 		}
 
+		if (demoName[0] != '\0')
+			m_out << "stop\n";
+
 		if (saveName[0] != '\0')
 			m_out << "\nsave " << saveName;
 

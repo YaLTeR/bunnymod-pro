@@ -1267,7 +1267,8 @@ bool TAS_CheckWaterAndGround(const vec3_t &velocity, const vec3_t &origin, bool 
 			gEngfuncs.Con_Printf("Plane: %f; ent: %d\n", tr->plane.normal[2], tr->ent);
 		}
 
-		if (tr->plane.normal[2] >= 0.7)
+		if ((tr->plane.normal[2] >= 0.7) ||
+			((tr->ent != -1) && (tr->plane.normal[2] == 0) && (CVAR_GET_FLOAT("tas_consider_clientside_entity_trace_bug") != 0.0f)))
 		{
 			if ((waterlvl < 2) && !tr->startsolid && !tr->allsolid)
 				VectorCopy(tr->endpos, newpos);
@@ -3801,6 +3802,7 @@ void InitInput (void)
 	gEngfuncs.pfnRegisterVariable( "tas_log",    "0", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_consider_fps_bug", "1", FCVAR_ARCHIVE);
 	gEngfuncs.pfnRegisterVariable( "tas_paused", "0", 0 );
+	gEngfuncs.pfnRegisterVariable( "tas_consider_clientside_entity_trace_bug", "0", FCVAR_ARCHIVE );
 
 	gEngfuncs.pfnRegisterVariable( "tas_db4c", "0", 0 );
 	gEngfuncs.pfnRegisterVariable( "tas_db4c_ceiling", "0", FCVAR_ARCHIVE );
