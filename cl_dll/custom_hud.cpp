@@ -1045,29 +1045,34 @@ void CHudCustom::CalculateLadderViewangles( void )
 	static const double M_PI = 3.14159265358979323846;
 	static const double M_RAD2DEG = 180 / M_PI;
 
-	double yaw;
-	double pitch;
-
-	if (normal_z > 0.0f)
+	if ((normal_x != 0) || (normal_y != 0))
 	{
-		// sqrt( sin(-2 * phi) )
-		double s = sqrt(2 * normal_z * sqrt((normal_x * normal_x) + (normal_y * normal_y)));
+		double ladder_yaw = atan2(normal_y, normal_x);
 
-		yaw = M_PI - atan(1 / s);
-		pitch = -1 * acos(s);
+		double yaw;
+		double pitch;
+
+		if (normal_z > 0.0f)
+		{
+			// sqrt( sin(-2 * phi) )
+			double s = sqrt(2 * normal_z * sqrt((normal_x * normal_x) + (normal_y * normal_y)));
+
+			yaw = M_PI - atan(1 / s);
+			pitch = -1 * acos(s);
+		}
+		else
+		{
+			yaw = M_PI / 2;
+			pitch = -1 * M_PI / 2;
+		}
+
+		double yaw_right = ladder_yaw - yaw;
+		double yaw_left = ladder_yaw + yaw;
+
+		gEngfuncs.Con_Printf("Yaw (right, left): %.8f %.8f\n", yaw_right * M_RAD2DEG, yaw_left * M_RAD2DEG);
+		gEngfuncs.Con_Printf("Pitch: %.8f\n", pitch * M_RAD2DEG);
+		gEngfuncs.Con_Printf("Sideways yaw (right, left): %.8f %.8f\n", -1 * (ladder_yaw + (M_PI / 4)) * M_RAD2DEG, -1 * (ladder_yaw - (M_PI / 4)) * M_RAD2DEG);
 	}
-	else
-	{
-		yaw = M_PI / 2;
-		pitch = -1 * M_PI / 2;
-	}
-
-	double ladder_yaw = atan2(normal_y, normal_x);
-	double yaw_right = ladder_yaw - yaw;
-	double yaw_left = ladder_yaw + yaw;
-
-	gEngfuncs.Con_Printf("Yaw (right, left): %.8f %.8f\n", yaw_right * M_RAD2DEG, yaw_left * M_RAD2DEG);
-	gEngfuncs.Con_Printf("Pitch: %.8f\n", pitch * M_RAD2DEG);
 }
 
 int CHudCustom::MsgFunc_EntHealth( const char *pszName, int iSize, void *pbuf )
