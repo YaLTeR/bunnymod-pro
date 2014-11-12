@@ -22,6 +22,7 @@ DECLARE_MESSAGE( m_CustomHud, EntFired )
 DECLARE_MESSAGE( m_CustomHud, FireReset )
 DECLARE_MESSAGE( m_CustomHud, VelClip )
 DECLARE_MESSAGE( m_CustomHud, PlayerInfo )
+DECLARE_MESSAGE( m_CustomHud, LadderInfo )
 
 int CHudCustom::Init( void )
 {
@@ -31,6 +32,7 @@ int CHudCustom::Init( void )
 	HOOK_MESSAGE( FireReset )
 	HOOK_MESSAGE( VelClip )
 	HOOK_MESSAGE( PlayerInfo )
+	HOOK_MESSAGE( LadderInfo )
 
 	m_iFlags = HUD_ACTIVE;
 	m_fJumpspeedFadeGreen = 0;
@@ -43,6 +45,10 @@ int CHudCustom::Init( void )
 	m_uiVelClipCount = 0;
 	m_flVelClipPlaneAngle = 0.0f;
 	m_flVelClipTime = 0.0f;
+	m_wasOnLadder = false;
+	m_ladderNormal[0] = 0;
+	m_ladderNormal[1] = 0;
+	m_ladderNormal[2] = 0;
 
 	g_iHealthDifference = 0;
 
@@ -55,6 +61,7 @@ int CHudCustom::VidInit( void )
 {
 	m_iNumFires = 0;
 	m_uiVelClipCount = 0;
+	m_wasOnLadder = false;
 
 	static bool bPrintedVersion = false;
 	if ( !bPrintedVersion )
@@ -91,6 +98,7 @@ extern cvar_t *hud_entityhealth, *hud_entityhealth_pos;
 extern cvar_t *hud_entityinfo, *hud_entityinfo_pos;
 extern cvar_t *hud_firemon, *hud_firemon_pos;
 extern cvar_t *hud_velclip, *hud_velclip_pos;
+extern cvar_t *hud_ladderinfo, *hud_ladderinfo_pos;
 extern cvar_t *hud_health_pos;
 extern cvar_t *con_color;
 extern vec3_t g_vel, g_org;
@@ -905,6 +913,32 @@ int CHudCustom::Draw( float fTime )
 	// ===========
 	// END VELOCITY CLIP HUD
 	// ===========
+	// ===========
+	// LADDER INFO HUD
+	// ===========
+
+	if (hud_ladderinfo->value)
+	{
+		int lix = 0, liy = 0;
+
+		if (hud_ladderinfo_pos->string)
+		{
+			sscanf( hud_ladderinfo_pos->string, "%d %d", &lix, &liy );
+		}
+
+		if (!m_wasOnLadder)
+			DrawString("Ladder normal: n/a", 0, 10 * gHUD.m_iFontHeight, lix, liy);
+		else
+		{
+			char temp[64];
+			sprintf(temp, "Ladder normal: %f %f %f", m_ladderNormal[0], m_ladderNormal[1], m_ladderNormal[2]);
+			DrawString(temp, 0, 10 * gHUD.m_iFontHeight, lix, liy);
+		}
+	}
+
+	// ===========
+	// END LADDER INFO HUD
+	// ===========
 
 	return 1;
 }
@@ -996,6 +1030,46 @@ void CHudCustom::HealthDifference( void )
 	}
 }
 
+void CHudCustom::CalculateLadderViewangles( void )
+{
+	if (!m_wasOnLadder)
+	{
+		gEngfuncs.Con_Printf("The player is not on a ladder.\n");
+		return;
+	}
+
+	double normal_x = m_ladderNormal[0],
+	       normal_y = m_ladderNormal[1],
+	       normal_z = m_ladderNormal[2];
+
+	static const double M_PI = 3.14159265358979323846;
+	static const double M_RAD2DEG = 180 / M_PI;
+
+	double yaw;
+	double pitch;
+
+	if (normal_z > 0.0f)
+	{
+		// sqrt( sin(-2 * phi) )
+		double s = sqrt(2 * normal_z * sqrt((normal_x * normal_x) + (normal_y * normal_y)));
+
+		yaw = M_PI - atan(1 / s);
+		pitch = -1 * acos(s);
+	}
+	else
+	{
+		yaw = M_PI / 2;
+		pitch = -1 * M_PI / 2;
+	}
+
+	double ladder_yaw = atan2(normal_y, normal_x);
+	double yaw_right = ladder_yaw - yaw;
+	double yaw_left = ladder_yaw + yaw;
+
+	gEngfuncs.Con_Printf("Yaw (right, left): %.8f %.8f\n", yaw_right * M_RAD2DEG, yaw_left * M_RAD2DEG);
+	gEngfuncs.Con_Printf("Pitch: %.8f\n", pitch * M_RAD2DEG);
+}
+
 int CHudCustom::MsgFunc_EntHealth( const char *pszName, int iSize, void *pbuf )
 {
 	BEGIN_READ( pbuf, iSize );
@@ -1059,6 +1133,21 @@ int CHudCustom::MsgFunc_VelClip( const char *pszName, int iSize, void *pbuf )
 	m_uiVelClipCount += READ_LONG();
 	m_flVelClipPlaneAngle = READ_FLOAT();
 	m_flVelClipTime = 1.0f;
+
+	return 1;
+}
+
+int CHudCustom::MsgFunc_LadderInfo( const char *pszName, int iSize, void *pbuf )
+{
+	BEGIN_READ( pbuf, iSize );
+
+	m_wasOnLadder = READ_BYTE();
+	int temp = READ_LONG();
+	m_ladderNormal[0] = *(float *)(&temp);
+	temp = READ_LONG();
+	m_ladderNormal[1] = *(float *)(&temp);
+	temp = READ_LONG();
+	m_ladderNormal[2] = *(float *)(&temp);
 
 	return 1;
 }

@@ -311,6 +311,7 @@ cvar_t *hud_entityinfo, *hud_entityinfo_pos;
 cvar_t *hud_firemon, *hud_firemon_pos;
 
 cvar_t *hud_velclip, *hud_velclip_pos;
+cvar_t *hud_ladderinfo, *hud_ladderinfo_pos;
 
 cvar_t *hud_accuracy;
 
@@ -469,6 +470,11 @@ void DumpFrameCounter( void )
 	gEngfuncs.Con_Printf("Frame counter is at: %u\n", g_ullFramecounter);
 }
 
+void CalculateLadderViewangles( void )
+{
+	gHUD.m_CustomHud.CalculateLadderViewangles();
+}
+
  // This is called every time the DLL is loaded
 void CHud :: Init( void )
 {
@@ -616,6 +622,8 @@ hud_firemon_pos = CVAR_CREATE( "hud_firemon_pos", "0", FCVAR_ARCHIVE );
 
 hud_velclip = CVAR_CREATE( "hud_velclip", "1", FCVAR_ARCHIVE );
 hud_velclip_pos = CVAR_CREATE( "hud_velclip_pos", "0", FCVAR_ARCHIVE );
+hud_ladderinfo = CVAR_CREATE( "hud_ladderinfo", "0", FCVAR_ARCHIVE );
+hud_ladderinfo_pos = CVAR_CREATE( "hud_ladderinfo_pos", "0", FCVAR_ARCHIVE );
 
 // cl_spawns_render = CVAR_CREATE( "cl_spawns_render", "0", FCVAR_ARCHIVE );
 // cl_spawns_wireframe = CVAR_CREATE( "cl_spawns_wireframe", "1", FCVAR_ARCHIVE );
@@ -663,6 +671,8 @@ gEngfuncs.pfnAddCommand("hud_framecounter_dump", DumpFrameCounter);
 
 gEngfuncs.pfnAddCommand( "alias_ex", AliasEx );
 gEngfuncs.pfnAddCommand( "_", AliasExCmd );
+
+gEngfuncs.pfnAddCommand( "tas_calc_ladder_viewangles", CalculateLadderViewangles );
 
 // gEngfuncs.pfnAddCommand( "cl_findspawns", FindSpawns );
 // YaLTeR End

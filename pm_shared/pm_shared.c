@@ -48,6 +48,9 @@ float g_flLastVelClipPlaneAngle = 0.0f;
 
 #ifndef CLIENT_DLL
 cvar_t g_sv_taslog;
+
+int g_wasOnLadder = 0;
+vec3_t g_ladderNormal = { 0.0f };
 #endif
 // YaLTeR End
 
@@ -2203,6 +2206,10 @@ void PM_LadderMove( physent_t *pLadder )
 		float forward = 0, right = 0;
 		vec3_t vpn, v_right;
 
+#ifndef CLIENT_DLL
+		VectorCopy(trace.plane.normal, g_ladderNormal);
+#endif
+
 		AngleVectors( pmove->angles, vpn, v_right, NULL );
 		if ( pmove->cmd.buttons & IN_BACK )
 			forward -= MAX_CLIMB_SPEED;
@@ -3137,6 +3144,10 @@ void PM_PlayerMove ( qboolean server )
 			g_onladder = 1;
 		}
 	}
+
+#ifndef CLIENT_DLL
+	g_wasOnLadder = g_onladder;
+#endif
 
 	PM_UpdateStepSound();
 

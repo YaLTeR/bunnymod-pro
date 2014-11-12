@@ -211,6 +211,7 @@ int gmsgEntityFireReset = 0;
 
 int gmsgVelocityClip = 0;
 int gmsgPlayerInfo = 0;
+int gmsgLadderInfo = 0;
 // YaLTeR End
 
 char m_szLastFiremonTarget[128];
@@ -269,6 +270,7 @@ void LinkUserMessages( void )
 	gmsgEntityFireReset = REG_USER_MSG("FireReset", 0);
 	gmsgVelocityClip = REG_USER_MSG("VelClip", 8);
 	gmsgPlayerInfo = REG_USER_MSG("PlayerInfo", 28);
+	gmsgLadderInfo = REG_USER_MSG("LadderInfo", 13);
 	// YaLTeR End
 }
 
@@ -1804,6 +1806,8 @@ extern "C" int g_iCustomJumpvel;
 extern "C" int g_iAutoJump;
 extern "C" unsigned int g_uiClipCount;
 extern "C" float g_flLastVelClipPlaneAngle;
+extern "C" int g_wasOnLadder;
+extern "C" vec3_t g_ladderNormal;
 extern cvar_t jumpvelocity;
 extern cvar_t autojump;
 extern cvar_t sethealth;
@@ -2622,6 +2626,13 @@ void CBasePlayer::PostThink()
 			WRITE_LONG( *(int *)&g_flLastVelClipPlaneAngle );
 		MESSAGE_END();
 	}
+
+	MESSAGE_BEGIN(MSG_ONE, gmsgLadderInfo, NULL, pev);
+		WRITE_BYTE( g_wasOnLadder );
+		WRITE_LONG( *(int *)(&g_ladderNormal[0]) );
+		WRITE_LONG( *(int *)(&g_ladderNormal[1]) );
+		WRITE_LONG( *(int *)(&g_ladderNormal[2]) );
+	MESSAGE_END();
 	// YaLTeR End
 
 	// Handle Tank controlling
