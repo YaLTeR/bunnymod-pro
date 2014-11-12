@@ -3810,7 +3810,7 @@ void InitInput (void)
 
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_ground", "1", FCVAR_ARCHIVE ); // Jump upon reaching the ground.
 	gEngfuncs.pfnRegisterVariable( "tas_autojump_water",  "1", FCVAR_ARCHIVE ); // Swim up in water.
-	gEngfuncs.pfnRegisterVariable( "tas_autojump_ladder", "1", FCVAR_ARCHIVE ); // Jump off of ladders.
+	// gEngfuncs.pfnRegisterVariable( "tas_autojump_ladder", "1", FCVAR_ARCHIVE ); // Jump off of ladders.
 
 	gEngfuncs.pfnRegisterVariable( "tas_strafe_type",     "0",   0 ); // Same as STRAFETYPE_ constants.
 	gEngfuncs.pfnRegisterVariable( "tas_strafe_dir",      "2",   0 ); // -1 is left, 0 is best for the given strafe type, 1 is right, 2 is yawstrafe, 3 is pointstrafe, 4 is linestrafe, ... (many stuff TBD)
