@@ -847,7 +847,7 @@ void PM_Math_CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross)
 	cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
 }
 
-void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemove, float upmove, float maxspeed, bool inDuck, vec3_t *wishvel)
+void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemove, float upmove, float maxspeed, bool inDuck, int waterlevel, vec3_t *wishvel)
 {
 	vec3_t properangles;
 	VectorCopy(angles, properangles);
@@ -858,10 +858,16 @@ void TAS_ConstructWishvel(const vec3_t &angles, float forwardmove, float sidemov
 	vec3_t forward, right, up;
 	PM_Math_AngleVectors(properangles, forward, right, up);
 
-	forward[2] = 0;
-	right[2] = 0;
-	VectorNormalize(forward);
-	VectorNormalize(right);
+	if (waterlevel < 2)
+	{
+		forward[2] = 0;
+		right[2] = 0;
+	}
+	else
+	{
+		VectorNormalize(forward);
+		VectorNormalize(right);
+	}
 
 	// CheckParamters
 	float spd = (forwardmove * forwardmove) + (sidemove * sidemove) + (upmove * upmove);
@@ -929,7 +935,7 @@ int TAS_GetButtons(const vec3_t &angles, const vec3_t &velocity, bool onGround)
 	return buttons;
 }
 
-void TAS_ConstructWishvelWithButtons(const vec3_t &angles, const vec3_t &velocity, float wishspeed, float upmove, float maxspeed, bool inDuck, bool onGround, vec3_t *wishvel)
+void TAS_ConstructWishvelWithButtons(const vec3_t &angles, const vec3_t &velocity, float wishspeed, float upmove, float maxspeed, bool inDuck, bool onGround, int waterlevel, vec3_t *wishvel)
 {
 	int buttons = TAS_GetButtons(angles, velocity, onGround);
 
@@ -967,7 +973,7 @@ void TAS_ConstructWishvelWithButtons(const vec3_t &angles, const vec3_t &velocit
 		gEngfuncs.Con_Printf("Angle: %.8f newangle: %.8f; buttons: %d\n", angles[1], newangles[1], buttons);
 	}
 
-	TAS_ConstructWishvel(newangles, forwardmove, sidemove, upmove, maxspeed, inDuck, wishvel);
+	TAS_ConstructWishvel(newangles, forwardmove, sidemove, upmove, maxspeed, inDuck, waterlevel, wishvel);
 
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 		indenter->endSection("TAS_ConstructWishvelWithButtons");
@@ -1029,14 +1035,80 @@ void TAS_SimpleWaterPredict(const vec3_t &wishvelocity, const vec3_t &velocity, 
 	double gravity, double pmove_gravity, bool onGround, int waterlevel, float upmove,
 	vec3_t *new_velocity, vec3_t *new_origin, int part = 0)
 {
-	// TODO
+	vec3_t newvel, newpos;
+	VectorCopy(velocity, newvel);
+	VectorCopy(origin, newpos);
+
+	vec3_t wishvel;
+	VectorCopy(wishvelocity, wishvel);
+
+	if (!wishvel[0] && !wishvel[1] && (upmove == 0.0f))
+		wishvel[2] -= 60;
+	else
+		wishvel[2] += upmove;
+
+	vec3_t wishdir;
+	float wishspeed;
+	VectorCopy(wishvel, wishdir);
+	wishspeed = VectorNormalize(wishdir);
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		indenter->startSection("TAS_SimpleWaterPredict");
+		indenter->indent();
+		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
+		indenter->indent();
+		gEngfuncs.Con_Printf("Wishvel[0]: %.8f; wishvel[1]: %.8f; wishvel[2]: %.8f; wishdir[0]: %.8f; wishdir[1]: %.8f; wishdir[2]: %.8f\n", wishvel[0], wishvel[1], wishvel[2], wishdir[0], wishdir[1], wishdir[2]);
+		indenter->indent();
+		gEngfuncs.Con_Printf("Frametime: %f; maxspeed: %f; accel: %f; wishspeed: %.8g; wishspeed_cap: %f; pmove_friction: %f\n", frametime, maxspeed, accel, wishspeed, wishspeed_cap, pmove_friction);
+	}
+
+	if (wishspeed > maxspeed)
+	{
+		VectorScale(wishvel, maxspeed / wishspeed, wishvel);
+		wishspeed = maxspeed;
+	}
+
+	wishspeed *= 0.8;
+
+	vec3_t temp;
+	float newspeed;
+	VectorCopy(newvel, temp);
+	newspeed = VectorNormalize(temp); // Assuming that we already applied water friction prior to this point.
+
+	if (wishspeed >= 0.1f)
+	{
+		float addspeed = wishspeed - newspeed;
+		if (addspeed > 0)
+		{
+			// Ground accel is used here.
+			float accelspeed = accel * wishspeed * frametime * pmove_friction;
+			if (accelspeed > addspeed)
+				accelspeed = addspeed;
+
+			for (int i = 0; i < 3; i++)
+				newvel[i] += accelspeed * wishdir[i];
+		}
+	}
+
+	if (part != 1)
+	{
+		VectorMA(newpos, frametime, newvel, newpos);
+	}
 
 	// Return values if needed.
 	if (new_velocity)
-		VectorCopy(velocity, *new_velocity);
+		VectorCopy(newvel, *new_velocity);
 
 	if (new_origin)
-		VectorCopy(origin, *new_origin);
+		VectorCopy(newpos, *new_origin);
+
+	if (CVAR_GET_FLOAT("tas_log") != 0)
+	{
+		indenter->indent();
+		gEngfuncs.Con_Printf("New velocity: %.8f; %.8f; %.8f; new origin: %.8f; %.8f; %.8f\n", newvel[0], newvel[1], newvel[2], newpos[0], newpos[1], newpos[2]);
+		indenter->endSection("TAS_SimpleWaterPredict");
+	}
 }
 
 // Predicts the next origin and velocity as if we were in an empty world.
@@ -1517,7 +1589,21 @@ void TAS_Predict(const vec3_t &wishvelocity, const vec3_t &velocity, const vec3_
 		gravity, pmove_gravity, onGround, justJumped, waterlevel, upmove,
 		&newvel, NULL, 1); // Predict without FixupGravityVelocity.
 
-	if (onGround)
+	if (waterlevel >= 2)
+	{
+		vec3_t start, dest;
+		VectorMA(newpos, frametime, newvel, dest);
+		VectorCopy(dest, start);
+		start[2] += stepsize + 1;
+		pmtrace_t *trace = gEngfuncs.PM_TraceLine(start, dest, PM_NORMAL, (inDuck ? 1 : 0), -1);
+		if (!trace->startsolid && !trace->allsolid)
+		{
+			VectorCopy(trace->endpos, newpos);
+		}
+		else
+			TAS_FlyMove(newvel, newpos, frametime, onGround, inDuck, pmove_friction, bounce, &newpos, &newvel);
+	}
+	else if (onGround)
 	{
 		// WalkMove
 		if (Length(newvel) != 0) // Can be set to 0 in the end of TAS_SimplePredict.
@@ -1592,8 +1678,9 @@ void TAS_Predict(const vec3_t &wishvelocity, const vec3_t &velocity, const vec3_
 		TAS_FlyMove(newvel, newpos, frametime, onGround, inDuck, pmove_friction, bounce, &newpos, &newvel);
 	}
 
+	int newwaterlevel;
 	int watertype = 0;
-	onGround = TAS_CheckWaterAndGround(newvel, newpos, inDuck, &waterlevel, &watertype, &newpos);
+	onGround = TAS_CheckWaterAndGround(newvel, newpos, inDuck, &newwaterlevel, &watertype, &newpos);
 	TAS_CheckVelocity(newvel, maxvelocity, &newvel);
 
 	if (waterlevel <= 1)
@@ -1613,7 +1700,7 @@ void TAS_Predict(const vec3_t &wishvelocity, const vec3_t &velocity, const vec3_
 		*new_onGround = onGround;
 
 	if (new_waterlevel)
-		*new_waterlevel = waterlevel;
+		*new_waterlevel = newwaterlevel;
 
 	if (new_watertype)
 		*new_watertype = watertype;
@@ -1625,13 +1712,13 @@ void TAS_Predict(const vec3_t &wishvelocity, const vec3_t &velocity, const vec3_
 		VectorCopy(newpos, *new_origin);
 }
 
-void TAS_ApplyFriction(const vec3_t &velocity, const vec3_t &origin, float frametime, bool inDuck, bool onGround, float pmove_friction, float cvar_friction, float cvar_edgefriction, float cvar_stopspeed, vec3_t *new_velocity)
+void TAS_ApplyFriction(const vec3_t &velocity, const vec3_t &origin, float frametime, bool inDuck, bool onGround, float pmove_friction, float cvar_friction, float cvar_edgefriction, float cvar_stopspeed, int waterlevel, vec3_t *new_velocity)
 {
 	if (CVAR_GET_FLOAT("tas_log") != 0)
 	{
 		indenter->startSection("TAS_ApplyFriction");
 		indenter->indent();
-		gEngfuncs.Con_Printf("InDuck: %s; onGround: %s; pmove_friction: %f; friction: %f; edgefriction: %f; stopspeed: %f\n", BOOLSTRING(inDuck), BOOLSTRING(onGround), pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed);
+		gEngfuncs.Con_Printf("InDuck: %s; onGround: %s; pmove_friction: %f; friction: %f; edgefriction: %f; stopspeed: %f; waterlevel: %d\n", BOOLSTRING(inDuck), BOOLSTRING(onGround), pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, waterlevel);
 		indenter->indent();
 		gEngfuncs.Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
 	}
@@ -1639,7 +1726,18 @@ void TAS_ApplyFriction(const vec3_t &velocity, const vec3_t &origin, float frame
 	vec3_t newvel;
 	VectorCopy(velocity, newvel);
 
-	if (onGround)
+	if (waterlevel >= 2) // Water has its own friction.
+	{
+		vec3_t temp;
+		VectorCopy(newvel, temp);
+		float speed = VectorNormalize(temp);
+		float newspeed = speed - frametime * speed * cvar_friction * pmove_friction;
+
+		if (newspeed < 0)
+			newspeed = 0;
+		VectorScale(newvel, newspeed / speed, newvel);
+	}
+	else if (onGround)
 	{
 		newvel[2] = 0;
 
@@ -2117,7 +2215,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, waterlevel, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2149,7 +2247,7 @@ bool TAS_StrafeMaxSpeed(const vec3_t &velocity, float pitch, float velocityAngle
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, waterlevel, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2250,7 +2348,7 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, waterlevel, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2287,7 +2385,7 @@ bool TAS_StrafeMaxAngle(const vec3_t &velocity, float pitch, float velocityAngle
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, waterlevel, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2393,7 +2491,7 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, waterlevel, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2425,7 +2523,7 @@ bool TAS_StrafeLeastSpeed(const vec3_t &velocity, float pitch, float velocityAng
 		angles[2] = 0;
 
 		vec3_t wishvel;
-		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, waterlevel, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, pos,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2596,7 +2694,7 @@ double TAS_YawStrafe(float desiredYaw, int strafetype, const vec3_t &velocity, c
 		viewangles[1] = beta[i];
 		viewangles[2] = 0;
 
-		TAS_ConstructWishvelWithButtons(viewangles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(viewangles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, waterlevel, &wishvel);
 
 		TAS_SimplePredict(wishvel, velocity, origin,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
@@ -2682,7 +2780,7 @@ double TAS_PointStrafe(const float *point, int strafetype, const vec3_t &velocit
 		viewangles[1] = beta[i];
 		viewangles[2] = 0;
 
-		TAS_ConstructWishvelWithButtons(viewangles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, &wishvel);
+		TAS_ConstructWishvelWithButtons(viewangles, velocity, wishspeed, 0, maxspeed, wasInDuck, onGround, waterlevel, &wishvel);
 		TAS_SimplePredict(wishvel, velocity, origin,
 			maxspeed, accel, maxvelocity, wishspeed_cap, frametime, pmove_friction,
 			0, 0, onGround, false, waterlevel, 0,
@@ -3091,9 +3189,6 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 			duckTime = 0;
 	}
 
-	// TODO ladders & water *eventually*.
-	// TODO remake all autostuff that uses prediction to proper prediction considering the geometry and vel clipping and whatnot.
-
 	// Moving automatic actions into separate functions would require a whole bunch of parameters getting passed.
 	// Ducktap
 	bool shouldAutojump = true;
@@ -3134,7 +3229,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 		if (!onGround && ((in_duck.state & 1) == 0)) // Flying in the air and duck is not pressed.
 		{
-			int duckedWaterlevel = 0;
+			int duckedWaterlevel = waterlevel;
 			vec3_t duckedOrigin;
 			if (!inDuck && TAS_Duck(velocity, origin, inDuck, onGround, tryingToDuck, duckTime, NULL, NULL, NULL, &duckedWaterlevel, NULL, &duckedOrigin))
 			{
@@ -3145,29 +3240,34 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 
 				vec3_t wishvel_unducked, wishvel_ducked;
 
+				vec3_t newvel_unducked, newvel_ducked;
+				TAS_ApplyFriction(velocity, origin, physics_frametime, false, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, waterlevel, &newvel_unducked);
+				TAS_ApplyFriction(velocity, origin, physics_frametime, true, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, duckedWaterlevel, &newvel_ducked);
+
 				if (!manualMovement)
 				{
-					float wishangle_unducked = TAS_Strafe(viewangles, velocity, origin,       cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, waterlevel,       pitch);
-					float wishangle_ducked =   TAS_Strafe(viewangles, velocity, duckedOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, duckedWaterlevel, pitch);
+					float wishangle_unducked = TAS_Strafe(viewangles, newvel_unducked, origin,       cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, waterlevel,       pitch);
+					float wishangle_ducked =   TAS_Strafe(viewangles, newvel_ducked, duckedOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, duckedWaterlevel, pitch);
 					angles[1] = wishangle_unducked;
-					TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, &wishvel_unducked);
+					TAS_ConstructWishvelWithButtons(angles, newvel_unducked, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, waterlevel, &wishvel_unducked);
 					angles[1] = wishangle_ducked;
-					TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, &wishvel_ducked);
+					TAS_ConstructWishvelWithButtons(angles, newvel_ducked, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, duckedWaterlevel, &wishvel_ducked);
 				}
 				else
 				{
 					angles[1] = viewangles[1];
-					TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, false, &wishvel_unducked);
+					TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, false, waterlevel, &wishvel_unducked);
+					TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, true, duckedWaterlevel, &wishvel_ducked);
 					VectorCopy(wishvel_unducked, wishvel_ducked);
 				}
 
 				vec3_t newpos_unducked, newpos_ducked;
-				TAS_SimplePredict(wishvel_unducked, velocity, origin,
-					cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
+				TAS_SimplePredict(wishvel_unducked, newvel_unducked, origin,
+					cvar_maxspeed, (waterlevel >= 2) ? cvar_accelerate : cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
 					cvar_gravity, pmove_gravity, onGround, false, waterlevel, 0,
 					NULL, &newpos_unducked);
-				TAS_SimplePredict(wishvel_ducked, velocity, duckedOrigin,
-					cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
+				TAS_SimplePredict(wishvel_ducked, newvel_ducked, duckedOrigin,
+					cvar_maxspeed, (duckedWaterlevel >= 2) ? cvar_accelerate : cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
 					cvar_gravity, pmove_gravity, onGround, false, duckedWaterlevel, 0,
 					NULL, &newpos_ducked);
 
@@ -3223,21 +3323,25 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 					angles[0] = pitch;
 					angles[2] = 0;
 
+					// We need this here for the water friction.
+					vec3_t newvel;
+					TAS_ApplyFriction(velocity, newOrigin, physics_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, newWaterlevel, &newvel);
+
 					vec3_t wishvel;
 					if (!manualMovement)
 					{
-						float wishangle = TAS_Strafe(viewangles, velocity, newOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, newWaterlevel, pitch);
+						float wishangle = TAS_Strafe(viewangles, newvel, newOrigin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, newWaterlevel, pitch);
 						angles[1] = wishangle;
-						TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, &wishvel);
+						TAS_ConstructWishvelWithButtons(angles, newvel, wishspeed, 0, cvar_maxspeed, wasInDuck, onGround, newWaterlevel, &wishvel);
 					}
 					else
 					{
 						angles[1] = viewangles[1];
-						TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, false, &wishvel);
+						TAS_ConstructWishvel(angles, forwardmove, sidemove, upmove, cvar_maxspeed, false, newWaterlevel, &wishvel);
 					}
 
-					TAS_Predict(wishvel, velocity, newOrigin,
-						cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, cvar_bounce, cvar_stepsize, wishspeed_cap, physics_frametime, pmove_friction,
+					TAS_Predict(wishvel, newvel, newOrigin,
+						cvar_maxspeed, (newWaterlevel >= 2) ? cvar_accelerate : cvar_airaccelerate, cvar_maxvelocity, cvar_bounce, cvar_stepsize, wishspeed_cap, physics_frametime, pmove_friction,
 						cvar_gravity, pmove_gravity, onGround, false, false, newWaterlevel, 0,
 						&newOnGround, NULL, NULL, NULL, NULL);
 				}
@@ -3307,13 +3411,13 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 				float strafetype = CVAR_GET_FLOAT("tas_strafe_type");
 				if (CVAR_GET_FLOAT("tas_strafe_autojump") != 0)
 				{
-					if (shouldAutojump && onGround && (strafetype == STRAFETYPE_MAXSPEED) && ((in_jump.state & 7) == 0))
+					if (shouldAutojump && onGround && (waterlevel < 2) && (strafetype == STRAFETYPE_MAXSPEED) && ((in_jump.state & 7) == 0))
 					{
 						if (CVAR_GET_FLOAT("tas_log") != 0)
 							indenter->startSection("Lgagst");
 
 						vec3_t velocityWithFriction;
-						TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, true, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocityWithFriction);
+						TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, true, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, waterlevel, &velocityWithFriction);
 						double speed = hypot(velocity[0], velocity[1]);
 						double speedWithFriction = hypot(velocityWithFriction[0], velocityWithFriction[1]);
 						double alpha_air =    TAS_GetMaxSpeedAngle(speed,             cvar_maxspeed, cvar_airaccelerate, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, wasInDuck, waterlevel);
@@ -3331,7 +3435,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 							angles[2] = 0;
 
 							vec3_t wishvel;
-							TAS_ConstructWishvelWithButtons(angles, velocityWithFriction, wishspeed, 0, cvar_maxspeed, wasInDuck, true, &wishvel);
+							TAS_ConstructWishvelWithButtons(angles, velocityWithFriction, wishspeed, 0, cvar_maxspeed, wasInDuck, true, waterlevel, &wishvel);
 
 							vec3_t newvel;
 							TAS_SimplePredict(wishvel, velocityWithFriction, origin,
@@ -3342,7 +3446,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 							newspeed_ground = hypot(newvel[0], newvel[1]);
 
 							angles[1] = wishangle_air;
-							TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, false, &wishvel);
+							TAS_ConstructWishvelWithButtons(angles, velocity, wishspeed, 0, cvar_maxspeed, wasInDuck, false, waterlevel, &wishvel);
 							TAS_SimplePredict(wishvel, velocity, origin,
 								cvar_maxspeed, cvar_airaccelerate, cvar_maxvelocity, wishspeed_cap, physics_frametime, pmove_friction,
 								cvar_gravity, pmove_gravity, false, true, waterlevel, 0,
@@ -3376,7 +3480,7 @@ void TAS_DoStuff(const vec3_t &viewangles, float frametime, bool manualMovement,
 					wishspeed_cap = cvar_maxspeed;
 
 				// Friction is applied after we ducked / unducked and after we jumped.
-				TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, &velocity);
+				TAS_ApplyFriction(velocity, origin, physics_frametime, inDuck, onGround, pmove_friction, cvar_friction, cvar_edgefriction, cvar_stopspeed, waterlevel, &velocity);
 
 				float wishangle = TAS_Strafe(viewangles, velocity, origin, cvar_maxspeed, cvar_accelerate, cvar_airaccelerate, cvar_maxvelocity, wishspeed, wishspeed_cap, physics_frametime, pmove_friction, onGround, wasInDuck, waterlevel, pitch);
 				TAS_SetWishspeed(viewangles, velocity, wishangle, frametime, onGround); // Needs the actual frametime (regardless of the fps bug).

@@ -1451,6 +1451,14 @@ void PM_WaterMove (void)
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
 
+// #ifndef CLIENT_DLL
+// 	if (g_sv_taslog.value != 0)
+// 	{
+// 		pmove->Con_Printf("wishspeed: %.8f\n");
+// 		pmove->Con_Printf("wishvel[0]: %.8f; wishvel[1]: %.8f; wishvel[2]: %.8f; wishdir[0]: %.8f; wishdir[1]: %.8f; wishdir[2]: %.8f\n", wishvel[0], wishvel[1], wishvel[2], wishdir[0], wishdir[1], wishdir[2]);
+// 	}
+// #endif
+
 	// Cap speed.
 	if (wishspeed > pmove->maxspeed)
 	{
@@ -1474,6 +1482,13 @@ void PM_WaterMove (void)
 	}
 	else
 		newspeed = 0;
+
+// #ifndef CLIENT_DLL
+// 	if (g_sv_taslog.value != 0)
+// 	{
+// 		pmove->Con_Printf("Post-friction vel: %.8f %.8f %.8f\n", pmove->velocity[0], pmove->velocity[1], pmove->velocity[2]);
+// 	}
+// #endif
 
 //
 // water acceleration
