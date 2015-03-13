@@ -74,14 +74,14 @@ typedef struct hull_s
 #define TIME_TO_DUCK	0.4
 #define VEC_DUCK_HULL_MIN	-18
 #define VEC_DUCK_HULL_MAX	18
-#define VEC_DUCK_VIEW		12
+#define VEC_DUCK_VIEW		-12
 #define PM_DEAD_VIEWHEIGHT	-8
 #define MAX_CLIMB_SPEED	200
 #define STUCK_MOVEUP 1
 #define STUCK_MOVEDOWN -1
 #define VEC_HULL_MIN		-36
 #define VEC_HULL_MAX		36
-#define VEC_VIEW			28
+#define VEC_VIEW			-28
 #define	STOP_EPSILON	0.1
 
 #define CTEXTURESMAX		512			// max number of textures loaded
@@ -1136,7 +1136,7 @@ void PM_WalkMove ()
 
 	// Start out up one stair height
 	VectorCopy (pmove->origin, dest);
-	dest[2] += pmove->movevars->stepsize;
+	dest[2] -= pmove->movevars->stepsize;
 	
 	trace = pmove->PM_PlayerTrace (pmove->origin, dest, PM_NORMAL, -1 );
 	// If we started okay and made it part of the way at least,
@@ -1153,13 +1153,13 @@ void PM_WalkMove ()
 // Now try going back down from the end point
 //  press down the stepheight
 	VectorCopy (pmove->origin, dest);
-	dest[2] -= pmove->movevars->stepsize;
+	dest[2] += pmove->movevars->stepsize;
 	
 	trace = pmove->PM_PlayerTrace (pmove->origin, dest, PM_NORMAL, -1 );
 
 	// If we are not on the ground any more then
 	//  use the original movement attempt
-	if ( trace.plane.normal[2] < 0.7)
+	if ( trace.plane.normal[2] > -0.7)
 		goto usedown;
 	// If the trace ended up in empty space, copy the end
 	//  over to the origin.
@@ -1227,8 +1227,8 @@ void PM_Friction (void)
 
 		start[0] = stop[0] = pmove->origin[0] + vel[0]/speed*16;
 		start[1] = stop[1] = pmove->origin[1] + vel[1]/speed*16;
-		start[2] = pmove->origin[2] + pmove->player_mins[pmove->usehull][2];
-		stop[2] = start[2] - 34;
+		start[2] = pmove->origin[2] + pmove->player_maxs[pmove->usehull][2];
+		stop[2] = start[2] + 34;
 
 		trace = pmove->PM_PlayerTrace (start, stop, PM_NORMAL, -1 );
 
@@ -1481,7 +1481,7 @@ qboolean PM_CheckWater ()
 	// Pick a spot just above the players feet.
 	point[0] = pmove->origin[0] + (pmove->player_mins[pmove->usehull][0] + pmove->player_maxs[pmove->usehull][0]) * 0.5;
 	point[1] = pmove->origin[1] + (pmove->player_mins[pmove->usehull][1] + pmove->player_maxs[pmove->usehull][1]) * 0.5;
-	point[2] = pmove->origin[2] + pmove->player_mins[pmove->usehull][2] + 1;
+	point[2] = pmove->origin[2] + pmove->player_maxs[pmove->usehull][2] - 1;
 	
 	// Assume that we are not in water at all.
 	pmove->waterlevel = 0;
@@ -1560,9 +1560,9 @@ void PM_CatagorizePosition (void)
 
 	point[0] = pmove->origin[0];
 	point[1] = pmove->origin[1];
-	point[2] = pmove->origin[2] - 2;
+	point[2] = pmove->origin[2] + 2;
 
-	if (pmove->velocity[2] > 180)   // Shooting up really fast.  Definitely not on ground.
+	if (pmove->velocity[2] < -180)   // Shooting up really fast.  Definitely not on ground.
 	{
 		pmove->onground = -1;
 	}
@@ -1571,7 +1571,7 @@ void PM_CatagorizePosition (void)
 		// Try and move down.
 		tr = pmove->PM_PlayerTrace (pmove->origin, point, PM_NORMAL, -1 );
 		// If we hit a steep plane, we are not on ground
-		if ( tr.plane.normal[2] < 0.7)
+		if ( tr.plane.normal[2] > -0.7)
 			pmove->onground = -1;	// too steep
 		else
 			pmove->onground = tr.ent;  // Otherwise, point to index of ent under us.
@@ -1929,7 +1929,7 @@ void PM_UnDuck( void )
 	{
 		for ( i = 0; i < 3; i++ )
 		{
-			newOrigin[i] += ( pmove->player_mins[1][i] - pmove->player_mins[0][i] );
+			newOrigin[i] -= ( pmove->player_mins[1][i] - pmove->player_mins[0][i] );
 		}
 	}
 	
@@ -2029,7 +2029,7 @@ void PM_Duck( void )
 					{
 						for ( i = 0; i < 3; i++ )
 						{
-							pmove->origin[i] -= ( pmove->player_mins[1][i] - pmove->player_mins[0][i] );
+							pmove->origin[i] += ( pmove->player_mins[1][i] - pmove->player_mins[0][i] );
 						}
 						// See if we are stuck?
 						PM_FixPlayerCrouchStuck( STUCK_MOVEUP );
@@ -2040,7 +2040,7 @@ void PM_Duck( void )
 				}
 				else
 				{
-					float fMore = (VEC_DUCK_HULL_MIN - VEC_HULL_MIN);
+					float fMore = (VEC_DUCK_HULL_MAX - VEC_HULL_MAX);
 
 					// Calc parametric time
 					duckFraction = PM_SplineFraction( time, (1.0/TIME_TO_DUCK) );
@@ -2597,16 +2597,16 @@ void PM_Jump (void)
 				pmove->velocity[i] = pmove->forward[i] * PLAYER_LONGJUMP_SPEED * 1.6;
 			}
 		
-			pmove->velocity[2] = sqrt(2 * 800 * 56.0);
+			pmove->velocity[2] = -sqrt(2 * 800 * 56.0);
 		}
 		else
 		{
-			pmove->velocity[2] = sqrt(2 * 800 * 45.0);
+			pmove->velocity[2] = -sqrt(2 * 800 * 45.0);
 		}
 	}
 	else
 	{
-		pmove->velocity[2] = sqrt(2 * 800 * 45.0);
+		pmove->velocity[2] = -sqrt(2 * 800 * 45.0);
 	}
 
 	// Decay it for simulation
@@ -2636,7 +2636,7 @@ void PM_CheckWaterJump (void)
 		return;
 
 	// Don't hop out if we just jumped in
-	if ( pmove->velocity[2] < -180 )
+	if ( pmove->velocity[2] > -180 )
 		return; // only hop out if we are moving up
 
 	// See if we are backing up
@@ -2658,7 +2658,7 @@ void PM_CheckWaterJump (void)
 		return;
 
 	VectorCopy( pmove->origin, vecStart );
-	vecStart[2] += WJ_HEIGHT;
+	vecStart[2] -= WJ_HEIGHT;
 
 	VectorMA ( vecStart, 24, flatforward, vecEnd );
 	
@@ -2666,9 +2666,9 @@ void PM_CheckWaterJump (void)
 	savehull = pmove->usehull;
 	pmove->usehull = 2;
 	tr = pmove->PM_PlayerTrace( vecStart, vecEnd, PM_NORMAL, -1 );
-	if ( tr.fraction < 1.0 && fabs( tr.plane.normal[2] ) < 0.1f )  // Facing a near vertical wall?
+	if ( tr.fraction < 1.0 && fabs( tr.plane.normal[2] ) > -0.1f )  // Facing a near vertical wall?
 	{
-		vecStart[2] += pmove->player_maxs[ savehull ][2] - WJ_HEIGHT;
+		vecStart[2] -= pmove->player_maxs[ savehull ][2] - WJ_HEIGHT;
 		VectorMA( vecStart, 24, flatforward, vecEnd );
 		VectorMA( vec3_origin, -50, tr.plane.normal, pmove->movedir );
 
@@ -2676,7 +2676,7 @@ void PM_CheckWaterJump (void)
 		if ( tr.fraction == 1.0 )
 		{
 			pmove->waterjumptime = 2000;
-			pmove->velocity[2] = 225;
+			pmove->velocity[2] = -225;
 			pmove->oldbuttons |= IN_JUMP;
 			pmove->flags |= FL_WATERJUMP;
 		}
@@ -2997,7 +2997,7 @@ void PM_PlayerMove ( qboolean server )
 	// If we are not on ground, store off how fast we are moving down
 	if ( pmove->onground == -1 )
 	{
-		pmove->flFallVelocity = -pmove->velocity[2];
+		pmove->flFallVelocity = pmove->velocity[2];
 	}
 
 	g_onladder = 0;
@@ -3108,7 +3108,7 @@ void PM_PlayerMove ( qboolean server )
 			}
 
 			// If we are falling again, then we must not trying to jump out of water any more.
-			if ( pmove->velocity[2] < 0 && pmove->waterjumptime )
+			if ( pmove->velocity[2] > 0 && pmove->waterjumptime )
 			{
 				pmove->waterjumptime = 0;
 			}
